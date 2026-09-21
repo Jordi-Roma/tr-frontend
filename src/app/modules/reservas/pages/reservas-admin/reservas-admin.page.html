@@ -1,0 +1,217 @@
+<section class="admin-page-shell">
+  <div class="admin-page-header">
+    <div>
+      <p class="admin-eyebrow">Reservas</p>
+      <h1>Gestión de reservas</h1>
+      <p>Revisa reservas de clientes, filtra por estado y actualiza su atención.</p>
+    </div>
+
+    <div class="filters-row">
+      <label class="filter-control">
+        Estado
+        <select [value]="estadoFiltro()" (change)="cambiarFiltro($event)">
+          <option value="">Todos</option>
+          @for (estado of estados; track estado) {
+            <option [value]="estado">{{ estado }}</option>
+          }
+        </select>
+      </label>
+
+      @if (esAdmin()) {
+        <label class="filter-control">
+          Sucursal
+          <select [value]="sucursalFiltro() ?? ''" (change)="cambiarSucursal($event)">
+            <option value="">Todas</option>
+            @for (sucursal of sucursales(); track sucursal.id) {
+              <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+            }
+          </select>
+        </label>
+      }
+    </div>
+  </div>
+
+  @if (mensaje()) {
+    <p class="feedback success">{{ mensaje() }}</p>
+  }
+
+  @if (error()) {
+    <p class="feedback error">{{ error() }}</p>
+  }
+
+  <div class="admin-card">
+    @if (cargando()) {
+      <div class="empty-state">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        <p>Cargando reservas...</p>
+      </div>
+    } @else if (reservas().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-calendar-times" aria-hidden="true"></i>
+        <p>No hay reservas para el filtro seleccionado.</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Sucursal</th>
+              <th>Fecha</th>
+              <th>Cita</th>
+              <th>Anticipo</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (reserva of reservas(); track reserva.id) {
+              <tr>
+                <td>
+                  <strong>{{ reserva.codigo }}</strong>
+                </td>
+                <td>{{ reserva.cliente || 'Cliente' }}</td>
+                <td>{{ reserva.ciudad }} - {{ reserva.sucursal }}</td>
+                <td>{{ formatFecha(reserva.fecha_reserva) }}</td>
+                <td>{{ reserva.fecha_cita || 'Sin cita' }}</td>
+                <td>{{ formatPrecio(reserva.monto_reserva) }}</td>
+                <td>{{ formatPrecio(reserva.total) }}</td>
+                <td>
+                  <span class="estado-pill" [class]="estadoClase(reserva.estado)">
+                    {{ reserva.estado }}
+                  </span>
+                </td>
+                <td class="actions-cell">
+                  <button type="button" class="ghost-button" (click)="verDetalle(reserva)">
+                    Ver
+                  </button>
+                  <select
+                    class="state-select"
+                    [value]="reserva.estado"
+                    [disabled]="guardando()"
+                    (change)="cambiarEstado(reserva, $event)"
+                  >
+                    @for (estado of estados; track estado) {
+                      <option [value]="estado">{{ estado }}</option>
+                    }
+                  </select>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>
+
+@if (reservaSeleccionada(); as reserva) {
+  <div class="modal-backdrop" role="presentation" (click)="cerrarDetalle()"></div>
+  <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reserva-modal-title">
+    <button type="button" class="close-button" aria-label="Cerrar" (click)="cerrarDetalle()">
+      <i class="pi pi-times" aria-hidden="true"></i>
+    </button>
+
+    <p class="admin-eyebrow">Detalle</p>
+    <h2 id="reserva-modal-title">{{ reserva.codigo }}</h2>
+
+    <div class="detail-grid">
+      <div>
+        <span>Cliente</span>
+        <strong>{{ reserva.cliente || 'Cliente' }}</strong>
+      </div>
+      <div>
+        <span>Sucursal</span>
+        <strong>{{ reserva.ciudad }} - {{ reserva.sucursal }}</strong>
+      </div>
+      <div>
+        <span>Cita</span>
+        <strong>{{ reserva.fecha_cita || 'Sin fecha' }}</strong>
+      </div>
+      <div>
+        <span>Expira</span>
+        <strong>{{ formatFecha(reserva.fecha_expiracion) }}</strong>
+      </div>
+      <div>
+        <span>Valor prendas</span>
+        <strong>{{ formatPrecio(reserva.total) }}</strong>
+      </div>
+      <div>
+        <span>Anticipo pagado/cobrado</span>
+        <strong>{{ formatPrecio(reserva.monto_reserva) }}</strong>
+      </div>
+      @if (reserva.venta_id) {
+        <div>
+          <span>Venta generada</span>
+          <strong>#{{ reserva.venta_id }}</strong>
+        </div>
+      }
+    </div>
+
+    <div class="detail-items">
+      @for (detalle of reserva.detalles; track detalle.id) {
+        <article>
+          <div>
+            <strong>{{ detalle.producto }}</strong>
+            <span>{{ detalle.categoria }} · {{ detalle.talla }} / {{ detalle.color }}</span>
+          </div>
+          <span>{{ detalle.cantidad }} x {{ formatPrecio(detalle.precio_unitario) }}</span>
+          <strong>{{ formatPrecio(detalle.subtotal) }}</strong>
+          @if (puedeFinalizar(reserva) || reserva.estado !== 'COMPLETADA') {
+            <label>
+              Se lleva
+              <input
+                type="number"
+                min="0"
+                [max]="detalle.cantidad"
+                [value]="cantidadesVenta()[detalle.id] ?? detalle.cantidad"
+                (input)="actualizarCantidadVenta(detalle.id, $any($event.target).value, detalle.cantidad)"
+              />
+            </label>
+          }
+        </article>
+      }
+    </div>
+
+    @if (!['COMPLETADA', 'CANCELADA', 'VENCIDA'].includes(reserva.estado)) {
+      <section class="sale-close-panel">
+        <h3>Cerrar como venta presencial</h3>
+        <div class="close-grid">
+          <label>
+            Método de pago
+            <select [value]="metodoPago()" (change)="actualizarMetodoPago($event)">
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TARJETA">Tarjeta</option>
+              <option value="QR">QR</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+            </select>
+          </label>
+          <label>
+            Observación
+            <textarea
+              rows="2"
+              [value]="observacionVenta()"
+              (input)="actualizarObservacionVenta($event)"
+              placeholder="Opcional"
+            ></textarea>
+          </label>
+        </div>
+        <div class="sale-summary">
+          <span>Subtotal elegido: {{ formatPrecio(subtotalVenta(reserva)) }}</span>
+          <span>Anticipo aplicado: -{{ formatPrecio(anticipoAplicado(reserva)) }}</span>
+          <strong>Saldo a cobrar: {{ formatPrecio(saldoVenta(reserva)) }}</strong>
+        </div>
+        <button
+          type="button"
+          class="primary-action"
+          [disabled]="guardando() || !puedeFinalizar(reserva)"
+          (click)="finalizarVenta(reserva)"
+        >
+          Finalizar venta presencial
+        </button>
+      </section>
+    }
+  </section>
+}

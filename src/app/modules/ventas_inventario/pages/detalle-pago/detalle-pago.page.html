@@ -1,0 +1,71 @@
+<section class="admin-page-shell">
+  <div class="admin-page-header">
+    <div>
+      <p class="admin-eyebrow">Pagos</p>
+      <h1>Detalle del pago</h1>
+      <p>Consulta la información registrada para esta orden.</p>
+    </div>
+    <a class="secondary-action" [routerLink]="volverLink()">Volver</a>
+  </div>
+
+  @if (error()) {
+    <p class="feedback error">{{ error() }}</p>
+  }
+
+  @if (cargando()) {
+    <div class="admin-card">
+      <p class="status-message">Cargando pago...</p>
+    </div>
+  } @else if (pago(); as item) {
+    <div class="detail-grid">
+      <article class="admin-card summary-card">
+        <div>
+          <span class="status-pill {{ estadoClase(item.estado) }}">{{ item.estado }}</span>
+          <h2>Orden #{{ item.orden_id }}</h2>
+          <p>{{ item.venta_codigo || ('Venta #' + item.venta_id) }}</p>
+        </div>
+        <strong>{{ formatMonto(item.monto_total) }}</strong>
+      </article>
+
+      <article class="admin-card info-grid">
+        <div><span>Método</span><strong>{{ item.metodo }}</strong></div>
+        <div><span>Proveedor</span><strong>{{ item.proveedor }}</strong></div>
+        <div><span>Fecha creación</span><strong>{{ formatFecha(item.fecha_creacion) }}</strong></div>
+        <div><span>Fecha pago</span><strong>{{ formatFecha(item.fecha_pago) }}</strong></div>
+        <div><span>Sucursal</span><strong>{{ item.sucursal_nombre || '-' }}</strong></div>
+        @if (!vistaCliente()) {
+          <div><span>Cliente</span><strong>{{ item.cliente_nombre || '-' }}</strong></div>
+          <div><span>Correo</span><strong>{{ item.cliente_correo || '-' }}</strong></div>
+        }
+      </article>
+    </div>
+
+    <div class="admin-card table-wrap products-table-wrap">
+      <h3>Productos</h3>
+      <table class="products-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Detalle</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (producto of item.productos; track producto.producto + producto.talla + producto.color) {
+            <tr>
+              <td>{{ producto.producto }}</td>
+              <td>{{ producto.categoria || '-' }} · {{ producto.talla || '-' }} / {{ producto.color || '-' }}</td>
+              <td>{{ producto.cantidad }}</td>
+              <td>{{ formatMonto(producto.precio_unitario) }}</td>
+              <td><strong>{{ formatMonto(producto.subtotal) }}</strong></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5">No hay productos asociados a este pago.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

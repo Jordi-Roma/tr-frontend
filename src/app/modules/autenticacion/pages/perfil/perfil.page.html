@@ -1,0 +1,284 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-user"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Perfil</p>
+    <h2>Configurar perfil</h2>
+    <p>Administra tus datos personales, seguridad y direcciones registradas.</p>
+  </div>
+</section>
+
+@if (cargandoPerfil()) {
+  <p class="status-message">Cargando perfil...</p>
+}
+
+<div class="profile-summary">
+  @if (perfil(); as perfilActual) {
+    <div class="avatar-card">
+      <span class="profile-avatar" aria-hidden="true">
+        {{ (perfilActual.nombre || perfilActual.username || 'U').charAt(0).toUpperCase() }}
+      </span>
+      <div>
+        <p class="eyebrow">Cuenta</p>
+        <h3>{{ perfilActual.nombre }} {{ perfilActual.apellido }}</h3>
+        <p class="profile-handle">&#64;{{ perfilActual.username }} · {{ perfilActual.correo }}</p>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <p class="eyebrow">Roles</p>
+      <div class="role-list">
+        @for (rol of perfilActual.roles; track rol) {
+          <span>{{ rol }}</span>
+        }
+      </div>
+    </div>
+  }
+</div>
+
+<div class="profile-grid">
+  <section class="panel action-card" aria-labelledby="datos-title">
+    <div>
+      <p class="eyebrow">Datos personales</p>
+      <h3 id="datos-title">Perfil básico</h3>
+      <p>Actualiza nombre, apellido y teléfono cuando lo necesites.</p>
+    </div>
+
+    @if (mensajePerfil()) {
+      <p class="success-message">{{ mensajePerfil() }}</p>
+    }
+
+    @if (errorPerfil()) {
+      <p class="error-message">{{ errorPerfil() }}</p>
+    }
+
+    <button type="button" (click)="abrirPerfilForm()">
+      <i class="pi pi-pencil" aria-hidden="true"></i>
+      Editar perfil
+    </button>
+  </section>
+
+  <section class="panel action-card" aria-labelledby="password-title">
+    <div>
+      <p class="eyebrow">Seguridad</p>
+      <h3 id="password-title">Contraseña</h3>
+      <p>Cambia tu contraseña desde un panel seguro y separado.</p>
+    </div>
+
+    @if (mensajePassword()) {
+      <p class="success-message">{{ mensajePassword() }}</p>
+    }
+
+    @if (errorPassword()) {
+      <p class="error-message">{{ errorPassword() }}</p>
+    }
+
+    <button type="button" (click)="abrirPasswordForm()">
+      <i class="pi pi-lock" aria-hidden="true"></i>
+      Cambiar contraseña
+    </button>
+  </section>
+</div>
+
+<section class="panel addresses-panel" aria-labelledby="direcciones-title">
+  <div class="panel-header">
+    <div>
+      <p class="eyebrow">Direcciones</p>
+      <h3 id="direcciones-title">Direcciones del cliente</h3>
+    </div>
+    <button type="button" (click)="abrirNuevaDireccion()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Nueva dirección
+    </button>
+  </div>
+
+  @if (mensajeDireccion()) {
+    <p class="success-message">{{ mensajeDireccion() }}</p>
+  }
+
+  @if (errorDireccion()) {
+    <p class="error-message">{{ errorDireccion() }}</p>
+  }
+
+  <div class="address-list">
+    @if (direcciones().length === 0) {
+      <p class="empty-message">No tienes direcciones registradas.</p>
+    } @else {
+      @for (direccion of direcciones(); track direccion.id) {
+        <article class="address-card">
+          <div>
+            <h4>{{ direccion.direccion }}</h4>
+            <p>Ciudad: {{ nombreCiudad(direccion.ciudad_id) }}</p>
+
+            @if (direccion.referencia) {
+              <p>Referencia: {{ direccion.referencia }}</p>
+            }
+
+            @if (direccion.es_principal) {
+              <span class="principal-badge">Principal</span>
+            }
+          </div>
+
+          <div class="card-actions">
+            <button type="button" class="secondary-button" (click)="editarDireccion(direccion)">
+              <i class="pi pi-pencil" aria-hidden="true"></i>
+              Editar
+            </button>
+            <button type="button" class="danger-button" (click)="desactivarDireccion(direccion.id)">
+              <i class="pi pi-trash" aria-hidden="true"></i>
+              Desactivar
+            </button>
+          </div>
+        </article>
+      }
+    }
+  </div>
+</section>
+
+<app-drawer
+  [open]="perfilFormAbierto()"
+  title="Editar perfil"
+  eyebrow="Datos personales"
+  (close)="cerrarPerfilForm()"
+>
+  <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" novalidate>
+    <label for="nombre">Nombre</label>
+    <input id="nombre" type="text" formControlName="nombre" />
+
+    @if (perfilForm.controls.nombre.invalid && perfilForm.controls.nombre.touched) {
+      <p class="field-error">El nombre es obligatorio.</p>
+    }
+
+    <label for="apellido">Apellido</label>
+    <input id="apellido" type="text" formControlName="apellido" />
+
+    @if (perfilForm.controls.apellido.invalid && perfilForm.controls.apellido.touched) {
+      <p class="field-error">El apellido es obligatorio.</p>
+    }
+
+    <label for="telefono">Telefono</label>
+    <input id="telefono" type="text" formControlName="telefono" />
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="perfilForm.invalid || guardandoPerfil()">
+        <i class="pi pi-check" aria-hidden="true"></i>
+        Guardar cambios
+      </button>
+      <button type="button" class="secondary-button" (click)="cerrarPerfilForm()">Cancelar</button>
+    </div>
+  </form>
+</app-drawer>
+
+<app-drawer
+  [open]="passwordFormAbierto()"
+  title="Cambiar contraseña"
+  eyebrow="Seguridad"
+  (close)="cerrarPasswordForm()"
+>
+  <form [formGroup]="passwordForm" (ngSubmit)="cambiarPassword()" novalidate>
+    <label for="passwordActual">Contraseña actual</label>
+    <input id="passwordActual" type="password" formControlName="passwordActual" autocomplete="current-password" />
+
+    @if (passwordForm.controls.passwordActual.invalid && passwordForm.controls.passwordActual.touched) {
+      <p class="field-error">La contraseña actual es obligatoria.</p>
+    }
+
+    <label for="passwordNuevo">Nueva contraseña</label>
+    <input
+      id="passwordNuevo"
+      type="password"
+      formControlName="passwordNuevo"
+      autocomplete="new-password"
+      (input)="actualizarPasswordChecklist()"
+    />
+
+    <ul class="password-checklist" aria-label="Requisitos de contraseña">
+      @for (requirement of passwordRequirements(); track requirement.texto) {
+        <li [class.requirement-ok]="requirement.cumplido">
+          <span aria-hidden="true">{{ requirement.cumplido ? '✓' : '○' }}</span>
+          {{ requirement.texto }}
+        </li>
+      }
+    </ul>
+
+    @if (passwordForm.controls.passwordNuevo.touched && passwordForm.controls.passwordNuevo.errors?.['required']) {
+      <p class="field-error">La nueva contraseña es obligatoria.</p>
+    }
+
+    @if (passwordForm.controls.passwordNuevo.touched && passwordForm.controls.passwordNuevo.errors?.['passwordInseguro']) {
+      <p class="field-error">Debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.</p>
+    }
+
+    <label for="confirmarPasswordNuevo">Confirmar nueva contraseña</label>
+    <input id="confirmarPasswordNuevo" type="password" formControlName="confirmarPasswordNuevo" autocomplete="new-password" />
+
+    @if (passwordForm.controls.confirmarPasswordNuevo.invalid && passwordForm.controls.confirmarPasswordNuevo.touched) {
+      <p class="field-error">Debes confirmar la nueva contraseña.</p>
+    }
+
+    @if (passwordsNoCoinciden()) {
+      <p class="field-error">Las contraseñas nuevas no coinciden.</p>
+    }
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="passwordForm.invalid || cambiandoPassword()">
+        <i class="pi pi-lock" aria-hidden="true"></i>
+        Cambiar contraseña
+      </button>
+      <button type="button" class="secondary-button" (click)="cerrarPasswordForm()">Cancelar</button>
+    </div>
+  </form>
+</app-drawer>
+
+<app-drawer
+  [open]="direccionFormAbierto()"
+  [title]="direccionEditandoId() === null ? 'Nueva dirección' : 'Editar dirección'"
+  eyebrow="Direcciones"
+  (close)="cerrarDireccionForm()"
+>
+  <form class="address-form" [formGroup]="direccionForm" (ngSubmit)="guardarDireccion()" novalidate>
+    <div class="form-row">
+      <div class="field">
+        <label for="ciudadId">Ciudad</label>
+        <select id="ciudadId" formControlName="ciudadId">
+          <option [ngValue]="null">Selecciona una ciudad</option>
+          @for (ciudad of ciudades(); track ciudad.id) {
+            <option [ngValue]="ciudad.id">
+              {{ ciudad.nombre }}{{ ciudad.departamento ? ' - ' + ciudad.departamento : '' }}
+            </option>
+          }
+        </select>
+
+        @if (direccionForm.controls.ciudadId.invalid && direccionForm.controls.ciudadId.touched) {
+          <p class="field-error">La ciudad es obligatoria.</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="referencia">Referencia</label>
+        <input id="referencia" type="text" formControlName="referencia" />
+      </div>
+    </div>
+
+    <label for="direccion">Dirección</label>
+    <input id="direccion" type="text" formControlName="direccion" />
+
+    @if (direccionForm.controls.direccion.invalid && direccionForm.controls.direccion.touched) {
+      <p class="field-error">La dirección es obligatoria.</p>
+    }
+
+    <label class="checkbox-field" for="esPrincipal">
+      <input id="esPrincipal" type="checkbox" formControlName="esPrincipal" />
+      Marcar como dirección principal
+    </label>
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="direccionForm.invalid || guardandoDireccion()">
+        <i class="pi pi-check" aria-hidden="true"></i>
+        {{ direccionEditandoId() === null ? 'Crear dirección' : 'Guardar dirección' }}
+      </button>
+      <button type="button" class="secondary-button" (click)="cerrarDireccionForm()">Cancelar</button>
+    </div>
+  </form>
+</app-drawer>

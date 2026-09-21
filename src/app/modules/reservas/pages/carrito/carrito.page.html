@@ -1,0 +1,245 @@
+<section class="cart-header" aria-labelledby="cart-title">
+  <p class="eyebrow">Carrito</p>
+  <h1 id="cart-title">Tu carrito de compras</h1>
+  <p>Revisa tus prendas antes de confirmar la reserva o pagar una compra digital.</p>
+</section>
+
+@if (cargando()) {
+  <section class="empty-card">
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    <h2>Cargando carrito...</h2>
+  </section>
+} @else if (error()) {
+  <section class="empty-card error-card">
+    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+    <h2>No se pudo procesar</h2>
+    <p>{{ error() }}</p>
+  </section>
+} @else if (items().length === 0) {
+  <section class="empty-card">
+    <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+    <h2>Tu carrito esta vacio</h2>
+    <p>Agrega productos desde el catalogo para armar tu reserva.</p>
+    <a routerLink="/catalogo">Ir al catalogo</a>
+  </section>
+} @else {
+  <section class="cart-layout">
+    <div class="cart-list">
+      @for (item of items(); track item.id) {
+        <article class="cart-item">
+          <div class="item-visual" aria-hidden="true">
+            {{ item.categoria.slice(0, 2).toUpperCase() }}
+          </div>
+
+          <div class="item-info">
+            <h2>{{ item.producto }}</h2>
+            <p>{{ item.categoria }} · {{ item.talla }} / {{ item.color }}</p>
+            <p>
+              {{ item.sucursal ? (item.ciudad + ' - ' + item.sucursal) : 'Sucursal por confirmar' }}
+            </p>
+            <strong>{{ formatPrecio(item.precio_unitario) }}</strong>
+            <small>Stock disponible: {{ item.stock_disponible }}</small>
+          </div>
+
+          <div class="quantity-control">
+            <button
+              type="button"
+              [disabled]="guardando()"
+              (click)="cambiarCantidad(item, item.cantidad - 1)"
+              aria-label="Disminuir cantidad"
+            >
+              <i class="pi pi-minus" aria-hidden="true"></i>
+            </button>
+            <span>{{ item.cantidad }}</span>
+            <button
+              type="button"
+              [disabled]="guardando()"
+              (click)="cambiarCantidad(item, item.cantidad + 1)"
+              aria-label="Aumentar cantidad"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <strong class="line-total">{{ formatPrecio(item.subtotal) }}</strong>
+
+          <button
+            type="button"
+            class="remove-button"
+            [disabled]="guardando()"
+            (click)="quitar(item)"
+            aria-label="Quitar producto"
+          >
+            <i class="pi pi-trash" aria-hidden="true"></i>
+          </button>
+        </article>
+      }
+    </div>
+
+    <aside class="summary-card" aria-label="Resumen de carrito">
+      <h2>Resumen</h2>
+
+      @if (mensaje()) {
+        <p class="success-message">{{ mensaje() }}</p>
+      }
+
+      <div>
+        <span>Productos</span>
+        <strong>{{ totalItems() }}</strong>
+      </div>
+      <div>
+        <span>Subtotal</span>
+        <strong>{{ formatPrecio(subtotal()) }}</strong>
+      </div>
+      @if (tipoEntrega() === 'DELIVERY') {
+        <div>
+          <span>Delivery</span>
+          <strong>{{ cotizacionDelivery()?.disponible ? formatPrecio(costoDelivery()) : 'Por cotizar' }}</strong>
+        </div>
+        <div>
+          <span>Total</span>
+          <strong>{{ formatPrecio(totalCompra()) }}</strong>
+        </div>
+      }
+
+      <label class="branch-control">
+        Sucursal para reserva o pago
+        <select [value]="sucursalId() ?? ''" (change)="actualizarSucursal($event)">
+          <option value="">Seleccionar</option>
+          @for (sucursal of sucursales(); track sucursal.id) {
+            <option [value]="sucursal.id" [selected]="esSucursalSeleccionada(sucursal.id)">
+              {{ sucursal.ciudad }} - {{ sucursal.nombre }}
+            </option>
+          }
+        </select>
+      </label>
+      @if (sucursales().length === 0) {
+        <p class="stock-warning">
+          No hay una sucursal con stock suficiente para todos los productos del carrito.
+        </p>
+      }
+
+      <fieldset class="delivery-mode">
+        <legend>Forma de entrega</legend>
+        <button
+          type="button"
+          [class.active]="tipoEntrega() === 'RECOJO_SUCURSAL'"
+          (click)="cambiarTipoEntrega('RECOJO_SUCURSAL')"
+        >
+          Recojo en sucursal
+        </button>
+        <button
+          type="button"
+          [class.active]="tipoEntrega() === 'DELIVERY'"
+          (click)="cambiarTipoEntrega('DELIVERY')"
+        >
+          Delivery
+        </button>
+      </fieldset>
+
+      @if (tipoEntrega() === 'DELIVERY') {
+        <section class="delivery-card" aria-label="Datos de delivery">
+          <label>
+            Dirección de entrega
+            <input
+              type="text"
+              [value]="direccionEntrega()"
+              (input)="actualizarDireccion($event)"
+              placeholder="Ej. Av. Banzer 4to anillo, Santa Cruz"
+            />
+          </label>
+
+          <label>
+            Referencia
+            <input
+              type="text"
+              [value]="referenciaEntrega()"
+              (input)="actualizarReferencia($event)"
+              placeholder="Ej. Casa roja frente a farmacia"
+            />
+          </label>
+
+          <div class="delivery-map-shell">
+            <div #deliveryMap class="delivery-map" aria-label="Mapa para seleccionar la ubicación de entrega"></div>
+            <div class="delivery-map-legend" aria-hidden="true">
+              <span><i class="legend-dot branch"></i>Sucursal</span>
+              <span><i class="legend-dot client"></i>Tu ubicación</span>
+            </div>
+          </div>
+          <small>Busca tu dirección o mueve el marcador en el mapa para ajustar la ubicación de entrega.</small>
+
+          <button type="button" class="secondary-button" [disabled]="cotizandoDelivery()" (click)="buscarDireccion()">
+            Buscar ubicación
+          </button>
+          <button type="button" class="secondary-button" [disabled]="cotizandoDelivery()" (click)="usarUbicacionActual()">
+            Usar mi ubicación actual
+          </button>
+          <button type="button" class="secondary-button" [disabled]="cotizandoDelivery()" (click)="cotizarDelivery()">
+            Cotizar delivery
+          </button>
+
+          @if (cotizacionDelivery(); as cotizacion) {
+            <div class="delivery-quote" [class.invalid]="!cotizacion.disponible">
+              <span>Distancia: {{ cotizacion.distancia_km }} km</span>
+              <span>Tiempo aprox.: {{ cotizacion.tiempo_estimado_min }} min</span>
+              <strong>{{ cotizacion.disponible ? formatPrecio(cotizacion.costo_delivery) : cotizacion.mensaje }}</strong>
+            </div>
+          }
+        </section>
+      }
+      @if (tipoEntrega() === 'RECOJO_SUCURSAL') {
+        <label class="branch-control">
+          Fecha para ir a probar/recoger
+          <input
+            type="date"
+            [min]="fechaMinimaCita()"
+            [value]="fechaCita()"
+            (change)="actualizarFechaCita($event)"
+          />
+        </label>
+
+        <div class="reservation-fee">
+          <span>Anticipo de reserva</span>
+          <strong>{{ formatPrecio(montoReserva()) }}</strong>
+          <small>Se cobra Bs 10 por día hasta tu cita y se descuenta si compras en tienda.</small>
+        </div>
+
+        @if (excedeMaximoReserva()) {
+          <p class="stock-warning">
+            Para reservar solo puedes apartar hasta 2 unidades de la misma prenda.
+          </p>
+        }
+      }
+
+      @if (tipoEntrega() === 'RECOJO_SUCURSAL') {
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="guardando() || !entregaLista()"
+          (click)="confirmarReserva()"
+        >
+          <i class="pi pi-calendar-check" aria-hidden="true"></i>
+          Confirmar reserva
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="guardando() || !entregaLista()"
+          (click)="pagarConStripe()"
+        >
+          <i class="pi pi-credit-card" aria-hidden="true"></i>
+          Pagar delivery con Stripe
+        </button>
+      }
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="guardando()"
+        (click)="vaciar()"
+      >
+        Vaciar carrito
+      </button>
+    </aside>
+  </section>
+}

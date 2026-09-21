@@ -1,0 +1,223 @@
+<section class="catalog-header" aria-labelledby="catalog-title">
+  <p class="eyebrow">Catalogo StyleAR</p>
+  <div class="heading-row">
+    <div>
+      <h1 id="catalog-title">Prendas listas para combinar</h1>
+      <p>Explora poleras, oversize y camisas con precio vigente y disponibilidad por sucursal.</p>
+    </div>
+  </div>
+</section>
+
+<section class="catalog-toolbar" aria-label="Filtros del catalogo">
+  <div class="category-list">
+    <button
+      type="button"
+      [class.is-active]="categoriaId() === null"
+      (click)="seleccionarCategoria(null)"
+    >
+      Todos
+    </button>
+
+    @for (item of categorias(); track item.id) {
+      <button
+        type="button"
+        [class.is-active]="categoriaId() === item.id"
+        (click)="seleccionarCategoria(item.id)"
+      >
+        {{ item.nombre }}
+      </button>
+    }
+  </div>
+
+  <label class="sort-control">
+    Ordenar
+    <select [value]="orden()" (change)="actualizarOrden($event)">
+      <option value="relevancia">Recientes</option>
+      <option value="nombre">Nombre</option>
+      <option value="precio-asc">Menor precio</option>
+      <option value="precio-desc">Mayor precio</option>
+    </select>
+  </label>
+</section>
+
+<section class="catalog-filters" aria-label="Filtros avanzados">
+  <label>
+    Talla
+    <select [value]="tallaId() ?? ''" (change)="actualizarTalla($event)">
+      <option value="">Todas</option>
+      @for (talla of tallas(); track talla.id) {
+        <option [value]="talla.id">{{ talla.nombre }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Color
+    <select [value]="colorId() ?? ''" (change)="actualizarColor($event)">
+      <option value="">Todos</option>
+      @for (color of colores(); track color.id) {
+        <option [value]="color.id">{{ color.nombre }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Sucursal
+    <select [value]="sucursalId() ?? ''" (change)="actualizarSucursal($event)">
+      <option value="">Todas</option>
+      @for (sucursal of sucursales(); track sucursal.id) {
+        <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Temporada
+    <select [value]="temporadaId() ?? ''" (change)="actualizarTemporada($event)">
+      <option value="">Todas</option>
+      @for (temporada of temporadas(); track temporada.id) {
+        <option [value]="temporada.id">{{ temporada.nombre }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Coleccion
+    <select [value]="coleccionId() ?? ''" (change)="actualizarColeccion($event)">
+      <option value="">Todas</option>
+      @for (coleccion of colecciones(); track coleccion.id) {
+        <option [value]="coleccion.id">{{ coleccion.nombre }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Precio minimo
+    <input
+      type="number"
+      min="0"
+      placeholder="0"
+      [value]="precioMin() ?? ''"
+      (input)="actualizarPrecioMin($event)"
+      (change)="aplicarRangoPrecio()"
+    />
+  </label>
+
+  <label>
+    Precio maximo
+    <input
+      type="number"
+      min="0"
+      placeholder="999"
+      [value]="precioMax() ?? ''"
+      (input)="actualizarPrecioMax($event)"
+      (change)="aplicarRangoPrecio()"
+    />
+  </label>
+
+  <label class="check-control">
+    <input
+      type="checkbox"
+      [checked]="soloDisponibles()"
+      (change)="alternarSoloDisponibles($event)"
+    />
+    Solo disponibles
+  </label>
+
+  <button type="button" class="clear-button" (click)="limpiarFiltros()">
+    Limpiar
+  </button>
+</section>
+
+@if (cargando()) {
+  <section class="state-card" aria-live="polite">
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    <p>Cargando catalogo...</p>
+  </section>
+} @else if (error()) {
+  <section class="state-card error-state" aria-live="polite">
+    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+    <p>{{ error() }}</p>
+  </section>
+} @else if (productos().length === 0) {
+  <section class="state-card" aria-live="polite">
+    <i class="pi pi-inbox" aria-hidden="true"></i>
+    <p>No hay productos para los filtros actuales.</p>
+  </section>
+} @else {
+  <p class="results-count">{{ total() }} prenda(s) encontradas</p>
+
+  <section class="product-grid" aria-label="Productos disponibles">
+    @for (item of productos(); track item.producto_id) {
+      <article class="product-card">
+        <a
+          class="product-visual"
+          [routerLink]="['/producto', item.producto_id]"
+          aria-label="Ver detalle de {{ item.nombre }}"
+        >
+          @if (item.imagen_principal) {
+            <img [src]="item.imagen_principal" [alt]="item.nombre" class="catalog-thumb-img" />
+          } @else {
+            <span>{{ inicialesCategoria(item) }}</span>
+          }
+        </a>
+
+        <div class="product-header">
+          <span class="product-tag">{{ item.categoria }}</span>
+          <button
+            type="button"
+            [class.is-favorite]="esFavorito(item.producto_id)"
+            (click)="alternarFavorito(item)"
+            aria-label="Alternar favorito"
+          >
+            <i class="pi pi-heart" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <h2>
+          <a [routerLink]="['/producto', item.producto_id]">{{ item.nombre }}</a>
+        </h2>
+        <p>{{ item.descripcion || 'Prenda disponible en el catalogo StyleAR.' }}</p>
+
+        <div class="product-meta">
+          <strong>{{ formatPrecio(item.precio_final ?? item.precio_vigente) }}</strong>
+          <span>{{ item.marca || 'StyleAR' }}</span>
+        </div>
+
+        @if (item.tiene_promocion) {
+          <span class="promo-badge">Promocion activa</span>
+        }
+
+        <div class="stock-row" [class.is-empty]="item.stock_total === 0">
+          <i class="pi pi-map-marker" aria-hidden="true"></i>
+          {{ item.stock_total > 0 ? item.stock_total + ' disponible(s)' : 'Sin stock registrado' }}
+        </div>
+
+        <div class="chip-list" aria-label="Tallas disponibles">
+          @if (item.tallas.length === 0) {
+            <span>Talla por definir</span>
+          } @else {
+            @for (talla of item.tallas; track talla.id) {
+              <span>{{ talla.nombre }}</span>
+            }
+          }
+        </div>
+
+        <div class="chip-list muted" aria-label="Colores disponibles">
+          @if (item.colores.length === 0) {
+            <span>Color por definir</span>
+          } @else {
+            @for (color of item.colores; track color.id) {
+              <span>{{ color.nombre }}</span>
+            }
+          }
+        </div>
+
+        <button type="button" class="cart-button" (click)="agregarAlCarrito(item)">
+          <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+          Elegir variante
+        </button>
+      </article>
+    }
+  </section>
+}

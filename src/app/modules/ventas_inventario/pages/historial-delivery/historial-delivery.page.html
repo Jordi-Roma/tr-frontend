@@ -1,0 +1,71 @@
+<section class="page-header">
+  <p class="eyebrow">Delivery</p>
+  <h1>{{ titulo() }}</h1>
+  <p>Consulta pedidos enviados a domicilio, distancia, costo y estado actual.</p>
+</section>
+
+<section class="filters-card">
+  <label>
+    Estado
+    <select [value]="estado()" (change)="actualizarEstado($event)">
+      <option value="">Todos</option>
+      <option value="PENDIENTE">Pendiente</option>
+      <option value="EN_PREPARACION">En preparación</option>
+      <option value="EN_CAMINO">En camino</option>
+      <option value="ENTREGADO">Entregado</option>
+      <option value="CANCELADO">Cancelado</option>
+    </select>
+  </label>
+
+  @if (!vistaCliente()) {
+    <label>
+      Cliente
+      <input type="search" [value]="cliente()" (input)="actualizarCliente($event)" placeholder="Nombre o correo" />
+    </label>
+  }
+
+  <button type="button" (click)="cargar()">Buscar</button>
+</section>
+
+@if (cargando()) {
+  <p class="status">Cargando deliveries...</p>
+} @else if (error()) {
+  <p class="status error">{{ error() }}</p>
+} @else if (deliveries().length === 0) {
+  <p class="status">No hay deliveries para mostrar.</p>
+} @else {
+  <section class="table-card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Venta</th>
+            <th>Cliente</th>
+            <th>Sucursal</th>
+            <th>Dirección</th>
+            <th>Distancia</th>
+            <th>Costo</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (delivery of deliveries(); track delivery.id) {
+            <tr>
+              <td>{{ delivery.venta_codigo || ('#' + delivery.venta_id) }}</td>
+              <td>{{ delivery.cliente_nombre || delivery.cliente_correo || '-' }}</td>
+              <td>{{ delivery.sucursal_nombre || '-' }}</td>
+              <td>{{ delivery.direccion_entrega }}</td>
+              <td>{{ delivery.distancia_km || '0' }} km</td>
+              <td>{{ formatPrecio(delivery.costo_delivery) }}</td>
+              <td><span class="state">{{ delivery.estado }}</span></td>
+              <td>{{ formatFecha(delivery.fecha_creacion) }}</td>
+              <td><a [routerLink]="detallePath(delivery)">Ver detalle</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

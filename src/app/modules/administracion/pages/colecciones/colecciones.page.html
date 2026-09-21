@@ -1,0 +1,162 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-th-large"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Colecciones</p>
+    <h2>Gestion de colecciones</h2>
+    <p>Administra colecciones y vinculos con temporadas de StyleAR.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando colecciones...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="colecciones-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="colecciones-title">Colecciones registradas</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ coleccionesFiltradas().length }} colecciones</span>
+        <button type="button" (click)="abrirNuevaColeccion()">
+          <i class="pi pi-plus"></i>
+          Nueva coleccion
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="busqueda">Buscar colección</label>
+        <input
+          id="busqueda"
+          type="search"
+          [value]="busqueda()"
+          (input)="actualizarBusqueda($event)"
+          placeholder="Nombre, temporada..."
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="filtroEstado">Estado</label>
+        <select
+          id="filtroEstado"
+          [value]="filtroEstado()"
+          (change)="actualizarFiltroEstado($event)"
+        >
+          <option value="todos">Todos</option>
+          <option value="activos">Activos</option>
+          <option value="inactivos">Inactivos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Temporada</th>
+            <th>Descripcion</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (coleccion of coleccionesFiltradas(); track coleccion.id) {
+            <tr>
+              <td>{{ coleccion.id }}</td>
+              <td><strong>{{ coleccion.nombre }}</strong></td>
+              <td>{{ coleccion.temporada_nombre }}</td>
+              <td>{{ coleccion.descripcion || '-' }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!coleccion.activo">
+                  {{ coleccion.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarColeccion(coleccion)">
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="coleccion.activo"
+                    [class.secondary-button]="!coleccion.activo"
+                    (click)="cambiarEstadoColeccion(coleccion)"
+                    [disabled]="procesando()"
+                  >
+                    {{ coleccion.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">No se encontraron colecciones.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="coleccionEditandoId() === null ? 'Nueva coleccion' : 'Editar coleccion'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+    <form [formGroup]="coleccionForm" (ngSubmit)="guardarColeccion()" novalidate>
+      <label for="temporada_id">Temporada</label>
+      <select id="temporada_id" formControlName="temporada_id">
+        <option [ngValue]="null">Selecciona una temporada...</option>
+        @for (temporada of temporadasActivas(); track temporada.id) {
+          <option [ngValue]="temporada.id">{{ temporada.nombre }} ({{ temporada.anio }})</option>
+        }
+      </select>
+      @if (
+        coleccionForm.controls.temporada_id.invalid &&
+        coleccionForm.controls.temporada_id.touched
+      ) {
+        <p class="field-error">Debes seleccionar una temporada válida y activa.</p>
+      }
+
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" />
+
+      @if (
+        coleccionForm.controls.nombre.invalid &&
+        coleccionForm.controls.nombre.touched
+      ) {
+        <p class="field-error">El nombre de la colección es obligatorio.</p>
+      }
+
+      <label for="descripcion">Descripcion</label>
+      <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="coleccionForm.invalid || procesando()">
+          {{ coleccionEditandoId() === null ? 'Crear colección' : 'Guardar cambios' }}
+        </button>
+
+        <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </app-modal>
+</div>

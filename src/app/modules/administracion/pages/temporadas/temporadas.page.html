@@ -1,0 +1,162 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-calendar"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Temporadas</p>
+    <h2>Gestion de temporadas</h2>
+    <p>Administra las temporadas para clasificar colecciones de StyleAR.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando temporadas...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="temporadas-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="temporadas-title">Temporadas registradas</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ temporadasFiltradas().length }} temporadas</span>
+        <button type="button" (click)="abrirNuevaTemporada()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          Nueva temporada
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="busqueda">Buscar temporada</label>
+        <input
+          id="busqueda"
+          type="search"
+          [value]="busqueda()"
+          (input)="actualizarBusqueda($event)"
+          placeholder="Nombre o año"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="filtroEstado">Estado</label>
+        <select
+          id="filtroEstado"
+          [value]="filtroEstado()"
+          (change)="actualizarFiltroEstado($event)"
+        >
+          <option value="todos">Todos</option>
+          <option value="activos">Activos</option>
+          <option value="inactivos">Inactivos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Años</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (temporada of temporadasFiltradas(); track temporada.id) {
+            <tr>
+              <td>{{ temporada.id }}</td>
+              <td><strong>{{ temporada.nombre }}</strong></td>
+              <td>{{ temporada.anio }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!temporada.activo">
+                  {{ temporada.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarTemporada(temporada)">
+                    <i class="pi pi-pencil" aria-hidden="true"></i>
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="temporada.activo"
+                    [class.secondary-button]="!temporada.activo"
+                    (click)="cambiarEstadoTemporada(temporada)"
+                    [disabled]="procesando()"
+                  >
+                    {{ temporada.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">No se encontraron temporadas.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="temporadaEditandoId() === null ? 'Nueva temporada' : 'Editar temporada'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+    <form [formGroup]="temporadaForm" (ngSubmit)="guardarTemporada()" novalidate>
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" />
+
+      @if (
+        temporadaForm.controls.nombre.invalid &&
+        temporadaForm.controls.nombre.touched
+      ) {
+        <p class="field-error">El nombre de la temporada es obligatorio.</p>
+      }
+
+      <label for="anio">Años</label>
+      <input id="anio" type="number" formControlName="anio" placeholder="Ej: 2024" />
+      @if (
+        temporadaForm.controls.anio.invalid &&
+        temporadaForm.controls.anio.touched
+      ) {
+        <p class="field-error">El año debe estar entre 2000 y 2200.</p>
+      }
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="temporadaForm.invalid || procesando()">
+          <i class="pi pi-check" aria-hidden="true"></i>
+          {{ temporadaEditandoId() === null ? 'Crear temporada' : 'Guardar cambios' }}
+        </button>
+
+        @if (temporadaEditandoId() !== null) {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+            Cancelar edicion
+          </button>
+        } @else {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+            Cancelar
+          </button>
+        }
+      </div>
+    </form>
+  </app-modal>
+</div>

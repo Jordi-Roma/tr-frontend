@@ -1,0 +1,138 @@
+<main class="registro-page">
+  <section class="registro-box" aria-labelledby="registro-title">
+    <p class="eyebrow">StyleAR</p>
+    <h1 id="registro-title">Crear cuenta</h1>
+    <p class="subtitle">Registrate para acceder a la tienda, guardar tu carrito y gestionar tus datos.</p>
+
+    <form [formGroup]="registroForm" (ngSubmit)="registrar()" novalidate>
+      <div class="form-row">
+        <div class="field">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" type="text" formControlName="nombre" autocomplete="given-name" />
+
+          @if (registroForm.controls.nombre.invalid && registroForm.controls.nombre.touched) {
+            <p class="field-error">El nombre es obligatorio.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="apellido">Apellido</label>
+          <input
+            id="apellido"
+            type="text"
+            formControlName="apellido"
+            autocomplete="family-name"
+          />
+
+          @if (
+            registroForm.controls.apellido.invalid &&
+            registroForm.controls.apellido.touched
+          ) {
+            <p class="field-error">El apellido es obligatorio.</p>
+          }
+        </div>
+      </div>
+
+      <label for="username">Username</label>
+      <input id="username" type="text" formControlName="username" autocomplete="username" />
+
+      @if (registroForm.controls.username.touched && registroForm.controls.username.errors?.['required']) {
+        <p class="field-error">El username es obligatorio.</p>
+      }
+
+      @if (registroForm.controls.username.touched && registroForm.controls.username.errors?.['minlength']) {
+        <p class="field-error">El username debe tener minimo 4 caracteres.</p>
+      }
+
+      @if (registroForm.controls.username.touched && usernameTieneEspacios()) {
+        <p class="field-error">El username no debe contener espacios.</p>
+      }
+
+      @if (registroForm.controls.username.touched && registroForm.controls.username.errors?.['pattern']) {
+        <p class="field-error">
+          El username solo puede tener letras, numeros, guion bajo y punto.
+        </p>
+      }
+
+      <label for="correo">Correo</label>
+      <input id="correo" type="email" formControlName="correo" autocomplete="email" />
+
+      @if (registroForm.controls.correo.touched && registroForm.controls.correo.errors?.['required']) {
+        <p class="field-error">El correo es obligatorio.</p>
+      }
+
+      @if (registroForm.controls.correo.touched && registroForm.controls.correo.errors?.['email']) {
+        <p class="field-error">Ingresa un correo valido.</p>
+      }
+
+      <label for="password">Contrasena</label>
+      <input
+        id="password"
+        type="password"
+        formControlName="password"
+        autocomplete="new-password"
+        (input)="actualizarPasswordChecklist()"
+      />
+
+      <ul class="password-checklist" aria-label="Requisitos de contrasena">
+        @for (requirement of passwordRequirements(); track requirement.texto) {
+          <li [class.requirement-ok]="requirement.cumplido">
+            <span aria-hidden="true">{{ requirement.cumplido ? 'OK' : '-' }}</span>
+            {{ requirement.texto }}
+          </li>
+        }
+      </ul>
+
+      @if (
+        registroForm.controls.password.touched &&
+        registroForm.controls.password.errors?.['required']
+      ) {
+        <p class="field-error">La contrasena es obligatoria.</p>
+      }
+
+      @if (
+        registroForm.controls.password.touched &&
+        registroForm.controls.password.errors?.['passwordInseguro']
+      ) {
+        <p class="field-error">La contrasena debe cumplir todos los requisitos.</p>
+      }
+
+      <label for="confirmarPassword">Confirmar contrasena</label>
+      <input
+        id="confirmarPassword"
+        type="password"
+        formControlName="confirmarPassword"
+        autocomplete="new-password"
+      />
+
+      @if (
+        registroForm.controls.confirmarPassword.invalid &&
+        registroForm.controls.confirmarPassword.touched
+      ) {
+        <p class="field-error">Debes confirmar la contrasena.</p>
+      }
+
+      @if (passwordsNoCoinciden()) {
+        <p class="field-error">Las contrasenas no coinciden.</p>
+      }
+
+      @if (mensajeError()) {
+        <p class="error-message">{{ mensajeError() }}</p>
+      }
+
+      @if (mensajeExito()) {
+        <p class="success-message">{{ mensajeExito() }}</p>
+      }
+
+      @if (cargando()) {
+        <p class="loading-message">Registrando usuario...</p>
+      }
+
+      <button type="submit" [disabled]="registroForm.invalid || cargando()">
+        Registrarse
+      </button>
+
+      <a class="login-link" routerLink="/login">Ya tengo cuenta</a>
+    </form>
+  </section>
+</main>

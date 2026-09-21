@@ -1,0 +1,390 @@
+<section class="page-container">
+  <!-- Encabezado de la página -->
+  <section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-history"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Seguridad y auditoria</p>
+    <h2>Bitacora del sistema</h2>
+    <p>Consulta acciones y eventos relevantes realizados en el sistema.</p>
+  </div>
+</section>
+
+  <!-- Mensajes de error -->
+  @if (error()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Panel de Filtros -->
+  <div class="panel filters-panel">
+    <div class="panel-header">
+      <h3>Filtros de Búsqueda</h3>
+      <span class="hint">Filtra por usuario, acción, módulo, resultado o período de fechas</span>
+    </div>
+
+    <form [formGroup]="filtrosForm" (ngSubmit)="aplicarFiltros()" class="filters-grid">
+      <!-- Módulo -->
+      <div class="field">
+        <label for="modulo">Módulo</label>
+        <select id="modulo" formControlName="modulo">
+          @for (m of modulosDisponibles; track m.valor) {
+            <option [value]="m.valor">{{ m.etiqueta }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Acción -->
+      <div class="field">
+        <label for="accion">Acción</label>
+        <input
+          id="accion"
+          type="text"
+          formControlName="accion"
+          placeholder="Ej. LOGIN, CREAR, ACTUALIZAR..."
+        />
+      </div>
+
+      <!-- Resultado -->
+      <div class="field">
+        <label for="resultado">Resultado</label>
+        <select id="resultado" formControlName="resultado">
+          @for (r of resultadosDisponibles; track r.valor) {
+            <option [value]="r.valor">{{ r.etiqueta }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Usuario ID -->
+      <div class="field">
+        <label for="usuarioId">ID de Usuario</label>
+        <input
+          id="usuarioId"
+          type="number"
+          formControlName="usuarioId"
+          placeholder="Opcional: ID numérico"
+          min="1"
+        />
+      </div>
+
+      <!-- Fecha Desde -->
+      <div class="field">
+        <label for="fechaDesde">Fecha Desde</label>
+        <input
+          id="fechaDesde"
+          type="date"
+          formControlName="fechaDesde"
+        />
+      </div>
+
+      <!-- Fecha Hasta -->
+      <div class="field">
+        <label for="fechaHasta">Fecha Hasta</label>
+        <input
+          id="fechaHasta"
+          type="date"
+          formControlName="fechaHasta"
+        />
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="filters-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="cargando()">
+          🔍 Filtrar
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="limpiarFiltros()" [disabled]="cargando()">
+          🔄 Limpiar
+        </button>
+        <button type="button" class="btn btn-ghost" (click)="cargarBitacora(paginaActual())" [disabled]="cargando()" title="Refrescar">
+          ⚡ Refrescar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Panel Principal: Listado de Eventos -->
+  <div class="panel table-panel">
+    <div class="table-header">
+      <div class="table-title">
+        <h3>Registros de Auditoría</h3>
+        <span class="count-tag">Mostrando página {{ paginaActual() }} de {{ totalPaginas() }}</span>
+      </div>
+
+      <div class="per-page-selector">
+        <label for="porPaginaSelect">Filas por página:</label>
+        <select
+          id="porPaginaSelect"
+          [value]="porPagina()"
+          (change)="cambiarPorPagina(+$any($event.target).value)"
+        >
+          <option [value]="15">15</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Spinner de carga -->
+    @if (cargando()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando eventos de la bitácora...</p>
+      </div>
+    } @else {
+      @if (registros().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <h4>No se encontraron registros</h4>
+          <p>No hay eventos registrados que coincidan con los filtros especificados.</p>
+          <button type="button" class="btn btn-secondary" (click)="limpiarFiltros()">Limpiar Filtros</button>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="col-id"># ID</th>
+                <th class="col-fecha">Fecha y Hora</th>
+                <th class="col-usuario">Usuario</th>
+                <th class="col-modulo">Módulo</th>
+                <th class="col-accion">Acción</th>
+                <th class="col-resultado">Resultado</th>
+                <th class="col-ip">Dirección IP</th>
+                <th class="col-desc">Descripcion</th>
+                <th class="col-acciones text-center">Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of registros(); track item.id) {
+                <tr class="table-row" (click)="verDetalle(item)">
+                  <td class="col-id font-mono">#{{ item.id }}</td>
+                  <td class="col-fecha">
+                    <span class="date-text">{{ formatearFecha(item.fecha) }}</span>
+                  </td>
+                  <td class="col-usuario">
+                    @if (item.usuario_username) {
+                      <div class="user-cell">
+                        <span class="user-avatar">{{ item.usuario_username.slice(0, 1).toUpperCase() }}</span>
+                        <div class="user-meta">
+                          <span class="username">&#64;{{ item.usuario_username }}</span>
+                          @if (item.usuario_nombre || item.usuario_apellido) {
+                            <span class="user-fullname">
+                              {{ item.usuario_nombre }} {{ item.usuario_apellido }}
+                            </span>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <span class="system-tag">Sistema / Anónimo</span>
+                    }
+                  </td>
+                  <td class="col-modulo">
+                    <span class="badge-modulo">{{ item.modulo }}</span>
+                  </td>
+                  <td class="col-accion">
+                    <span class="action-tag">{{ item.accion }}</span>
+                  </td>
+                  <td class="col-resultado">
+                    <span [class]="'badge-status ' + obtenerBadgeClase(item.resultado)">
+                      {{ item.resultado }}
+                    </span>
+                  </td>
+                  <td class="col-ip font-mono text-muted">
+                    {{ item.direccion_ip || '-' }}
+                  </td>
+                  <td class="col-desc">
+                    <span class="desc-text" [title]="item.descripcion || ''">
+                      {{ item.descripcion || '-' }}
+                    </span>
+                  </td>
+                  <td class="col-acciones text-center" (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      (click)="verDetalle(item)"
+                      title="Ver detalle del registro"
+                    >
+                      👁️
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="pagination-bar">
+          <span class="pagination-info">
+            Total: <strong>{{ totalRegistros() }}</strong> registros
+          </span>
+
+          <div class="pagination-buttons">
+            <button
+              type="button"
+              class="btn-page"
+              [disabled]="paginaActual() <= 1"
+              (click)="irAPagina(1)"
+              title="Primera página"
+            >
+              ⏮️
+            </button>
+            <button
+              type="button"
+              class="btn-page"
+              [disabled]="paginaActual() <= 1"
+              (click)="irAPagina(paginaActual() - 1)"
+              title="Página anterior"
+            >
+              ◀️ Anterior
+            </button>
+
+            <span class="page-indicator">
+              Página {{ paginaActual() }} de {{ totalPaginas() }}
+            </span>
+
+            <button
+              type="button"
+              class="btn-page"
+              [disabled]="paginaActual() >= totalPaginas()"
+              (click)="irAPagina(paginaActual() + 1)"
+              title="Página siguiente"
+            >
+              Siguiente ▶️
+            </button>
+            <button
+              type="button"
+              class="btn-page"
+              [disabled]="paginaActual() >= totalPaginas()"
+              (click)="irAPagina(totalPaginas())"
+              title="Última página"
+            >
+              ⏭️
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <!-- Modal de Detalle de Registro -->
+  @if (modalDetalleAbierto()) {
+    <div class="modal-backdrop" (click)="cerrarModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-eyebrow">Inspección de Registro</span>
+            <h3>Evento #{{ registroSeleccionado()?.id }}</h3>
+          </div>
+          <button type="button" class="btn-close" (click)="cerrarModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          @if (cargandoDetalle()) {
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Obteniendo detalle...</p>
+            </div>
+          } @else if (registroSeleccionado()) {
+            <div class="detail-grid">
+              <!-- Fecha -->
+              <div class="detail-item">
+                <span class="detail-label">Fecha y Hora</span>
+                <span class="detail-value font-mono">
+                  {{ formatearFecha(registroSeleccionado()!.fecha) }}
+                </span>
+              </div>
+
+              <!-- Resultado -->
+              <div class="detail-item">
+                <span class="detail-label">Resultado</span>
+                <span [class]="'badge-status ' + obtenerBadgeClase(registroSeleccionado()!.resultado)">
+                  {{ registroSeleccionado()!.resultado }}
+                </span>
+              </div>
+
+              <!-- Módulo -->
+              <div class="detail-item">
+                <span class="detail-label">Módulo</span>
+                <span class="badge-modulo font-bold">{{ registroSeleccionado()!.modulo }}</span>
+              </div>
+
+              <!-- Acción -->
+              <div class="detail-item">
+                <span class="detail-label">Acción</span>
+                <span class="action-tag font-bold">{{ registroSeleccionado()!.accion }}</span>
+              </div>
+
+              <!-- Usuario Info -->
+              <div class="detail-item detail-span-2">
+                <span class="detail-label">Usuario</span>
+                <div class="user-detail-box">
+                  @if (registroSeleccionado()!.usuario_username) {
+                    <div class="user-detail-row">
+                      <span class="detail-field-name">Username:</span>
+                      <strong>&#64;{{ registroSeleccionado()!.usuario_username }}</strong>
+                    </div>
+                    @if (registroSeleccionado()!.usuario_nombre || registroSeleccionado()!.usuario_apellido) {
+                      <div class="user-detail-row">
+                        <span class="detail-field-name">Nombre:</span>
+                        <span>{{ registroSeleccionado()!.usuario_nombre }} {{ registroSeleccionado()!.usuario_apellido }}</span>
+                      </div>
+                    }
+                    @if (registroSeleccionado()!.usuario_correo) {
+                      <div class="user-detail-row">
+                        <span class="detail-field-name">Correo:</span>
+                        <span>{{ registroSeleccionado()!.usuario_correo }}</span>
+                      </div>
+                    }
+                    @if (registroSeleccionado()!.usuario_id) {
+                      <div class="user-detail-row">
+                        <span class="detail-field-name">ID de Usuario:</span>
+                        <span>#{{ registroSeleccionado()!.usuario_id }}</span>
+                      </div>
+                    }
+                  } @else {
+                    <span class="system-tag">Acción ejecutada sin sesión o por el sistema (ID: {{ registroSeleccionado()!.usuario_id || 'N/A' }})</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Dirección IP -->
+              <div class="detail-item">
+                <span class="detail-label">Dirección IP</span>
+                <span class="detail-value font-mono">
+                  {{ registroSeleccionado()!.direccion_ip || 'No registrada' }}
+                </span>
+              </div>
+
+              <!-- User Agent -->
+              <div class="detail-item detail-span-2">
+                <span class="detail-label">Agente de Usuario (Dispositivo / Navegador)</span>
+                <div class="ua-box font-mono">
+                  {{ registroSeleccionado()!.user_agent || 'No capturado' }}
+                </div>
+              </div>
+
+              <!-- Descripcion -->
+              <div class="detail-item detail-span-2">
+                <span class="detail-label">Descripcion del Evento</span>
+                <div class="desc-box">
+                  {{ registroSeleccionado()!.descripcion || 'Sin descripcion detallada.' }}
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

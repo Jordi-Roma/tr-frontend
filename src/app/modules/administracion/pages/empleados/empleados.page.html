@@ -1,0 +1,205 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-id-card"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Empleados</p>
+    <h2>Gestion de empleados</h2>
+    <p>Asigna usuarios existentes como empleados de sucursal y administra su estado.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando empleados...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="empleados-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="empleados-title">Empleados registrados</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ empleadosFiltrados().length }} empleados</span>
+        <button type="button" (click)="abrirNuevoEmpleado()">
+          <i class="pi pi-plus"></i>
+          Nuevo empleado
+        </button>
+      </div>
+    </div>
+
+    <label for="busqueda">Buscar empleado</label>
+    <input
+      id="busqueda"
+      type="search"
+      [value]="busqueda()"
+      (input)="actualizarBusqueda($event)"
+      placeholder="Nombre, cargo, usuario o sucursal"
+    />
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Empleado</th>
+            <th>Sucursal</th>
+            <th>Cargo</th>
+            <th>Roles</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (empleado of empleadosFiltrados(); track empleado.empleado_id) {
+            <tr>
+              <td>{{ empleado.empleado_id }}</td>
+              <td>
+                <strong>{{ empleado.nombre }} {{ empleado.apellido }}</strong>
+                <span>@{{ empleado.username }}</span>
+                <span>{{ empleado.correo }}</span>
+                <span>Código: {{ empleado.codigo_empleado }}</span>
+              </td>
+              <td>
+                {{ empleado.sucursal_nombre }}
+                <span>ID: {{ empleado.sucursal_id }}</span>
+              </td>
+              <td>{{ empleado.cargo }}</td>
+              <td>{{ empleado.roles.join(', ') || 'Sin roles' }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!empleado.activo">
+                  {{ empleado.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarEmpleado(empleado)">
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="empleado.activo"
+                    [class.secondary-button]="!empleado.activo"
+                    (click)="cambiarEstadoEmpleado(empleado)"
+                    [disabled]="procesando()"
+                  >
+                    {{ empleado.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7">No se encontraron empleados.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="empleadoEditandoId() === null ? 'Nuevo empleado' : 'Editar empleado'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+<form [formGroup]="empleadoForm" (ngSubmit)="guardarEmpleado()" novalidate>
+      <label for="usuarioId">Usuario ID</label>
+      <input id="usuarioId" type="number" min="1" formControlName="usuarioId" />
+
+      @if (
+        empleadoForm.controls.usuarioId.invalid &&
+        empleadoForm.controls.usuarioId.touched
+      ) {
+        <p class="field-error">El usuario es obligatorio.</p>
+      }
+
+      <label for="sucursalId">Sucursal</label>
+      <select id="sucursalId" formControlName="sucursalId">
+        <option [ngValue]="null">Selecciona una sucursal</option>
+        @for (sucursal of sucursales(); track sucursal.id) {
+          @if (sucursal.activo) {
+            <option [ngValue]="sucursal.id">
+              {{ sucursal.nombre }} - {{ sucursal.ciudad_nombre }}
+            </option>
+          }
+        }
+      </select>
+
+      @if (
+        empleadoForm.controls.sucursalId.invalid &&
+        empleadoForm.controls.sucursalId.touched
+      ) {
+        <p class="field-error">La sucursal es obligatoria.</p>
+      }
+
+      <label for="codigoEmpleado">Código de empleado</label>
+      <input id="codigoEmpleado" type="text" formControlName="codigoEmpleado" />
+
+      @if (
+        empleadoForm.controls.codigoEmpleado.invalid &&
+        empleadoForm.controls.codigoEmpleado.touched
+      ) {
+        <p class="field-error">El código de empleado es obligatorio.</p>
+      }
+
+      <label for="cargo">Cargo</label>
+      <input id="cargo" type="text" formControlName="cargo" />
+
+      @if (
+        empleadoForm.controls.cargo.touched &&
+        empleadoForm.controls.cargo.errors?.['required']
+      ) {
+        <p class="field-error">El cargo es obligatorio.</p>
+      }
+
+      @if (
+        empleadoForm.controls.cargo.touched &&
+        empleadoForm.controls.cargo.errors?.['minlength']
+      ) {
+        <p class="field-error">El cargo debe tener minimo 2 caracteres.</p>
+      }
+
+      <label for="rol">Rol laboral</label>
+      <select id="rol" formControlName="rol">
+        <option value="" disabled>Selecciona un rol laboral</option>
+        @for (rol of rolesDisponibles; track rol.valor) {
+          <option [value]="rol.valor">{{ rol.etiqueta }} ({{ rol.valor }})</option>
+        }
+      </select>
+
+      @if (empleadoForm.controls.rol.invalid && empleadoForm.controls.rol.touched) {
+        <p class="field-error">El rol es obligatorio.</p>
+      }
+
+      <div class="helper-box">
+        <p>
+          Esta pantalla asigna usuarios existentes como empleados. No crea usuarios
+          nuevos.
+        </p>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="empleadoForm.invalid || procesando()">
+          {{ empleadoEditandoId() === null ? 'Crear empleado' : 'Guardar empleado' }}
+        </button>
+
+        @if (empleadoEditandoId() !== null) {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            Cancelar
+          </button>
+        }
+      </div>
+    </form>
+  </app-modal>
+</div>

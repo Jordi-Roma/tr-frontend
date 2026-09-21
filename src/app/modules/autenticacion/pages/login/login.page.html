@@ -1,0 +1,74 @@
+<main class="auth-page">
+  <section class="auth-card" aria-labelledby="login-title">
+    <aside class="brand-panel" aria-hidden="true">
+      <a class="brand-logo">Style<span>AR</span></a>
+      <div>
+        <p class="brand-kicker">Moda urbana</p>
+        <h2>Basicos, oversize y camisas para tu dia a dia.</h2>
+      </div>
+      <div class="brand-tags">
+        <span>Poleras</span>
+        <span>Oversize</span>
+        <span>Camisas</span>
+      </div>
+    </aside>
+
+    <div class="auth-box">
+      <p class="eyebrow">Bienvenido</p>
+      <h1 id="login-title">Iniciar sesion</h1>
+      <p class="subtitle">Ingresa para comprar, ver tu carrito y gestionar tu perfil.</p>
+
+      <form [formGroup]="loginForm" (ngSubmit)="iniciarSesion()" novalidate>
+        <label for="identificador">Usuario o correo</label>
+        <input
+          id="identificador"
+          type="text"
+          formControlName="identificador"
+          autocomplete="username"
+          placeholder="Ej: cliente01"
+        />
+
+        @if (
+          loginForm.controls.identificador.invalid &&
+          loginForm.controls.identificador.touched
+        ) {
+          <p class="field-error">El usuario o correo es obligatorio.</p>
+        }
+
+        <label for="password">Contrasena</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          placeholder="Ingresa tu contrasena"
+        />
+
+        @if (loginForm.controls.password.invalid && loginForm.controls.password.touched) {
+          <p class="field-error">La contrasena es obligatoria.</p>
+        }
+
+        <p class="register-text">
+          <a class="register-link" routerLink="/recuperar-password">¿Olvidaste tu contraseña?</a>
+        </p>
+
+        @if (mensajeError()) {
+          <p class="error-message">{{ mensajeError() }}</p>
+        }
+
+        @if (cargando()) {
+          <p class="loading-message">Iniciando sesion...</p>
+        }
+
+        <button type="submit" [disabled]="loginForm.invalid || cargando()">
+          Ingresar
+        </button>
+
+        <p class="register-text">
+          No tienes cuenta?
+          <a class="register-link" routerLink="/registro">Crear cuenta</a>
+        </p>
+      </form>
+    </div>
+  </section>
+</main>

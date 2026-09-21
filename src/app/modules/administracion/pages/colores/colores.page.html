@@ -1,0 +1,186 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-palette"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Colores</p>
+    <h2>Gestion de colores</h2>
+    <p>Administra los colores disponibles para las variantes de prendas de StyleAR.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando colores...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="colores-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="colores-title">Colores registrados</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ coloresFiltrados().length }} colores</span>
+        <button type="button" (click)="abrirNuevoColor()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          Nuevo color
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="busqueda">Buscar color</label>
+        <input
+          id="busqueda"
+          type="search"
+          [value]="busqueda()"
+          (input)="actualizarBusqueda($event)"
+          placeholder="Nombre o codigo hex"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="filtroEstado">Estado</label>
+        <select
+          id="filtroEstado"
+          [value]="filtroEstado()"
+          (change)="actualizarFiltroEstado($event)"
+        >
+          <option value="todos">Todos</option>
+          <option value="activos">Activos</option>
+          <option value="inactivos">Inactivos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Color</th>
+            <th>Codigo Hex</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (color of coloresFiltrados(); track color.id) {
+            <tr>
+              <td>{{ color.id }}</td>
+              <td>
+                <div class="color-cell">
+                  @if (color.codigo_hex) {
+                    <span
+                      class="color-swatch"
+                      [style.background]="color.codigo_hex"
+                      [attr.aria-label]="'Muestra de color ' + color.nombre"
+                    ></span>
+                  }
+                  <strong>{{ color.nombre }}</strong>
+                </div>
+              </td>
+              <td>
+                @if (color.codigo_hex) {
+                  <code>{{ color.codigo_hex }}</code>
+                } @else {
+                  -
+                }
+              </td>
+              <td>
+                <span class="status-badge" [class.inactive]="!color.activo">
+                  {{ color.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarColor(color)">
+                    <i class="pi pi-pencil" aria-hidden="true"></i>
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="color.activo"
+                    [class.secondary-button]="!color.activo"
+                    (click)="cambiarEstadoColor(color)"
+                    [disabled]="procesando()"
+                  >
+                    {{ color.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">No se encontraron colores.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="colorEditandoId() === null ? 'Nuevo color' : 'Editar color'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+<form [formGroup]="colorForm" (ngSubmit)="guardarColor()" novalidate>
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" placeholder="Ej: Negro, Azul marino" />
+
+      @if (
+        colorForm.controls.nombre.invalid &&
+        colorForm.controls.nombre.touched
+      ) {
+        <p class="field-error">El nombre del color es obligatorio.</p>
+      }
+
+      <label for="codigo_hex">Codigo hexadecimal</label>
+      <div class="hex-row">
+        <input
+          id="codigo_hex"
+          type="text"
+          formControlName="codigo_hex"
+          placeholder="Ej: #FF5733 (opcional)"
+        />
+        @if (colorForm.controls.codigo_hex.value) {
+          <span
+            class="hex-preview"
+            [style.background]="colorForm.controls.codigo_hex.value"
+          ></span>
+        }
+      </div>
+
+      @if (
+        colorForm.controls.codigo_hex.touched &&
+        colorForm.controls.codigo_hex.errors?.['pattern']
+      ) {
+        <p class="field-error">El codigo hexadecimal debe tener el formato #RRGGBB (ej: #FF5733).</p>
+      }
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="colorForm.invalid || procesando()">
+          <i class="pi pi-check" aria-hidden="true"></i>
+          {{ colorEditandoId() === null ? 'Crear color' : 'Guardar cambios' }}
+        </button>
+
+        <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+            Cancelar
+          </button>
+      </div>
+    </form>
+  </app-modal>
+</div>

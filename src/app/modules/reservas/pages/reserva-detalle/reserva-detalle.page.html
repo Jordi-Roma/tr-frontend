@@ -1,0 +1,157 @@
+@if (cargando()) {
+  <section class="state-card">
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    <p>Cargando reserva...</p>
+  </section>
+} @else if (reserva(); as item) {
+  <section class="detail-card">
+    <a routerLink="/reservas" class="back-link">← Volver a reservas</a>
+    <div class="heading">
+      <div>
+        <p class="eyebrow">Reserva</p>
+        <h1>{{ item.codigo }}</h1>
+        <p>{{ item.ciudad }} - {{ item.sucursal }}</p>
+      </div>
+      <span class="status">{{ item.estado }}</span>
+    </div>
+
+    <div class="info-grid">
+      <div>
+        <span>Fecha reserva</span>
+        <strong>{{ formatFecha(item.fecha_reserva) }}</strong>
+      </div>
+      <div>
+        <span>Cita</span>
+        <strong>{{ item.fecha_cita || 'Sin fecha' }}</strong>
+      </div>
+      <div>
+        <span>Expira</span>
+        <strong>{{ formatFecha(item.fecha_expiracion) }}</strong>
+      </div>
+      <div>
+        <span>Valor prendas</span>
+        <strong>{{ formatPrecio(item.total) }}</strong>
+      </div>
+      <div>
+        <span>Anticipo</span>
+        <strong>{{ formatPrecio(item.monto_reserva) }} · {{ item.anticipo_pagado ? 'Pagado' : 'Pendiente' }}</strong>
+      </div>
+      @if (item.venta_id) {
+        <div>
+          <span>Venta generada</span>
+          <strong>#{{ item.venta_id }}</strong>
+        </div>
+      }
+    </div>
+
+    <section class="items-list">
+      <h2>Prendas reservadas</h2>
+      @for (detalle of item.detalles; track detalle.id) {
+        <article>
+          <div>
+            <strong>{{ detalle.producto }}</strong>
+            <span>{{ detalle.categoria }} · {{ detalle.talla }} / {{ detalle.color }}</span>
+          </div>
+          <span>{{ detalle.cantidad }} x {{ formatPrecio(detalle.precio_unitario) }}</span>
+          <strong>{{ formatPrecio(detalle.subtotal) }}</strong>
+        </article>
+      }
+    </section>
+
+    @if (requiereAnticipo(item)) {
+      <section class="payment-panel">
+        <div>
+          <h2>Pagar anticipo de reserva</h2>
+          <p>Esta reserva tiene un anticipo no reembolsable de {{ formatPrecio(item.monto_reserva) }}. Después de pagarlo, la reserva queda activa para recoger en sucursal.</p>
+        </div>
+        <button type="button" class="primary-button" [disabled]="guardando()" (click)="pagarAnticipo()">
+          Pagar anticipo con Stripe
+        </button>
+      </section>
+    } @else if (puedeCancelar(item)) {
+      <section class="payment-panel">
+        <div>
+          <h2>Elegir prendas y pagar reserva</h2>
+          <p>Coloca 0 en las prendas que ya no quieras llevar. Se liberarán al completar el pago.</p>
+        </div>
+
+        <div class="selection-list">
+          @for (detalle of item.detalles; track detalle.id) {
+            <label>
+              <span>
+                <strong>{{ detalle.producto }}</strong>
+                <small>{{ detalle.talla }} / {{ detalle.color }} · máx. {{ detalle.cantidad }}</small>
+              </span>
+              <input
+                type="number"
+                min="0"
+                [max]="detalle.cantidad"
+                [value]="cantidades()[detalle.id] ?? detalle.cantidad"
+                (input)="actualizarCantidad(detalle.id, $any($event.target).value, detalle.cantidad)"
+              />
+            </label>
+          }
+        </div>
+
+        <div class="payment-summary">
+          <div><span>Subtotal elegido</span><strong>{{ formatPrecio(subtotalSeleccionado()) }}</strong></div>
+          <div><span>Anticipo aplicado</span><strong>-{{ formatPrecio(anticipoAplicado()) }}</strong></div>
+          <div><span>Saldo a pagar</span><strong>{{ formatPrecio(saldoAPagar()) }}</strong></div>
+        </div>
+
+        <label class="field-label">
+          Método de pago
+          <select [value]="metodoPago()" (change)="actualizarMetodo($event)">
+            <option value="STRIPE">Stripe</option>
+            <option value="QR">QR</option>
+            <option value="EFECTIVO">Efectivo</option>
+          </select>
+        </label>
+
+        <label class="field-label">
+          Observación
+          <textarea rows="2" [value]="observacion()" (input)="actualizarObservacion($event)" placeholder="Opcional"></textarea>
+        </label>
+
+        @if (metodoPago() === 'QR' && mostrandoQr()) {
+          <section class="qr-panel">
+            <div>
+              <h3>Pago por QR</h3>
+              <p>Escanea este QR para pagar {{ formatPrecio(saldoAPagar()) }}.</p>
+            </div>
+            <img class="qr-image" [src]="qrDataUrl()" alt="QR de pago" />
+            <pre>{{ qrPayload() }}</pre>
+            <div class="qr-actions">
+              <button type="button" class="secondary-button" [disabled]="guardando()" (click)="cerrarQr()">Cambiar método</button>
+              <button type="button" class="primary-button" [disabled]="guardando()" (click)="finalizarReserva()">Confirmar pago QR</button>
+            </div>
+          </section>
+        }
+
+        <button type="button" class="primary-button" [disabled]="guardando() || !puedeFinalizar(item)" (click)="finalizarReserva()">
+          {{ metodoPago() === 'STRIPE' ? 'Pagar reserva con Stripe' : metodoPago() === 'QR' ? 'Generar QR de pago' : 'Completar reserva' }}
+        </button>
+      </section>
+    }
+
+    @if (error()) {
+      <p class="error-message">{{ error() }}</p>
+    }
+
+    @if (mensaje()) {
+      <p class="success-message">{{ mensaje() }}</p>
+    }
+
+    @if (puedeCancelar(item)) {
+      <button type="button" class="danger-button" [disabled]="guardando()" (click)="cancelar()">
+        Cancelar reserva
+      </button>
+    }
+  </section>
+} @else if (error()) {
+  <section class="state-card error-state">
+    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+    <p>{{ error() }}</p>
+    <a routerLink="/reservas">Volver a reservas</a>
+  </section>
+}

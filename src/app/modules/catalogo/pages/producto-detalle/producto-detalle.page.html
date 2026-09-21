@@ -1,0 +1,207 @@
+@if (cargando()) {
+  <section class="state-card">
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    <p>Cargando producto...</p>
+  </section>
+} @else if (error()) {
+  <section class="state-card error-state">
+    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+    <p>{{ error() }}</p>
+    <a routerLink="/catalogo">Volver al catalogo</a>
+  </section>
+} @else if (producto(); as item) {
+  <section class="detail-shell" aria-labelledby="product-title">
+    <div class="product-visual" aria-hidden="true">
+      @if (item.imagen_principal) {
+        <img [src]="item.imagen_principal" [alt]="item.nombre" class="detail-main-img" />
+      } @else {
+        <span>{{ inicialesCategoria(item) }}</span>
+      }
+    </div>
+
+    <article class="product-info">
+      <p class="eyebrow">{{ item.categoria }}</p>
+      <h1 id="product-title">{{ item.nombre }}</h1>
+      <p class="description">
+        {{ item.descripcion || 'Prenda disponible en StyleAR para combinar con outfits casuales.' }}
+      </p>
+
+      <div class="price-row">
+        <strong class="price">{{ formatPrecio(precio()) }}</strong>
+        @if (item.tiene_promocion) {
+          <span>Promocion activa</span>
+        }
+      </div>
+
+      <div class="info-grid">
+        <div>
+          <span>Marca</span>
+          <strong>{{ item.marca || 'StyleAR' }}</strong>
+        </div>
+        <div>
+          <span>Material</span>
+          <strong>{{ item.material || 'Por definir' }}</strong>
+        </div>
+        <div>
+          <span>Genero</span>
+          <strong>{{ item.genero || 'Unisex' }}</strong>
+        </div>
+      </div>
+
+      <div class="option-group">
+        <h2>Tallas</h2>
+        <div class="chip-list">
+          @for (talla of item.tallas; track talla.id) {
+            <button
+              type="button"
+              [class.is-active]="tallaId() === talla.id"
+              (click)="seleccionarTalla(talla.id)"
+            >
+              {{ talla.nombre }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="option-group">
+        <h2>Colores</h2>
+        <div class="chip-list muted">
+          @for (color of item.colores; track color.id) {
+            <button
+              type="button"
+              [class.is-active]="colorId() === color.id"
+              (click)="seleccionarColor(color.id)"
+            >
+              {{ color.nombre }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="option-group">
+        <h2>Variantes</h2>
+        <div class="variant-list">
+          @if (variantesFiltradas().length === 0) {
+            <span>No hay variantes para esta seleccion.</span>
+          } @else {
+            @for (variante of variantesFiltradas(); track variante.id) {
+              <span>
+                {{ varianteLabel(variante) }}
+                · {{ formatPrecio(variante.precio_final ?? variante.precio_vigente) }}
+                · {{ variante.stock_total }} disponible(s)
+              </span>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="option-group">
+        <h2>Disponibilidad por sucursal</h2>
+
+        <label class="branch-control">
+          Sucursal para carrito
+          <select [value]="sucursalId() ?? ''" (change)="seleccionarSucursal($event)">
+            <option value="">Seleccionar sucursal</option>
+            @for (stock of sucursalesDisponibles(); track stock.sucursal_id) {
+              <option [value]="stock.sucursal_id">
+                {{ stock.ciudad }} - {{ stock.sucursal }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <div class="availability-list">
+          @if (disponibilidadFiltrada().length === 0) {
+            <span>No hay stock registrado para esta prenda.</span>
+          } @else {
+            @for (stock of disponibilidadFiltrada(); track stock.sucursal_id + '-' + stock.variante_id) {
+              <div [class.is-empty]="!stock.disponible">
+                <strong>{{ disponibilidadLabel(stock) }}</strong>
+                <span>
+                  {{ stock.stock_disponible - stock.stock_reservado }} disponible(s)
+                </span>
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="quantity-row">
+        <span>Cantidad · stock seleccionado: {{ stockSeleccionado() }}</span>
+        <div>
+          <button type="button" (click)="cambiarCantidad(-1)" aria-label="Disminuir cantidad">
+            <i class="pi pi-minus" aria-hidden="true"></i>
+          </button>
+          <strong>{{ cantidad() }}</strong>
+          <button type="button" (click)="cambiarCantidad(1)" aria-label="Aumentar cantidad">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="guardando()"
+          (click)="agregarAlCarrito()"
+        >
+          <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+          {{ guardando() ? 'Agregando...' : 'Agregar al carrito' }}
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          [class.is-favorite]="esFavorito()"
+          (click)="alternarFavorito()"
+          aria-label="Alternar favorito"
+        >
+          <i class="pi pi-heart" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      @if (mensaje()) {
+        <p class="action-message success">{{ mensaje() }}</p>
+      }
+
+      @if (accionError()) {
+        <p class="action-message error">{{ accionError() }}</p>
+      }
+    </article>
+  </section>
+
+  <section class="recommendations-section" aria-labelledby="recommendations-title">
+    <div class="recommendations-heading">
+      <div>
+        <p class="eyebrow">Descubre más</p>
+        <h2 id="recommendations-title">También te puede gustar</h2>
+      </div>
+      <a routerLink="/para-ti">Ver Para ti</a>
+    </div>
+    @if (cargandoRecomendaciones()) {
+      <p class="recommendations-status">Buscando prendas relacionadas...</p>
+    } @else if (recomendaciones().length > 0) {
+      <div class="recommendations-grid">
+        @for (sugerida of recomendaciones(); track sugerida.producto_id) {
+          <a class="recommendation-card" [routerLink]="['/producto', sugerida.producto_id]">
+            <div class="recommendation-image">
+              @if (sugerida.imagen_principal) {
+                <img [src]="sugerida.imagen_principal" [alt]="sugerida.nombre" />
+              } @else {
+                <span>{{ sugerida.categoria.slice(0, 2).toUpperCase() }}</span>
+              }
+            </div>
+            <span>{{ sugerida.categoria }}</span>
+            <strong>{{ sugerida.nombre }}</strong>
+            <em>{{ sugerida.motivo }}</em>
+            <b>{{ formatPrecio(sugerida.precio_final ?? sugerida.precio_vigente) }}</b>
+          </a>
+        }
+      </div>
+    } @else {
+      <p class="recommendations-status">
+        Todavía no hay prendas relacionadas disponibles para esta selección.
+      </p>
+    }
+  </section>
+}

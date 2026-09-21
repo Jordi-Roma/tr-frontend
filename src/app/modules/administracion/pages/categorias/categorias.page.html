@@ -1,0 +1,179 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-tags"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Categorias</p>
+    <h2>Gestion de categorias</h2>
+    <p>Administra las categorias utilizadas para clasificar las prendas de StyleAR.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando categorias...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="categorias-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="categorias-title">Categorias registradas</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ categoriasFiltradasTree().length }} categorias</span>
+        <button type="button" (click)="abrirNuevaCategoria()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          Nueva categoria
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="busqueda">Buscar categoria</label>
+        <input
+          id="busqueda"
+          type="search"
+          [value]="busqueda()"
+          (input)="actualizarBusqueda($event)"
+          placeholder="Nombre o descripcion"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="filtroEstado">Estado</label>
+        <select
+          id="filtroEstado"
+          [value]="filtroEstado()"
+          (change)="actualizarFiltroEstado($event)"
+        >
+          <option value="todos">Todos</option>
+          <option value="activos">Activos</option>
+          <option value="inactivos">Inactivos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripcion</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (categoria of categoriasFiltradasTree(); track categoria.id) {
+            <tr>
+              <td>{{ categoria.id }}</td>
+              <td [style.padding-left.px]="categoria.nivel * 24">
+                <div class="tree-cell">
+                  @if (categoria.tieneHijos) {
+                    <button 
+                      type="button" 
+                      class="tree-toggle"
+                      (click)="alternarExpansion(categoria.id)"
+                    >
+                      {{ categoria.expandido ? '▼' : '▶' }}
+                    </button>
+                  } @else {
+                    <span class="tree-toggle-spacer"></span>
+                  }
+                  <strong>{{ categoria.nombre }}</strong>
+                </div>
+              </td>
+              <td>{{ categoria.descripcion || '-' }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!categoria.activo">
+                  {{ categoria.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarCategoria(categoria)">
+                    <i class="pi pi-pencil" aria-hidden="true"></i>
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="categoria.activo"
+                    [class.secondary-button]="!categoria.activo"
+                    (click)="cambiarEstadoCategoria(categoria)"
+                    [disabled]="procesando()"
+                  >
+                    {{ categoria.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">No se encontraron categorias.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="categoriaEditandoId() === null ? 'Nueva categoria' : 'Editar categoria'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+    <form [formGroup]="categoriaForm" (ngSubmit)="guardarCategoria()" novalidate>
+      <label for="categoria_padre_id">Categoria Padre</label>
+      <select id="categoria_padre_id" formControlName="categoria_padre_id">
+        <option [ngValue]="null">Ninguna (Categoria raiz)</option>
+        @for (padre of categoriasPadreDisponibles(); track padre.id) {
+          <option [ngValue]="padre.id">{{ padre.nombre }}</option>
+        }
+      </select>
+
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" />
+
+      @if (
+        categoriaForm.controls.nombre.invalid &&
+        categoriaForm.controls.nombre.touched
+      ) {
+        <p class="field-error">El nombre de la categoria es obligatorio.</p>
+      }
+
+      <label for="descripcion">Descripcion</label>
+      <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="categoriaForm.invalid || procesando()">
+          <i class="pi pi-check" aria-hidden="true"></i>
+          {{ categoriaEditandoId() === null ? 'Crear categoria' : 'Guardar cambios' }}
+        </button>
+
+        @if (categoriaEditandoId() !== null) {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+            Cancelar edicion
+          </button>
+        } @else {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+            Cancelar
+          </button>
+        }
+      </div>
+    </form>
+  </app-modal>
+</div>

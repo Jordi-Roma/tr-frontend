@@ -1,0 +1,76 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-chart-line"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Panel</p>
+    <h2>Dashboard administrativo</h2>
+    <p>Resumen rapido para controlar catalogo, usuarios y actividad comercial.</p>
+  </div>
+</section>
+
+@if (cargando()) {
+  <p class="status-message">Cargando resumen de la tienda...</p>
+}
+
+@if (error()) {
+  <div class="dashboard-alert">
+    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+    <span>{{ error() }}</span>
+  </div>
+}
+
+<section class="dashboard-grid" aria-label="Resumen de administracion">
+  @for (card of cards(); track card.label) {
+    <article class="summary-card">
+      <span class="summary-icon" aria-hidden="true">
+        <i [class]="card.icon"></i>
+      </span>
+      <div>
+        <p>{{ card.label }}</p>
+        <strong>{{ card.value }}</strong>
+        <span>{{ card.note }}</span>
+      </div>
+    </article>
+  }
+</section>
+
+<section class="dashboard-panels">
+  <article class="panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Acciones sugeridas</p>
+        <h3>Prioridades del panel</h3>
+      </div>
+    </div>
+
+    <ul class="task-list">
+      <li>
+        <i class="pi pi-shopping-bag" aria-hidden="true"></i>
+        Mantener productos activos y bien categorizados.
+      </li>
+      <li>
+        <i class="pi pi-tags" aria-hidden="true"></i>
+        Revisar categorias, tallas, colores y marcas antes de publicar catalogo.
+      </li>
+      <li>
+        <i class="pi pi-users" aria-hidden="true"></i>
+        Validar que los usuarios cliente no tengan accesos administrativos.
+      </li>
+    </ul>
+  </article>
+
+  <article class="panel accent-panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">StyleAR</p>
+        <h3>Tienda lista para crecer</h3>
+      </div>
+    </div>
+
+    <p>
+      Este dashboard usa informacion real cuando el backend responde. Si algun endpoint
+      falla, el panel mantiene la interfaz estable y muestra el aviso correspondiente.
+    </p>
+  </article>
+</section>

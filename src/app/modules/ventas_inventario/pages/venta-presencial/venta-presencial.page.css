@@ -1,0 +1,7 @@
+.sale-form { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)) auto; gap: 1rem; align-items: end; margin-bottom: 1.25rem; }
+.sale-form label, .filters-row label { display: grid; gap: .35rem; color: var(--admin-muted); font-size: .82rem; font-weight: 700; }
+.sale-form input, .sale-form select, .filters-row select { border: 1px solid var(--admin-border); border-radius: 14px; padding: .78rem .9rem; background: #fff; color: var(--admin-ink); }
+.primary-action { border: 0; border-radius: 999px; padding: .9rem 1.1rem; background: var(--admin-accent); color: #fff; font-weight: 800; cursor: pointer; }
+.primary-action:disabled { opacity: .65; cursor: progress; }
+.pill { display: inline-flex; border-radius: 999px; padding: .25rem .65rem; background: #eef3e4; color: var(--admin-accent-strong); font-weight: 800; font-size: .75rem; }
+@media (max-width: 1100px) { .sale-form { grid-template-columns: 1fr; } }

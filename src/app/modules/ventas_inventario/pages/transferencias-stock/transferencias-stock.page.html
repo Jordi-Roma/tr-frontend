@@ -1,0 +1,95 @@
+<section class="admin-page-shell">
+  <div class="admin-page-header">
+    <div>
+      <p class="admin-eyebrow">Ventas e inventario</p>
+      <h1>Transferencias de stock</h1>
+      <p>Mueve stock entre sucursales y deja trazabilidad automática.</p>
+    </div>
+    <div class="filters-row">
+      <label>
+        Sucursal
+        <select [value]="filtroSucursalId() ?? ''" (change)="cambiarFiltroSucursal($event)">
+          <option value="">Todas</option>
+          @for (sucursal of sucursales(); track sucursal.id) {
+            <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+
+  @if (mensaje()) { <p class="feedback success">{{ mensaje() }}</p> }
+  @if (error()) { <p class="feedback error">{{ error() }}</p> }
+
+  <details class="admin-card form-details">
+    <summary>Registrar transferencia</summary>
+    <div class="transfer-form">
+    <label>
+      Origen
+      <select [value]="form().sucursal_origen_id ?? ''" (change)="actualizarCampo('sucursal_origen_id', $event)">
+        <option value="">Seleccionar</option>
+        @for (sucursal of sucursales(); track sucursal.id) {
+          <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Destino
+      <select [value]="form().sucursal_destino_id ?? ''" (change)="actualizarCampo('sucursal_destino_id', $event)">
+        <option value="">Seleccionar</option>
+        @for (sucursal of sucursales(); track sucursal.id) {
+          <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Prenda
+      <select [value]="form().producto_variante_id ?? ''" (change)="actualizarCampo('producto_variante_id', $event)">
+        <option value="">Seleccionar</option>
+        @for (variante of variantes(); track variante.id) {
+          <option [value]="variante.id">{{ etiquetaVariante(variante) }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Cantidad
+      <input type="number" min="1" [value]="form().cantidad" (input)="actualizarCampo('cantidad', $event)" />
+    </label>
+    <label>
+      Observación
+      <input type="text" [value]="form().observacion" (input)="actualizarCampo('observacion', $event)" />
+    </label>
+    <button class="primary-action" type="button" [disabled]="guardando()" (click)="crearTransferencia()">
+      {{ guardando() ? 'Guardando...' : 'Registrar transferencia' }}
+    </button>
+    </div>
+  </details>
+
+  <div class="admin-card table-wrap">
+    <table class="transfers-table">
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Origen</th><th>Destino</th><th>Estado</th><th>Prendas</th><th>Observación</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (transferencia of transferencias(); track transferencia.id) {
+          <tr>
+            <td>{{ fechaCorta(transferencia.fecha_transferencia) }}</td>
+            <td>{{ transferencia.sucursal_origen }}</td>
+            <td>{{ transferencia.sucursal_destino }}</td>
+            <td><span class="pill">{{ transferencia.estado }}</span></td>
+            <td>
+              @for (detalle of transferencia.detalles; track detalle.id) {
+                <div>{{ detalle.producto }} · {{ detalle.talla }} / {{ detalle.color }} x {{ detalle.cantidad }}</div>
+              }
+            </td>
+            <td>{{ transferencia.observacion || '-' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6">No hay transferencias registradas.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

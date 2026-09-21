@@ -1,0 +1,151 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-bookmark"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Marcas</p>
+    <h2>Gestion de marcas</h2>
+    <p>Administra las marcas disponibles para las prendas de StyleAR.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando Marcas...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="Marcas-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="Marcas-title">Marcas registradas</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ marcasFiltradas().length }} Marcas</span>
+        <button type="button" (click)="abrirNuevaMarca()">
+          <i class="pi pi-plus"></i>
+          Nueva marca
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="busqueda">Buscar Marca</label>
+        <input
+          id="busqueda"
+          type="search"
+          [value]="busqueda()"
+          (input)="actualizarBusqueda($event)"
+          placeholder="Nombre o descripcion"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="filtroEstado">Estado</label>
+        <select
+          id="filtroEstado"
+          [value]="filtroEstado()"
+          (change)="actualizarFiltroEstado($event)"
+        >
+          <option value="todos">Todos</option>
+          <option value="activos">Activos</option>
+          <option value="inactivos">Inactivos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripcion</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (marca of marcasFiltradas(); track marca.id) {
+            <tr>
+              <td>{{ marca.id }}</td>
+              <td><strong>{{ marca.nombre }}</strong></td>
+              <td>{{ marca.descripcion || '-' }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!marca.activo">
+                  {{ marca.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarMarca(marca)">
+                    <i class="pi pi-pencil" aria-hidden="true"></i>
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="marca.activo"
+                    [class.secondary-button]="!marca.activo"
+                    (click)="cambiarEstadoMarca(marca)"
+                    [disabled]="procesando()"
+                  >
+                    {{ marca.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">No se encontraron Marcas.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="marcaEditandoId() === null ? 'Nueva marca' : 'Editar marca'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+<form [formGroup]="marcaForm" (ngSubmit)="guardarMarca()" novalidate>
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" placeholder="Ej: Nike, Adidas, Zara" />
+
+      @if (
+        marcaForm.controls.nombre.invalid &&
+        marcaForm.controls.nombre.touched
+      ) {
+        <p class="field-error">El nombre de la Marca es obligatorio.</p>
+      }
+
+      <label for="descripcion">Descripcion</label>
+      <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="marcaForm.invalid || procesando()">
+          <i class="pi pi-check" aria-hidden="true"></i>
+          {{ marcaEditandoId() === null ? 'Crear Marca' : 'Guardar cambios' }}
+        </button>
+
+        @if (marcaEditandoId() !== null) {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+            Cancelar
+          </button>
+        }
+      </div>
+    </form>
+  </app-modal>
+</div>

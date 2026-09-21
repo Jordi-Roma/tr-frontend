@@ -1,0 +1,183 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-truck"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Proveedores</p>
+    <h2>Gestion de proveedores</h2>
+    <p>Administra proveedores de productos para StyleAR.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando proveedores...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="proveedores-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="proveedores-title">Proveedores registrados</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ proveedoresFiltrados().length }} proveedores</span>
+        <button type="button" (click)="abrirNuevoProveedor()">
+          <i class="pi pi-plus"></i>
+          Nuevo proveedor
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="busqueda">Buscar proveedor</label>
+        <input
+          id="busqueda"
+          type="search"
+          [value]="busqueda()"
+          (input)="actualizarBusqueda($event)"
+          placeholder="Nombre, NIT o correo"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="filtroEstado">Estado</label>
+        <select
+          id="filtroEstado"
+          [value]="filtroEstado()"
+          (change)="actualizarFiltroEstado($event)"
+        >
+          <option value="todos">Todos</option>
+          <option value="activos">Activos</option>
+          <option value="inactivos">Inactivos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Proveedor</th>
+            <th>NIT</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (proveedor of proveedoresFiltrados(); track proveedor.id) {
+            <tr>
+              <td>{{ proveedor.id }}</td>
+              <td>
+                <strong>{{ proveedor.nombre }}</strong>
+                @if (proveedor.correo) {
+                  <span>{{ proveedor.correo }}</span>
+                }
+                @if (proveedor.direccion) {
+                  <span>{{ proveedor.direccion }}</span>
+                }
+              </td>
+              <td>{{ proveedor.nit || '-' }}</td>
+              <td>{{ proveedor.telefono || '-' }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!proveedor.activo">
+                  {{ proveedor.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarProveedor(proveedor)">
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="proveedor.activo"
+                    [class.secondary-button]="!proveedor.activo"
+                    (click)="cambiarEstadoProveedor(proveedor)"
+                    [disabled]="procesando()"
+                  >
+                    {{ proveedor.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">No se encontraron proveedores.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="proveedorEditandoId() === null ? 'Nuevo proveedor' : 'Editar proveedor'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+<form [formGroup]="proveedorForm" (ngSubmit)="guardarProveedor()" novalidate>
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" />
+
+      @if (
+        proveedorForm.controls.nombre.invalid &&
+        proveedorForm.controls.nombre.touched
+      ) {
+        <p class="field-error">El nombre del proveedor es obligatorio.</p>
+      }
+
+      <label for="nit">NIT / Documento tributario</label>
+      <input
+        id="nit"
+        type="text"
+        formControlName="nit"
+        [attr.disabled]="proveedorEditandoId() !== null ? true : null"
+      />
+
+      @if (proveedorEditandoId() !== null) {
+        <p class="field-hint">El NIT no puede modificarse una vez registrado.</p>
+      }
+
+      <label for="telefono">Teléfono</label>
+      <input id="telefono" type="text" formControlName="telefono" />
+
+      <label for="correo">Correo electrónico</label>
+      <input id="correo" type="email" formControlName="correo" />
+
+      @if (
+        proveedorForm.controls.correo.touched &&
+        proveedorForm.controls.correo.errors?.['email']
+      ) {
+        <p class="field-error">El correo no tiene un formato válido.</p>
+      }
+
+      <label for="direccion">Dirección</label>
+      <input id="direccion" type="text" formControlName="direccion" />
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="proveedorForm.invalid || procesando()">
+          {{ proveedorEditandoId() === null ? 'Crear proveedor' : 'Guardar cambios' }}
+        </button>
+
+        @if (proveedorEditandoId() !== null) {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            Cancelar
+          </button>
+        }
+      </div>
+    </form>
+  </app-modal>
+</div>

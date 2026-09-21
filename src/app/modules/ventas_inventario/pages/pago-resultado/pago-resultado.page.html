@@ -1,0 +1,65 @@
+<section class="payment-result">
+  <p class="eyebrow">Pasarela de pago</p>
+  <h1>Resultado del pago</h1>
+  <p>Consulta el estado de tu orden registrada con Stripe.</p>
+
+  @if (cargando()) {
+    <article class="result-card">
+      <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+      <h2>Cargando orden...</h2>
+    </article>
+  } @else if (error()) {
+    <article class="result-card error">
+      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+      <h2>No se pudo consultar el pago</h2>
+      <p>{{ error() }}</p>
+      <a routerLink="/carrito">Volver al carrito</a>
+    </article>
+  } @else if (orden(); as item) {
+    <article class="result-card" [class]="estadoClase()">
+      <span class="status-pill">{{ item.estado }}</span>
+      <h2>Orden #{{ item.orden_id }}</h2>
+      <div class="info-grid">
+        <div>
+          <span>Venta</span>
+          <strong>#{{ item.venta_id }}</strong>
+        </div>
+        <div>
+          <span>Total</span>
+          <strong>{{ formatMonto(item.monto_total) }}</strong>
+        </div>
+        <div>
+          <span>Proveedor</span>
+          <strong>{{ item.proveedor }}</strong>
+        </div>
+        <div>
+          <span>Método</span>
+          <strong>{{ item.metodo }}</strong>
+        </div>
+      </div>
+
+      @if (mensaje()) {
+        <p class="success-message">{{ mensaje() }}</p>
+      }
+
+      @if (item.estado === 'PENDIENTE') {
+        <div class="test-actions">
+          <p>
+            El pago aún está pendiente de confirmación. Puedes actualizar el estado de la orden manualmente.
+          </p>
+          <button type="button" [disabled]="procesando()" (click)="confirmarPrueba(true)">
+            Marcar como pagado
+          </button>
+          <button type="button" class="secondary" [disabled]="procesando()" (click)="confirmarPrueba(false)">
+            Cancelar pago
+          </button>
+        </div>
+      }
+
+      <div class="actions">
+        <a routerLink="/catalogo">Seguir comprando</a>
+        <a routerLink="/carrito">Volver al carrito</a>
+      </div>
+    </article>
+  }
+</section>

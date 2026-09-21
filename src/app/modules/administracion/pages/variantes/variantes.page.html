@@ -1,0 +1,335 @@
+<div class="page-container fade-in">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="page-title">Gestión de Variantes y Precios</h1>
+        <p class="page-subtitle">Administra las variaciones de los productos y asigna precios vigentes y promocionales.</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="content-grid">
+    <!-- List Column -->
+    <div class="list-section">
+      <div class="card panel-card list-panel">
+        <div class="panel-header">
+          <div class="panel-header-content">
+            <h2 class="panel-title">Directorio de Variantes</h2>
+            <p class="panel-subtitle">Todas las variaciones registradas</p>
+          </div>
+          <button class="btn btn-primary btn-icon" (click)="abrirNuevaVariante()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            Nueva Variante
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" class="form-control" placeholder="Buscar por SKU, producto, talla..." (input)="actualizarBusqueda($event)" [value]="busqueda()" />
+          </div>
+          
+          <select class="form-control filter-select" (change)="actualizarFiltroEstado($event)" [value]="filtroEstado()">
+            <option value="todos">Todos los estados</option>
+            <option value="activos">Solo activos</option>
+            <option value="inactivos">Solo inactivos</option>
+          </select>
+        </div>
+
+        @if (cargando()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Cargando variantes...</p>
+        </div>
+        } @else if (variantesFiltradas().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="m4.9 4.9 14.2 14.2"></path>
+            </svg>
+          </div>
+          <p>No se encontraron variantes con los filtros actuales</p>
+        </div>
+        } @else {
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Producto / SKU</th>
+                <th>Talla</th>
+                <th>Color</th>
+                <th>Medidas RA (cm)</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (variante of variantesFiltradas(); track variante.id) {
+              <tr [class.is-editing]="variante.id === varianteEditandoId()" [class.is-inactive]="!variante.activo" (click)="seleccionarVariante(variante)">
+                <td>
+                  <div class="cell-primary">{{ variante.producto_nombre }}</div>
+                  <div class="cell-secondary">{{ variante.sku }}</div>
+                </td>
+                <td>{{ variante.talla_nombre || 'N/A' }}</td>
+                <td>{{ variante.color_nombre || 'N/A' }}</td>
+                <td>
+                  <span style="font-size: 0.85rem;">
+                    {{ variante.ancho_cm && variante.largo_cm ? variante.ancho_cm + ' x ' + variante.largo_cm + ' cm' : (variante.ancho_cm ? variante.ancho_cm + ' cm' : (variante.largo_cm ? variante.largo_cm + ' cm' : 'Talla estándar')) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [class.status-active]="variante.activo" [class.status-inactive]="!variante.activo">
+                    {{ variante.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="text-right" (click)="$event.stopPropagation()">
+                  <div class="action-buttons">
+                    <button class="btn-icon-only" title="Editar" (click)="seleccionarVariante(variante)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                      </svg>
+                    </button>
+                    <button class="btn-icon-only" [class.text-danger]="variante.activo" [class.text-success]="!variante.activo" [title]="variante.activo ? 'Desactivar' : 'Activar'" [disabled]="procesando()" (click)="cambiarEstadoVariante(variante)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        @if (variante.activo) {
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                        } @else {
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                        }
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Form Column -->
+    <app-drawer
+      [open]="formularioAbierto()"
+      [title]="varianteEditandoId() === null ? 'Nueva variante' : 'Editar variante'"
+      eyebrow="Variantes"
+      (close)="cerrarFormulario()"
+    >
+<div class="card panel-card form-panel" [class.is-editing]="varianteEditandoId() !== null">
+        <div class="panel-header">
+          <div class="panel-header-content">
+            <h2 class="panel-title">
+              {{ varianteEditandoId() === null ? 'Nueva Variante' : 'Editar Variante' }}
+            </h2>
+            <p class="panel-subtitle">
+              {{ varianteEditandoId() === null ? 'Ingresa los datos de la nueva variante' : 'Modifica los datos de la variante seleccionada' }}
+            </p>
+          </div>
+          @if (varianteEditandoId() !== null) {
+          <button class="btn-icon-only btn-close" (click)="cerrarFormulario()" title="Cancelar edicion">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          }
+        </div>
+
+        @if (mensaje()) {
+        <div class="alert alert-success">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          {{ mensaje() }}
+        </div>
+        }
+
+        @if (error()) {
+        <div class="alert alert-danger">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          {{ error() }}
+        </div>
+        }
+
+        <form [formGroup]="varianteForm" (ngSubmit)="guardarVariante()" class="form-content">
+          <div class="form-group">
+              <label class="form-label" for="producto_id">Producto <span class="required">*</span></label>
+              <select id="producto_id" class="form-control" formControlName="producto_id" (change)="onProductoChange($event)" [class.is-invalid]="varianteForm.get('producto_id')?.invalid && varianteForm.get('producto_id')?.touched">
+                  <option [ngValue]="null">Selecciona un producto</option>
+                  @for (producto of productos(); track producto.id) {
+                      <option [value]="producto.id">{{ producto.nombre }}</option>
+                  }
+              </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="sku">SKU <span class="required">*</span></label>
+            <input type="text" id="sku" class="form-control" formControlName="sku" placeholder="Ej: POL-CLA-M-BLA" [class.is-invalid]="varianteForm.get('sku')?.invalid && varianteForm.get('sku')?.touched" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="talla_id">Talla</label>
+                <select id="talla_id" class="form-control" formControlName="talla_id" (change)="onTallaChange($event)">
+                    <option [ngValue]="null">Sin talla / N/A</option>
+                    @for (talla of tallasFiltradasPorProducto(); track talla.id) {
+                        <option [value]="talla.id">
+                          {{ talla.nombre }} ({{ talla.tipo_prenda === 'INFERIOR' ? 'Inferior' : (talla.tipo_prenda === 'VESTIDO' ? 'Vestido' : 'Superior') }})
+                        </option>
+                    }
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="color_id">Color</label>
+                <select id="color_id" class="form-control" formControlName="color_id">
+                    <option [ngValue]="null">Sin color / N/A</option>
+                    @for (color of colores(); track color.id) {
+                        <option [value]="color.id">{{ color.nombre }}</option>
+                    }
+                </select>
+            </div>
+          </div>
+
+          <!-- SECCIÓN MEDIDAS REALIDAD AUMENTADA ESPECÍFICAS DE PRENDA -->
+          <div style="margin: 1rem 0; padding: 1rem; background: var(--surface-hover, #f8fafc); border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0);">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color, #6366f1);">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <h4 style="font-size: 0.9rem; font-weight: 600; margin: 0;">Medidas individuales de la prenda (RA)</h4>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary, #64748b); margin-bottom: 0.75rem;">
+              Al seleccionar una talla se cargan sus medidas base. Puedes editarlas libremente para esta prenda sin alterar la talla global.
+            </p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="ancho_cm">Ancho prenda (cm)</label>
+                <input type="number" id="ancho_cm" class="form-control" formControlName="ancho_cm" placeholder="Ej: 54.0" step="0.5" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="largo_cm">Largo prenda (cm)</label>
+                <input type="number" id="largo_cm" class="form-control" formControlName="largo_cm" placeholder="Ej: 73.0" step="0.5" />
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" (click)="cerrarFormulario()" [disabled]="procesando()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="varianteForm.invalid || procesando()">
+              @if (procesando()) {
+              <div class="spinner spinner-sm"></div>
+              Guardando...
+              } @else {
+              {{ varianteEditandoId() === null ? 'Crear Variante' : 'Guardar Cambios' }}
+              }
+            </button>
+          </div>
+        </form>
+
+        <!-- SECCIÓN PRECIOS -->
+        @if (varianteEditandoId() !== null) {
+        <div class="prices-section">
+            <div class="panel-header" style="padding: 1.5rem 0 1rem 0; border-top: 1px solid var(--border-color); margin-top: 1.5rem;">
+                <div class="panel-header-content">
+                    <h3 class="panel-title" style="font-size: 1.1rem;">Gestión de Precios</h3>
+                    <p class="panel-subtitle">Añade o visualiza el historial de precios.</p>
+                </div>
+            </div>
+            
+            <form [formGroup]="precioForm" (ngSubmit)="asignarPrecio()" class="form-content price-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="monto">Monto (Bs.) <span class="required">*</span></label>
+                        <input type="number" id="monto" class="form-control" formControlName="monto" placeholder="Ej: 150.00" step="0.01" min="0.01" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="fecha_inicio">Fecha Inicio</label>
+                        <input type="datetime-local" id="fecha_inicio" class="form-control" formControlName="fecha_inicio" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="fecha_fin">Fecha Fin</label>
+                        <input type="datetime-local" id="fecha_fin" class="form-control" formControlName="fecha_fin" />
+                    </div>
+                </div>
+                <div style="text-align: right; margin-bottom: 1.5rem;">
+                    <button type="submit" class="btn btn-secondary" [disabled]="precioForm.invalid || procesando()">
+                        Añadir Precio
+                    </button>
+                </div>
+            </form>
+            
+            @if (preciosVariante().length > 0) {
+            <div class="prices-history">
+                <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">Historial de Precios</h4>
+                <div class="table-container">
+                    <table class="data-table data-table-sm">
+                        <thead>
+                            <tr>
+                                <th>Monto</th>
+                                <th>Vigencia</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (precio of preciosVariante(); track precio.id) {
+                            <tr [class.is-inactive]="!precio.activo">
+                                <td style="font-weight: 600;">{{ precio.monto | number:'1.2-2' }} Bs.</td>
+                                <td style="font-size: 0.8rem;">
+                                    {{ precio.fecha_inicio | date:'dd/MM/yy' }} - 
+                                    {{ precio.fecha_fin ? (precio.fecha_fin | date:'dd/MM/yy') : 'Indefinido' }}
+                                </td>
+                                <td>
+                                    @if (precio.activo) {
+                                        <span class="text-success" style="font-size: 0.85rem; font-weight: 500;">Vigente</span>
+                                    } @else {
+                                        <span class="text-secondary" style="font-size: 0.85rem;">Histórico</span>
+                                    }
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            } @else {
+            <p style="font-size: 0.85rem; color: var(--text-light); text-align: center; margin-top: 1rem;">
+                No hay precios registrados para esta variante.
+            </p>
+            }
+        </div>
+        }
+      </div>
+    </app-drawer>
+  </div>
+</div>

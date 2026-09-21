@@ -1,0 +1,51 @@
+<section class="admin-page-shell">
+  <div class="admin-page-header">
+    <div>
+      <p class="admin-eyebrow">Ventas e inventario</p>
+      <h1>Inventario por sucursal</h1>
+      <p>Consulta stock disponible, reservado y real.</p>
+    </div>
+    <div class="filters-row">
+      <label>
+        Sucursal
+        <select [value]="sucursalId() ?? ''" (change)="cambiarSucursal($event)">
+          <option value="">Todas</option>
+          @for (sucursal of sucursales(); track sucursal.id) {
+            <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="check-control">
+        <input type="checkbox" [checked]="soloBajoStock()" (change)="cambiarBajoStock($event)" />
+        Bajo stock
+      </label>
+    </div>
+  </div>
+  @if (mensaje()) { <p class="feedback success">{{ mensaje() }}</p> }
+  @if (error()) { <p class="feedback error">{{ error() }}</p> }
+  <div class="admin-card table-wrap">
+    <table class="inventory-table">
+      <thead>
+        <tr>
+          <th>Sucursal</th><th>Producto</th><th>Talla/Color</th><th>Disponible</th><th>Reservado</th><th>Real</th><th>Mínimo</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of inventario(); track item.id) {
+          <tr>
+            <td>{{ item.ciudad }} - {{ item.sucursal }}</td>
+            <td>{{ item.producto }}</td>
+            <td>{{ item.talla }} / {{ item.color }}</td>
+            <td>{{ item.stock_disponible }}</td>
+            <td>{{ item.stock_reservado }}</td>
+            <td><strong>{{ item.stock_real }}</strong></td>
+            <td><input class="mini-input" type="number" min="0" [value]="item.stock_minimo" (change)="actualizarMinimo(item, $event)" /></td>
+            <td><span class="pill" [class.warn]="item.bajo_stock">{{ item.bajo_stock ? 'Bajo stock' : 'OK' }}</span></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="8">No hay inventario registrado.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

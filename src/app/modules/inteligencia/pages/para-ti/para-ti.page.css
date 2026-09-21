@@ -1,0 +1,29 @@
+:host { display: block; }
+.para-ti-header { margin-bottom: 24px; }
+.para-ti-header p { color: var(--color-accent); font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+h1 { margin: 0 0 12px; font-family: var(--font-display); font-size: clamp(2.5rem, 5vw, 4rem); }
+.para-ti-header span { color: var(--color-muted); }
+.estado { border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 28px; background: var(--color-surface); }
+.estado a { color: var(--color-primary); font-weight: 900; }
+.prendas { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; }
+.prenda { display: grid; gap: 7px; border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 14px; color: var(--color-primary); background: var(--color-surface); text-decoration: none; }
+.imagen { display: grid; height: 220px; place-items: center; overflow: hidden; border-radius: 14px; background: var(--color-accent-soft); }
+.imagen img { width: 100%; height: 100%; object-fit: cover; }
+.prenda small { color: var(--color-muted); }
+.prenda em {
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--color-primary);
+  background: var(--color-accent-soft);
+  font-size: .78rem;
+  font-style: normal;
+  font-weight: 900;
+}
+.gustos { display: grid; gap: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-card); margin-bottom: 24px; padding: 18px; background: var(--color-surface); }
+.gustos h2, .gustos p { margin: 0; }
+.gustos p { color: var(--color-muted); }
+.categorias { display: flex; gap: 8px; flex-wrap: wrap; }
+.categorias button { border: 1px solid var(--color-border); border-radius: 999px; padding: 8px 12px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; }
+.categorias button.activa { color: var(--color-surface); background: var(--color-primary); }
+.gustos label { display: flex; align-items: center; gap: 8px; }
+.guardar { justify-self: start; border: 0; border-radius: 12px; padding: 10px 16px; color: var(--color-surface); background: var(--color-primary); cursor: pointer; font-weight: 900; }

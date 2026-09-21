@@ -1,0 +1,98 @@
+<section class="admin-page-shell">
+  <div class="admin-page-header">
+    <div>
+      <p class="admin-eyebrow">Ventas e inventario</p>
+      <h1>Venta presencial</h1>
+      <p>Registra ventas en caja y descuenta stock automáticamente.</p>
+    </div>
+    <div class="filters-row">
+      <label>
+        Sucursal
+        <select [value]="filtroSucursalId() ?? ''" (change)="cambiarFiltroSucursal($event)">
+          <option value="">Todas</option>
+          @for (sucursal of sucursales(); track sucursal.id) {
+            <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+
+  @if (mensaje()) { <p class="feedback success">{{ mensaje() }}</p> }
+  @if (error()) { <p class="feedback error">{{ error() }}</p> }
+
+  <details class="admin-card form-details">
+    <summary>Registrar venta presencial</summary>
+    <div class="sale-form">
+    <label>
+      Sucursal
+      <select [value]="form().sucursal_id ?? ''" (change)="actualizarCampo('sucursal_id', $event)">
+        <option value="">Seleccionar</option>
+        @for (sucursal of sucursales(); track sucursal.id) {
+          <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Prenda
+      <select [value]="form().producto_variante_id ?? ''" (change)="actualizarCampo('producto_variante_id', $event)">
+        <option value="">Seleccionar</option>
+        @for (variante of variantes(); track variante.id) {
+          <option [value]="variante.id">{{ etiquetaVariante(variante) }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Cantidad
+      <input type="number" min="1" [value]="form().cantidad" (input)="actualizarCampo('cantidad', $event)" />
+    </label>
+    <label>
+      Descuento
+      <input type="number" min="0" step="0.01" [value]="form().descuento" (input)="actualizarCampo('descuento', $event)" />
+    </label>
+    <label>
+      Pago
+      <select [value]="form().metodo_pago" (change)="actualizarCampo('metodo_pago', $event)">
+        <option value="EFECTIVO">Efectivo</option>
+        <option value="QR">QR</option>
+        <option value="TARJETA">Tarjeta</option>
+      </select>
+    </label>
+    <label>
+      Observación
+      <input type="text" [value]="form().observacion" (input)="actualizarCampo('observacion', $event)" />
+    </label>
+    <button class="primary-action" type="button" [disabled]="guardando()" (click)="registrarVenta()">
+      {{ guardando() ? 'Guardando...' : 'Registrar venta' }}
+    </button>
+    </div>
+  </details>
+
+  <div class="admin-card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Código</th><th>Sucursal</th><th>Pago</th><th>Total</th><th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (venta of ventas(); track venta.id) {
+          <tr>
+            <td>{{ fechaCorta(venta.fecha_venta) }}</td>
+            <td><strong>{{ venta.codigo }}</strong></td>
+            <td>{{ venta.sucursal }}</td>
+            <td><span class="pill">{{ venta.metodo_pago || '-' }}</span></td>
+            <td><strong>{{ monto(venta.total) }}</strong></td>
+            <td>
+              @for (detalle of venta.detalles; track detalle.id) {
+                <div>{{ detalle.producto }} · {{ detalle.talla }} / {{ detalle.color }} x {{ detalle.cantidad }}</div>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6">No hay ventas registradas.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

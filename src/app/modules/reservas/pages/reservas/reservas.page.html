@@ -1,0 +1,46 @@
+<section class="reservas-header">
+  <p class="eyebrow">Reservas</p>
+  <h1>Mis reservas</h1>
+  <p>Consulta el estado de las prendas reservadas para recoger en sucursal.</p>
+</section>
+
+@if (cargando()) {
+  <section class="state-card">
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    <p>Cargando reservas...</p>
+  </section>
+} @else if (error()) {
+  <section class="state-card error-state">
+    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+    <p>{{ error() }}</p>
+  </section>
+} @else if (reservas().length === 0) {
+  <section class="state-card">
+    <i class="pi pi-calendar-times" aria-hidden="true"></i>
+    <p>Todavia no tienes reservas.</p>
+    <a routerLink="/catalogo">Ir al catalogo</a>
+  </section>
+} @else {
+  <section class="reservas-list">
+    @for (reserva of reservas(); track reserva.id) {
+      <article class="reserva-card">
+        <div>
+          <span class="status">{{ reserva.estado }}</span>
+          <h2>{{ reserva.codigo }}</h2>
+          <p>{{ reserva.ciudad }} - {{ reserva.sucursal }}</p>
+          @if (reserva.fecha_cita) {
+            <small>Cita: {{ reserva.fecha_cita }}</small>
+          }
+          <small>{{ formatFecha(reserva.fecha_reserva) }}</small>
+        </div>
+
+        <div class="summary">
+          <strong>{{ formatPrecio(reserva.total) }}</strong>
+          <span>Anticipo: {{ formatPrecio(reserva.monto_reserva) }}</span>
+          <span>{{ reserva.detalles.length }} item(s)</span>
+          <a [routerLink]="['/reservas', reserva.id]">Ver detalle</a>
+        </div>
+      </article>
+    }
+  </section>
+}

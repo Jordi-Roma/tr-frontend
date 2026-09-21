@@ -1,0 +1,132 @@
+:host {
+  display: block;
+}
+
+.page-header,
+.filters-card,
+.table-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.page-header {
+  padding: clamp(24px, 5vw, 42px);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: var(--color-primary);
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1;
+}
+
+.page-header p,
+.status {
+  color: var(--color-muted);
+}
+
+.filters-card {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+select,
+input,
+button {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 11px 12px;
+  color: var(--color-primary);
+  background: var(--color-surface);
+  font-weight: 900;
+}
+
+button {
+  align-self: end;
+  color: var(--color-surface);
+  background: var(--color-primary);
+  cursor: pointer;
+}
+
+.table-card {
+  margin-top: 18px;
+  overflow: hidden;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 14px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.state {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--color-accent-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+a {
+  color: var(--color-primary);
+  font-weight: 900;
+}
+
+.status {
+  margin-top: 18px;
+  border-radius: var(--radius-card);
+  padding: 16px;
+  background: var(--color-surface);
+}
+
+.status.error {
+  color: var(--color-danger);
+}
+
+@media (max-width: 760px) {
+  .filters-card {
+    grid-template-columns: 1fr;
+  }
+}

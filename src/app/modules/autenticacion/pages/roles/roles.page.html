@@ -1,0 +1,367 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-shield"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Roles y permisos</p>
+    <h2>Roles y permisos</h2>
+    <p>Administra roles del sistema y sus permisos por módulo.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando roles y permisos...</p>
+}
+
+<section class="panel" aria-labelledby="roles-title">
+  <div class="panel-header">
+    <div>
+      <p class="eyebrow">Listado</p>
+      <h3 id="roles-title">Roles del sistema</h3>
+      <p class="panel-description">
+        Los roles base ya existen. Puedes revisar o ajustar sus permisos desde
+        el botón <strong>Permisos</strong>.
+      </p>
+    </div>
+    <div class="panel-actions">
+      <span class="count-badge">{{ rolesFiltrados().length }} roles</span>
+      <button type="button" (click)="abrirNuevoRol()">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        Nuevo rol
+      </button>
+    </div>
+  </div>
+
+  <label for="busqueda">Buscar rol</label>
+  <input
+    id="busqueda"
+    type="search"
+    [value]="busqueda()"
+    (input)="actualizarBusqueda($event)"
+    placeholder="Nombre o descripcion"
+  />
+
+  <div class="table-shell">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Rol</th>
+          <th>Permisos</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (rol of rolesFiltrados(); track rol.id) {
+          <tr>
+            <td>{{ rol.id }}</td>
+            <td>
+              <strong>{{ rol.nombre }}</strong>
+              <span>{{ rol.descripcion || 'Sin descripcion' }}</span>
+            </td>
+            <td>
+              <span class="permission-count">
+                {{ rol.cantidad_permisos || 0 }} permisos
+              </span>
+            </td>
+            <td>
+              <span class="status-badge" [class.inactive]="!rol.activo">
+                {{ rol.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <div class="table-actions">
+                <button type="button" class="secondary-button" (click)="seleccionarRol(rol)">
+                  Editar
+                </button>
+                <button type="button" class="secondary-button" (click)="abrirEditorPermisos(rol)">
+                  Permisos
+                </button>
+                <button
+                  type="button"
+                  [class.danger-button]="rol.activo"
+                  [class.secondary-button]="!rol.activo"
+                  (click)="cambiarEstadoRol(rol)"
+                  [disabled]="procesando()"
+                >
+                  {{ rol.activo ? 'Desactivar' : 'Activar' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5">No se encontraron roles.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel lower-grid" aria-labelledby="permisos-title">
+  <div class="panel-header">
+    <div>
+      <p class="eyebrow">Permisos</p>
+      <h3 id="permisos-title">Permisos disponibles</h3>
+      <p class="panel-description">
+        Estos permisos representan acciones del sistema y se asignan desde cada rol.
+      </p>
+    </div>
+    <div class="panel-actions">
+      <span class="count-badge">{{ permisos().length }} permisos</span>
+      <button type="button" (click)="abrirNuevoPermiso()">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        Nuevo permiso
+      </button>
+    </div>
+  </div>
+
+  @if (permisos().length === 0) {
+    <div class="empty-state">
+      <strong>No hay permisos registrados.</strong>
+      <span>
+        Ejecuta la migración/seed de permisos base para cargar los permisos por
+        módulo.
+      </span>
+    </div>
+  } @else {
+    <div class="permission-toolbar">
+      <label for="busquedaPermiso">Buscar permiso</label>
+      <div class="permission-search-row">
+        <input
+          id="busquedaPermiso"
+          type="search"
+          [value]="busquedaPermiso()"
+          (input)="actualizarBusquedaPermiso($event)"
+          placeholder="Buscar por nombre, código, acción o módulo"
+        />
+        <span class="count-badge">
+          {{ totalPermisosCatalogo() }} visibles
+        </span>
+      </div>
+    </div>
+
+    @if (permisosCatalogoPorModulo().length === 0) {
+      <div class="empty-state">
+        <strong>No se encontraron permisos.</strong>
+        <span>Prueba con otro nombre, código o módulo.</span>
+      </div>
+    } @else {
+      <div class="permission-catalog">
+        @for (grupo of permisosCatalogoPorModulo(); track grupo.codigo) {
+          <details class="catalog-module">
+            <summary class="catalog-module-summary">
+              <div class="catalog-module-title">
+                <span class="module-avatar" aria-hidden="true">
+                  {{ grupo.label.charAt(0) }}
+                </span>
+                <div>
+                  <h4>{{ grupo.label }}</h4>
+                  <span>{{ grupo.codigo }}</span>
+                </div>
+              </div>
+
+              <div class="module-stats" aria-label="Resumen de permisos del módulo">
+                <span>{{ grupo.total }} permisos</span>
+                <span>{{ grupo.activos }} activos</span>
+                @if (grupo.inactivos > 0) {
+                  <span class="inactive-stat">{{ grupo.inactivos }} inactivos</span>
+                }
+              </div>
+
+              <span class="summary-action">Ver detalle</span>
+            </summary>
+
+            <div class="catalog-permission-list">
+              @for (permiso of grupo.permisos; track permiso.id) {
+                <article class="permission-row">
+                  <div class="permission-row-copy">
+                    <strong>{{ permiso.nombre }}</strong>
+                    <span>{{ obtenerCodigoPermiso(permiso) }}</span>
+                    @if (permiso.descripcion) {
+                      <small>{{ permiso.descripcion }}</small>
+                    }
+                  </div>
+
+                  <div class="permission-row-actions">
+                    <span class="status-badge" [class.inactive]="!permiso.activo">
+                      {{ permiso.activo ? 'Activo' : 'Inactivo' }}
+                    </span>
+                    <button
+                      type="button"
+                      class="permission-action-button"
+                      [class.danger-button]="permiso.activo"
+                      [class.secondary-button]="!permiso.activo"
+                      (click)="cambiarEstadoPermiso(permiso)"
+                      [disabled]="procesando()"
+                    >
+                      {{ permiso.activo ? 'Desactivar' : 'Activar' }}
+                    </button>
+                  </div>
+                </article>
+              }
+            </div>
+          </details>
+        }
+      </div>
+    }
+  }
+</section>
+
+<app-drawer
+  [open]="permisoEditorAbierto()"
+  [title]="tituloEditorPermisos()"
+  eyebrow="Editor de permisos"
+  (close)="cerrarEditorPermisos()"
+>
+  @if (rolPermisosEditando(); as rol) {
+    <div class="role-editor-summary">
+      <span class="role-chip">{{ rol.nombre }}</span>
+      <strong>{{ totalPermisosSeleccionados() }} de {{ permisos().length }} seleccionados</strong>
+      <p>{{ rol.descripcion || 'Rol sin descripcion.' }}</p>
+    </div>
+  }
+
+  @if (cargandoPermisosRol()) {
+    <p class="status-message">Cargando permisos del rol...</p>
+  }
+
+  @if (permisos().length === 0) {
+    <div class="empty-state">
+      <strong>No hay permisos para asignar.</strong>
+      <span>Primero carga los permisos base del sistema.</span>
+    </div>
+  } @else {
+    <div class="permission-groups">
+      @for (grupo of permisosPorModulo(); track grupo.codigo) {
+        <section class="permission-group">
+          <header class="permission-group-header">
+            <div>
+              <h4>{{ grupo.label }}</h4>
+              <span>{{ grupo.seleccionados }} / {{ grupo.total }} seleccionados</span>
+            </div>
+            <label class="select-all">
+              <input
+                type="checkbox"
+                [checked]="moduloCompleto(grupo)"
+                (change)="alternarModulo(grupo, $event)"
+              />
+              Seleccionar todos
+            </label>
+          </header>
+
+          <div class="permission-card-grid">
+            @for (permiso of grupo.permisos; track permiso.id) {
+              <label class="permission-card">
+                <input
+                  type="checkbox"
+                  [checked]="permisoEstaSeleccionado(permiso.id)"
+                  (change)="alternarPermiso(permiso.id, $event)"
+                />
+                <span>
+                  <strong>{{ permiso.nombre }}</strong>
+                  <small>{{ obtenerCodigoPermiso(permiso) }}</small>
+                </span>
+              </label>
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    <div class="drawer-actions">
+      <button
+        type="button"
+        (click)="guardarPermisosRol()"
+        [disabled]="procesando() || cargandoPermisosRol()"
+      >
+        <i class="pi pi-save" aria-hidden="true"></i>
+        Guardar permisos
+      </button>
+      <button type="button" class="secondary-button" (click)="cerrarEditorPermisos()">
+        Cerrar editor
+      </button>
+    </div>
+  }
+</app-drawer>
+
+<app-modal
+  [open]="rolFormAbierto()"
+  [title]="rolEditandoId() === null ? 'Crear rol' : 'Editar rol'"
+  eyebrow="Formulario"
+  (close)="cerrarRolForm()"
+>
+  <form [formGroup]="rolForm" (ngSubmit)="guardarRol()" novalidate>
+    <label for="nombreRol">Nombre</label>
+    <input id="nombreRol" type="text" formControlName="nombre" />
+
+    @if (rolForm.controls.nombre.touched && rolForm.controls.nombre.errors?.['required']) {
+      <p class="field-error">El nombre del rol es obligatorio.</p>
+    }
+
+    @if (rolForm.controls.nombre.touched && rolForm.controls.nombre.errors?.['minlength']) {
+      <p class="field-error">El nombre debe tener minimo 3 caracteres.</p>
+    }
+
+    <label for="descripcionRol">Descripcion</label>
+    <input id="descripcionRol" type="text" formControlName="descripcion" />
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="rolForm.invalid || procesando()">
+        {{ rolEditandoId() === null ? 'Crear rol' : 'Guardar rol' }}
+      </button>
+
+      <button type="button" class="secondary-button" (click)="cerrarRolForm()">
+        Cancelar
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal
+  [open]="permisoFormAbierto()"
+  title="Crear permiso"
+  eyebrow="Catálogo de permisos"
+  (close)="cerrarPermisoForm()"
+>
+  <form [formGroup]="permisoForm" (ngSubmit)="crearPermiso()" novalidate>
+    <div class="permission-grid">
+      <div class="field">
+        <label for="nombrePermiso">Nombre visible</label>
+        <input id="nombrePermiso" type="text" formControlName="nombre" placeholder="Ver productos" />
+      </div>
+
+      <div class="field">
+        <label for="moduloPermiso">Módulo</label>
+        <input id="moduloPermiso" type="text" formControlName="modulo" placeholder="CATALOGO" />
+      </div>
+
+      <div class="field">
+        <label for="accionPermiso">Código / acción</label>
+        <input id="accionPermiso" type="text" formControlName="accion" placeholder="productos:ver" />
+      </div>
+    </div>
+
+    <label for="descripcionPermiso">Descripción</label>
+    <input id="descripcionPermiso" type="text" formControlName="descripcion" />
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="permisoForm.invalid || procesando()">
+        Crear permiso
+      </button>
+      <button type="button" class="secondary-button" (click)="cerrarPermisoForm()">
+        Cancelar
+      </button>
+    </div>
+  </form>
+</app-modal>

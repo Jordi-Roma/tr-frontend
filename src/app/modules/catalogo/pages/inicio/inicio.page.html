@@ -1,0 +1,168 @@
+@if (esAdmin()) {
+  <section class="admin-dashboard" aria-labelledby="admin-title">
+    <p class="eyebrow">Panel administrativo</p>
+    <h2 id="admin-title">Hola, {{ usuario()?.nombre }}</h2>
+    <p class="summary">
+      Gestiona productos, catalogos, usuarios y operaciones desde el menu lateral.
+      La tienda para clientes mantiene una navegacion horizontal tipo ecommerce.
+    </p>
+
+    <div class="admin-grid">
+      <a routerLink="/productos" class="admin-card">
+        <i class="pi pi-shopping-bag" aria-hidden="true"></i>
+        <span>Productos</span>
+        <p>Administra prendas, materiales, marcas y colecciones.</p>
+      </a>
+
+      <a routerLink="/categorias" class="admin-card">
+        <i class="pi pi-tags" aria-hidden="true"></i>
+        <span>Categorias</span>
+        <p>Organiza poleras, oversize, camisas y lineas de venta.</p>
+      </a>
+
+      <a routerLink="/usuarios" class="admin-card">
+        <i class="pi pi-users" aria-hidden="true"></i>
+        <span>Usuarios</span>
+        <p>Controla cuentas, roles y accesos administrativos.</p>
+      </a>
+    </div>
+  </section>
+} @else {
+  <section class="store-hero" aria-labelledby="store-title">
+    <div class="hero-copy">
+      <p class="eyebrow">StyleAR / Moda urbana</p>
+      <h1 id="store-title">Mas que ropa, es tu estilo.</h1>
+      <p>
+        Basicos, oversize y camisas juveniles para armar outfits limpios,
+        comodos y faciles de combinar.
+      </p>
+
+      <div class="hero-actions">
+        <a routerLink="/catalogo" class="primary-action">Ver catalogo</a>
+        <a routerLink="/perfil" class="secondary-action">Mi perfil</a>
+      </div>
+    </div>
+
+    <div class="hero-panel" aria-label="Resumen del catalogo">
+      <span class="panel-kicker">Catalogo actualizado</span>
+      <strong>Prendas reales, stock real.</strong>
+      <p>
+        Explora el catalogo completo para filtrar por categorias, tallas,
+        colores, precios y disponibilidad.
+      </p>
+      <a routerLink="/catalogo" class="panel-action">Explorar catalogo</a>
+    </div>
+  </section>
+
+  <section class="catalog-section" aria-labelledby="catalog-title">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Catalogo</p>
+        <h2 id="catalog-title">Prendas destacadas</h2>
+      </div>
+      <a routerLink="/catalogo">Ver todo</a>
+    </div>
+
+    @if (cargandoDestacados()) {
+      <div class="catalog-state" aria-live="polite">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        <p>Cargando prendas destacadas...</p>
+      </div>
+    } @else if (errorDestacados()) {
+      <div class="catalog-state error-state" aria-live="polite">
+        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        <p>{{ errorDestacados() }}</p>
+      </div>
+    } @else if (productosDestacados().length === 0) {
+      <div class="catalog-state" aria-live="polite">
+        <i class="pi pi-inbox" aria-hidden="true"></i>
+        <p>No hay prendas destacadas todavía. Agrega productos disponibles desde administración.</p>
+      </div>
+    } @else {
+      <div class="product-grid">
+      @for (item of productosDestacados(); track item.producto_id) {
+        <article class="product-card">
+          <a
+            class="product-visual"
+            [routerLink]="['/producto', item.producto_id]"
+            aria-label="Ver detalle de {{ item.nombre }}"
+          >
+            @if (item.imagen_principal) {
+              <img [src]="item.imagen_principal" [alt]="item.nombre" />
+            } @else {
+              <span>{{ inicialesCategoria(item) }}</span>
+            }
+          </a>
+
+          <div class="product-header">
+            <span class="product-tag">{{ etiquetaProducto(item) }}</span>
+            <button
+              type="button"
+              [class.is-favorite]="esFavorito(item.producto_id)"
+              (click)="alternarFavorito(item)"
+              aria-label="Alternar favorito"
+            >
+              <i class="pi pi-heart" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <h3>
+            <a [routerLink]="['/producto', item.producto_id]">{{ item.nombre }}</a>
+          </h3>
+          <p>{{ item.descripcion || 'Prenda disponible en el catalogo StyleAR.' }}</p>
+
+          <div class="product-meta">
+            <strong>{{ formatPrecio(item.precio_final ?? item.precio_vigente) }}</strong>
+            <span>{{ item.stock_total }} en stock</span>
+          </div>
+
+          <div class="size-list" aria-label="Tallas disponibles">
+            @if (item.tallas.length === 0) {
+              <span>Talla por definir</span>
+            } @else {
+              @for (talla of item.tallas; track talla.id) {
+                <span>{{ talla.nombre }}</span>
+              }
+            }
+          </div>
+
+          <div class="color-list" aria-label="Colores disponibles">
+            @if (item.colores.length === 0) {
+              <span class="color-name">Color por definir</span>
+            } @else {
+              @for (color of item.colores; track color.id) {
+                <span
+                  [class.color-name]="!color.hex"
+                  [style.background]="color.hex || 'transparent'"
+                  [title]="color.nombre"
+                >
+                  @if (!color.hex) {
+                    {{ color.nombre }}
+                  }
+                </span>
+              }
+            }
+          </div>
+
+          <button type="button" class="cart-button" (click)="agregarAlCarrito(item)">
+            <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+            Elegir variante
+          </button>
+        </article>
+      }
+      </div>
+    }
+  </section>
+
+  <section class="benefit-grid" aria-label="Beneficios de compra">
+    @for (benefit of benefits; track benefit.title) {
+      <article>
+        <i [class]="benefit.icon" aria-hidden="true"></i>
+        <div>
+          <h3>{{ benefit.title }}</h3>
+          <p>{{ benefit.detail }}</p>
+        </div>
+      </article>
+    }
+  </section>
+}

@@ -1,0 +1,73 @@
+<main class="reportes-page">
+  <header class="page-header">
+    <p class="eyebrow">CU21 · análisis comercial</p>
+    <h1>Reportes</h1>
+    <p>Consulta la actividad real de StyleAR por voz o con filtros, y descarga el resultado.</p>
+  </header>
+
+  <section class="consulta-card" aria-labelledby="consulta-titulo">
+    <div class="section-heading">
+      <div><p class="eyebrow">Consulta</p><h2 id="consulta-titulo">¿Qué necesitas revisar?</h2></div>
+      <div class="mode-switch" role="group" aria-label="Forma de consultar">
+        <button type="button" [class.active]="modo() === 'filtros'" [attr.aria-pressed]="modo() === 'filtros'" (click)="cambiarModo('filtros')"><i class="pi pi-filter" aria-hidden="true"></i> Por filtros</button>
+        <button type="button" [class.active]="modo() === 'voz'" [attr.aria-pressed]="modo() === 'voz'" (click)="cambiarModo('voz')"><i class="pi pi-microphone" aria-hidden="true"></i> Por voz</button>
+      </div>
+    </div>
+
+    @if (modo() === 'voz') {
+      <div class="voice-panel">
+        <div class="voice-heading">
+          <button type="button" class="mic-button" [class.listening]="escuchando()" [attr.aria-label]="escuchando() ? 'Detener dictado' : 'Iniciar dictado'" [disabled]="!soportaVoz()" (click)="dictar()"><i [class]="escuchando() ? 'pi pi-stop' : 'pi pi-microphone'" aria-hidden="true"></i></button>
+          <div><strong>{{ escuchando() ? 'Escuchando…' : 'Dicta tu consulta' }}</strong><p>Ejemplo: «Ventas de este mes en todas las sucursales».</p></div>
+        </div>
+        @if (!soportaVoz()) { <p class="help">El dictado no está disponible en este navegador. Puedes escribir la consulta o usar los filtros.</p> }
+        <label for="texto-voz">Texto reconocido o escrito</label>
+        <textarea id="texto-voz" rows="3" [value]="textoVoz()" (input)="actualizarTexto($event)" placeholder="Ejemplo: Inventario bajo stock en Sucursal Centro"></textarea>
+        <button type="button" class="secondary-button" [disabled]="cargando()" (click)="interpretar()">Interpretar consulta</button>
+      </div>
+    }
+
+    @if (modo() === 'filtros' || interpretado()) {
+      <div class="filters-grid">
+        <div class="field">
+          <label for="reporte-tipo">Tipo de reporte</label>
+          @if (modo() === 'voz' && interpretado()) {
+            <input id="reporte-tipo" type="text" [value]="nombreTipo(filtros().tipo)" readonly />
+          } @else {
+            <select id="reporte-tipo" [value]="filtros().tipo" (change)="actualizarFiltro('tipo', $event)">
+              @for (tipo of tiposCatalogo(); track tipo.id) { <option [value]="tipo.id">{{ tipo.nombre }}</option> }
+            </select>
+          }
+        </div>
+        <div class="field"><label for="reporte-desde">Desde</label><input id="reporte-desde" type="date" [value]="filtros().fecha_desde" (change)="actualizarFiltro('fecha_desde', $event)" /></div>
+        <div class="field"><label for="reporte-hasta">Hasta</label><input id="reporte-hasta" type="date" [value]="filtros().fecha_hasta" (change)="actualizarFiltro('fecha_hasta', $event)" /></div>
+        <div class="field"><label for="reporte-sucursal">Sucursal</label><select id="reporte-sucursal" [value]="filtros().sucursal_id ?? ''" (change)="actualizarFiltro('sucursal_id', $event)"><option value="">Todas</option>@for (sucursal of catalogo()?.sucursales ?? []; track sucursal.id) { <option [value]="sucursal.id">{{ sucursal.ciudad }} · {{ sucursal.nombre }}</option> }</select></div>
+        <div class="field"><label for="reporte-agrupacion">Agrupar por</label><select id="reporte-agrupacion" [value]="filtros().agrupacion" (change)="actualizarFiltro('agrupacion', $event)"><option value="DIA">Día</option><option value="MES">Mes</option></select></div>
+        @if (['VENTAS', 'RESERVAS', 'MOVIMIENTOS', 'TRANSFERENCIAS', 'PAGOS', 'DELIVERIES'].includes(filtros().tipo)) { <div class="field"><label for="reporte-estado">Estado / tipo movimiento</label><input id="reporte-estado" type="text" [value]="filtros().estado ?? ''" (input)="actualizarFiltro('estado', $event)" placeholder="Ej. COMPLETADA, PAGADO, ENTREGADO" /></div> }
+        @if (['VENTAS', 'PRODUCTOS_MAS_VENDIDOS', 'PAGOS'].includes(filtros().tipo)) { <div class="field"><label for="reporte-entrega">Tipo de entrega</label><select id="reporte-entrega" [value]="filtros().tipo_entrega ?? ''" (change)="actualizarFiltro('tipo_entrega', $event)"><option value="">Todas</option><option value="RECOJO_SUCURSAL">Recojo en sucursal</option><option value="DELIVERY">Delivery</option></select></div> }
+        @if (filtros().tipo === 'PAGOS') { <div class="field"><label for="reporte-metodo">Método de pago</label><select id="reporte-metodo" [value]="filtros().metodo_pago ?? ''" (change)="actualizarFiltro('metodo_pago', $event)"><option value="">Todos</option><option value="TARJETA">Tarjeta</option></select></div><div class="field"><label for="reporte-proveedor">Proveedor</label><select id="reporte-proveedor" [value]="filtros().proveedor_pago ?? ''" (change)="actualizarFiltro('proveedor_pago', $event)"><option value="">Todos</option><option value="STRIPE">Stripe</option></select></div> }
+        @if (filtros().tipo === 'USUARIOS') { <div class="field"><label for="reporte-rol">Rol</label><select id="reporte-rol" [value]="filtros().rol ?? ''" (change)="actualizarFiltro('rol', $event)"><option value="">Todos</option><option value="CLIENTE">Cliente</option><option value="ADMINISTRADOR">Administrador</option><option value="ENCARGADO_SUCURSAL">Encargado de sucursal</option></select></div><div class="field"><label for="reporte-activo">Estado de cuenta</label><select id="reporte-activo" [value]="filtros().activo ?? ''" (change)="actualizarFiltro('activo', $event)"><option value="">Todos</option><option value="true">Activos</option><option value="false">Inactivos</option></select></div> }
+        @if (filtros().tipo === 'INVENTARIO') { <div class="field checkbox-field"><label for="reporte-bajo-stock"><input id="reporte-bajo-stock" type="checkbox" [checked]="filtros().solo_bajo_stock" (change)="cambiarBajoStock($event)" /> Solo bajo stock</label></div> }
+      </div>
+    }
+    @if (aviso()) { <p class="notice" role="status">{{ aviso() }}</p> }
+    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    <div class="actions"><button type="button" class="primary-button" [disabled]="cargando() || !catalogo() || (modo() === 'voz' && !interpretado())" (click)="generar()"><i class="pi pi-chart-bar" aria-hidden="true"></i> {{ cargando() ? 'Procesando…' : 'Generar reporte' }}</button></div>
+  </section>
+
+  @if (resultado(); as reporte) {
+    <section class="result-card" aria-labelledby="resultado-titulo">
+      <div class="section-heading result-heading"><div><p class="eyebrow">Resultado</p><h2 id="resultado-titulo">{{ reporte.titulo }}</h2><p>{{ reporte.filtros_efectivos.fecha_desde }} al {{ reporte.filtros_efectivos.fecha_hasta }} · {{ reporte.filtros_efectivos.sucursal }} · {{ reporte.total_filas }} registros</p></div>
+        <div class="download-actions"><button type="button" [disabled]="descargando()" (click)="descargar('pdf')"><i class="pi pi-file-pdf" aria-hidden="true"></i> Descargar PDF</button><button type="button" [disabled]="descargando()" (click)="descargar('excel')"><i class="pi pi-file-excel" aria-hidden="true"></i> Descargar Excel</button></div>
+      </div>
+      <div class="metrics">@for (indicador of reporte.indicadores; track indicador.label) { <article><span>{{ indicador.label }}</span><strong>{{ indicador.valor }}</strong></article> }</div>
+      @if (reporte.nota) { <p class="notice">{{ reporte.nota }}</p> }
+      @if (reporte.sin_datos) { <p class="empty-state">No hay datos para los filtros seleccionados.</p> }
+      @else {
+        <div class="chart-box"><canvas #chartCanvas role="img" [attr.aria-label]="'Gráfico de ' + reporte.titulo"></canvas></div>
+        <div class="table-wrap"><table><caption>Datos de {{ reporte.titulo }}</caption><thead><tr>@for (columna of reporte.columnas; track columna.key) { <th scope="col">{{ columna.label }}</th> }</tr></thead><tbody>@for (fila of filasPagina(); track $index) { <tr>@for (columna of reporte.columnas; track columna.key) { <td>{{ fila[columna.key] }}</td> }</tr> }</tbody></table></div>
+        @if (totalPaginas() > 1) { <nav class="pagination" aria-label="Páginas del reporte"><button type="button" [disabled]="pagina() === 1" (click)="cambiarPagina(-1)">Anterior</button><span>Página {{ pagina() }} de {{ totalPaginas() }}</span><button type="button" [disabled]="pagina() === totalPaginas()" (click)="cambiarPagina(1)">Siguiente</button></nav> }
+      }
+    </section>
+  }
+</main>

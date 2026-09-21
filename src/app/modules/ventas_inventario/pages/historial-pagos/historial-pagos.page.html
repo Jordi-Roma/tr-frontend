@@ -1,0 +1,104 @@
+<section class="admin-page-shell">
+  <div class="admin-page-header">
+    <div>
+      <p class="admin-eyebrow">Pagos</p>
+      <h1>{{ vistaCliente() ? 'Mis pagos' : 'Historial de pagos' }}</h1>
+      <p>
+        {{
+          vistaCliente()
+            ? 'Consulta el estado de tus pagos registrados.'
+            : 'Consulta pagos registrados por cliente, estado y fecha.'
+        }}
+      </p>
+    </div>
+    <div class="filters-row">
+      <label>
+        Estado
+        <select [value]="estado()" (change)="actualizarEstado($event)">
+          <option value="">Todos</option>
+          <option value="PENDIENTE">Pendiente</option>
+          <option value="PAGADO">Pagado</option>
+          <option value="RECHAZADO">Rechazado</option>
+          <option value="EXPIRADO">Expirado</option>
+          <option value="CANCELADO">Cancelado</option>
+        </select>
+      </label>
+      <label>
+        Desde
+        <input type="date" [value]="fechaDesde()" (input)="actualizarFechaDesde($event)" />
+      </label>
+      <label>
+        Hasta
+        <input type="date" [value]="fechaHasta()" (input)="actualizarFechaHasta($event)" />
+      </label>
+      @if (!vistaCliente()) {
+        <label>
+          Cliente
+          <input type="search" placeholder="Nombre o correo" [value]="cliente()" (input)="actualizarCliente($event)" />
+        </label>
+        <label>
+          Sucursal ID
+          <input type="number" min="1" placeholder="Todas" [value]="sucursalId()" (input)="actualizarSucursal($event)" />
+        </label>
+      }
+      <button type="button" class="primary-action" (click)="aplicarFiltros()">Filtrar</button>
+      <button type="button" class="secondary-action" (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="feedback error">{{ error() }}</p>
+  }
+
+  <div class="admin-card table-wrap">
+    @if (cargando()) {
+      <p class="status-message">Cargando pagos...</p>
+    } @else {
+      <table class="payments-table">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Venta</th>
+            @if (!vistaCliente()) {
+              <th>Cliente</th>
+              <th>Sucursal</th>
+            }
+            <th>Monto</th>
+            <th>Método</th>
+            <th>Proveedor</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (pago of pagos(); track pago.orden_id) {
+            <tr>
+              <td>#{{ pago.orden_id }}</td>
+              <td>{{ pago.venta_codigo || ('#' + pago.venta_id) }}</td>
+              @if (!vistaCliente()) {
+                <td>
+                  <strong>{{ pago.cliente_nombre || 'Cliente' }}</strong>
+                  <small>{{ pago.cliente_correo || '-' }}</small>
+                </td>
+                <td>{{ pago.sucursal_nombre || '-' }}</td>
+              }
+              <td><strong>{{ formatMonto(pago.monto_total) }}</strong></td>
+              <td>{{ pago.metodo }}</td>
+              <td>{{ pago.proveedor }}</td>
+              <td><span class="status-pill {{ estadoClase(pago.estado) }}">{{ pago.estado }}</span></td>
+              <td>{{ formatFecha(pago.fecha_pago || pago.fecha_creacion) }}</td>
+              <td><a class="table-link" [routerLink]="detalleLink(pago)">Ver detalle</a></td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="vistaCliente() ? 8 : 10">
+                {{ vistaCliente() ? 'Aún no tienes pagos registrados.' : 'No hay pagos registrados con esos filtros.' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</section>

@@ -1,0 +1,476 @@
+:host {
+  display: block;
+}
+
+.cart-header,
+.empty-card,
+.cart-item,
+.summary-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.cart-header {
+  padding: clamp(24px, 5vw, 42px);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: var(--color-primary);
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1;
+}
+
+.cart-header p,
+.empty-card p,
+.item-info p {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.cart-layout {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(420px, 480px);
+  align-items: start;
+  gap: 24px;
+  margin-top: 22px;
+}
+
+.cart-list {
+  display: grid;
+  align-content: start;
+  align-self: start;
+  gap: 12px;
+}
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+}
+
+.item-visual {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  border-radius: var(--radius-card);
+  color: var(--color-surface);
+  background: var(--color-primary);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.item-info h2 {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 1rem;
+}
+
+.item-info p {
+  margin: 4px 0;
+}
+
+.item-info small {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-muted);
+  font-weight: 800;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quantity-control button,
+.remove-button {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-primary);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.quantity-control button:disabled,
+.remove-button:disabled,
+.primary-button:disabled,
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.line-total {
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.remove-button {
+  color: var(--color-danger);
+}
+
+.summary-card {
+  position: sticky;
+  top: 98px;
+  align-self: start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding: 20px;
+  overflow-x: hidden;
+}
+
+.summary-card h2 {
+  margin: 0 0 16px;
+}
+
+.summary-card div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+}
+
+.summary-card strong {
+  color: var(--color-primary);
+}
+
+.branch-control {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.branch-control select,
+.branch-control input,
+.delivery-card input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 11px 12px;
+  color: var(--color-primary);
+  background: var(--color-surface);
+  font-weight: 900;
+}
+
+.reservation-fee {
+  display: grid !important;
+  gap: 4px !important;
+  margin-top: 12px;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-card);
+  padding: 12px !important;
+  color: var(--color-muted) !important;
+  background: var(--color-accent-soft);
+}
+
+.reservation-fee strong {
+  color: var(--color-primary);
+  font-size: 1.1rem;
+}
+
+.reservation-fee small {
+  color: var(--color-muted);
+  line-height: 1.35;
+}
+
+.delivery-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 16px 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.delivery-mode legend {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.delivery-mode button {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 10px;
+  color: var(--color-primary);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.delivery-mode button.active {
+  color: var(--color-surface);
+  background: var(--color-primary);
+}
+
+.delivery-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 12px;
+  background: var(--color-background);
+}
+
+.delivery-card label {
+  display: grid;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.coords-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.delivery-map-shell {
+  position: relative;
+}
+
+.delivery-map {
+  box-sizing: border-box;
+  width: 100%;
+  height: 280px;
+  min-height: 210px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.delivery-map-legend {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 410;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 24px);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 10px 20px rgb(17 17 17 / 12%);
+  color: var(--color-primary);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.delivery-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-dot.branch {
+  background: var(--color-accent);
+}
+
+.legend-dot.client {
+  background: var(--color-primary);
+}
+
+:host ::ng-deep .delivery-map-marker {
+  display: grid;
+  place-items: center;
+}
+
+:host ::ng-deep .delivery-map-marker span {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--color-surface);
+  border-radius: 50% 50% 50% 0;
+  background: var(--color-primary);
+  box-shadow: 0 8px 18px rgb(0 0 0 / 25%);
+  transform: rotate(-45deg);
+}
+
+:host ::ng-deep .delivery-map-marker-branch span {
+  background: var(--color-accent);
+}
+
+:host ::ng-deep .delivery-map-marker-client span {
+  background: var(--color-primary);
+}
+
+:host ::ng-deep .delivery-map-marker span::after {
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin: 5px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  content: "";
+}
+
+.delivery-card small {
+  color: var(--color-muted);
+  line-height: 1.4;
+}
+
+.delivery-quote {
+  display: grid !important;
+  gap: 4px !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-card);
+  padding: 10px !important;
+  color: var(--color-primary) !important;
+  background: var(--color-accent-soft);
+  font-size: 0.86rem;
+}
+
+.delivery-quote.invalid {
+  color: var(--color-danger) !important;
+  background: #fff3f0;
+}
+
+@media (max-width: 1180px) {
+  .cart-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .summary-card {
+    position: static;
+    max-height: none;
+  }
+}
+
+.success-message {
+  border-radius: var(--radius-card);
+  padding: 10px 12px;
+  color: var(--color-primary);
+  background: var(--color-accent-soft);
+  font-weight: 900;
+}
+
+.stock-warning {
+  margin: 10px 0 0;
+  border: 1px solid #f0d2a8;
+  border-radius: var(--radius-card);
+  padding: 10px 12px;
+  color: #8a5b12;
+  background: #fff7e8;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.primary-button,
+.secondary-button,
+.empty-card a {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 14px;
+  border-radius: var(--radius-card);
+  padding: 13px 16px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.primary-button {
+  gap: 8px;
+  border: 0;
+  color: var(--color-surface);
+  background: var(--color-primary);
+  cursor: pointer;
+}
+
+.secondary-button,
+.empty-card a {
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.empty-card {
+  display: grid;
+  justify-items: center;
+  margin-top: 22px;
+  padding: 44px 24px;
+  text-align: center;
+}
+
+.empty-card i {
+  color: var(--color-accent);
+  font-size: 2.2rem;
+}
+
+.error-card i {
+  color: var(--color-danger);
+}
+
+@media (max-width: 900px) {
+  .cart-layout,
+  .cart-item {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .cart-item {
+    justify-items: stretch;
+    gap: 12px;
+  }
+
+  .item-visual {
+    width: 58px;
+    height: 58px;
+  }
+
+  .quantity-control {
+    justify-content: space-between;
+  }
+
+  .line-total {
+    white-space: normal;
+  }
+}

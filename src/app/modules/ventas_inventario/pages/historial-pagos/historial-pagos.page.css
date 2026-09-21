@@ -1,0 +1,110 @@
+.filters-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.filters-row label {
+  display: grid;
+  gap: 6px;
+  color: var(--color-muted);
+  font-weight: 900;
+}
+
+.filters-row select,
+.filters-row input {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 9px 10px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.primary-action,
+.secondary-action {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.primary-action {
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.secondary-action {
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.feedback {
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-weight: 900;
+}
+
+.error {
+  background: rgba(178, 74, 61, 0.1);
+  color: var(--color-danger);
+}
+
+.payments-table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+td small {
+  display: block;
+  color: var(--color-muted);
+  margin-top: 4px;
+}
+
+.status-pill {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-weight: 900;
+  background: var(--color-accent-soft);
+}
+
+.status-pill.pagado {
+  background: rgba(68, 133, 82, 0.14);
+  color: #2f6f3e;
+}
+
+.status-pill.pendiente {
+  background: rgba(219, 157, 48, 0.16);
+  color: #9a6814;
+}
+
+.status-pill.rechazado {
+  background: rgba(178, 74, 61, 0.12);
+  color: var(--color-danger);
+}
+
+.table-link {
+  font-weight: 900;
+  color: var(--color-primary);
+}

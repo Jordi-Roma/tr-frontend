@@ -1,0 +1,123 @@
+<button
+  type="button"
+  class="chat-fab"
+  [class.chat-fab-open]="abierto()"
+  aria-label="Abrir asistente virtual"
+  (click)="alternar()"
+>
+  <i class="pi" [class.pi-comments]="!abierto()" [class.pi-times]="abierto()" aria-hidden="true"></i>
+</button>
+
+@if (abierto()) {
+  <section class="chat-panel" aria-label="Asistente virtual StyleAR">
+    <header class="chat-header">
+      <div>
+        <p>Asistente StyleAR</p>
+        <span>Catálogo, stock y ayuda del sistema</span>
+      </div>
+      <button type="button" aria-label="Cerrar chat" (click)="alternar()">
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div class="quick-actions" aria-label="Preguntas rápidas">
+      <button type="button" (click)="usarPreguntaRapida('¿Hay poleras azul marino talla M?')">
+        Poleras azul M
+      </button>
+      <button type="button" (click)="usarPreguntaRapida('¿Cómo hago una reserva?')">
+        Cómo reservar
+      </button>
+      <button type="button" (click)="usarPreguntaRapida('¿Cómo funciona el delivery?')">
+        Delivery
+      </button>
+      <button type="button" (click)="usarPreguntaRapida('¿Cómo pago con Stripe?')">
+        Pagos
+      </button>
+      <button type="button" (click)="usarPreguntaRapida('¿Cómo uso el carrito?')">
+        Carrito
+      </button>
+      <button type="button" (click)="usarPreguntaRapida('¿Dónde veo mis pagos?')">
+        Mis pagos
+      </button>
+      <button type="button" (click)="usarPreguntaRapida('¿Qué sucursales tienen atención?')">
+        Sucursales
+      </button>
+    </div>
+
+    <div class="chat-messages">
+      @for (mensaje of mensajes(); track $index) {
+        <article class="message" [class.message-user]="mensaje.autor === 'usuario'">
+          <p>{{ mensaje.texto }}</p>
+
+          @if (mensaje.productos?.length) {
+            <div class="product-results">
+              @for (producto of mensaje.productos; track producto.producto_id + '-' + $index) {
+                <a [routerLink]="['/producto', producto.producto_id]">
+                  <strong>{{ producto.nombre }}</strong>
+                  <span>
+                    {{ producto.talla || 'Talla' }} / {{ producto.color || 'Color' }}
+                    @if (producto.sucursal) {
+                      · {{ producto.sucursal }}
+                    }
+                  </span>
+                  @if (producto.stock_real !== null && producto.stock_real !== undefined) {
+                    <small>{{ producto.stock_real }} disponible(s)</small>
+                  }
+                </a>
+              }
+            </div>
+          }
+
+          @if (mensaje.alternativas?.length) {
+            <div class="alternatives-label">Alternativas disponibles</div>
+            <div class="product-results">
+              @for (producto of mensaje.alternativas; track producto.producto_id + '-' + producto.talla + '-' + producto.color + '-' + $index) {
+                <a [routerLink]="['/producto', producto.producto_id]">
+                  <strong>{{ producto.nombre }}</strong>
+                  <span>
+                    {{ producto.talla || 'Talla' }} / {{ producto.color || 'Color' }}
+                    @if (producto.sucursal) {
+                      · {{ producto.sucursal }}
+                    }
+                  </span>
+                  @if (producto.stock_real !== null && producto.stock_real !== undefined) {
+                    <small>{{ producto.stock_real }} disponible(s)</small>
+                  }
+                </a>
+              }
+            </div>
+          }
+
+          @if (mensaje.acciones?.length) {
+            <div class="chat-actions">
+              @for (accion of mensaje.acciones; track accion.tipo + '-' + $index) {
+                @if (accion.url) {
+                  <a [routerLink]="accion.url">{{ accion.label }}</a>
+                }
+              }
+            </div>
+          }
+        </article>
+      }
+
+      @if (cargando()) {
+        <article class="message">
+          <p>Estoy revisando el catálogo...</p>
+        </article>
+      }
+    </div>
+
+    <footer class="chat-input">
+      <input
+        type="text"
+        [value]="texto()"
+        placeholder="Pregúntame por prendas o procesos"
+        (input)="actualizarTexto($event)"
+        (keydown)="enviarConEnter($event)"
+      />
+      <button type="button" [disabled]="!puedeEnviar()" (click)="enviar()">
+        <i class="pi pi-send" aria-hidden="true"></i>
+      </button>
+    </footer>
+  </section>
+}

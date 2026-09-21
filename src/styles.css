@@ -1,0 +1,336 @@
+@import "primeicons/primeicons.css";
+@import "primeflex/primeflex.css";
+@import "leaflet/dist/leaflet.css";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800;900&display=swap");
+
+:root {
+  --font-ui: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --color-bg: #f5f5f2;
+  --color-surface: #ffffff;
+  --color-text: #151515;
+  --color-muted: #717171;
+  --color-primary: #111111;
+  --color-primary-hover: #2a2a2a;
+  --color-accent: #7c8f5a;
+  --color-accent-soft: #dde5cf;
+  --color-border: #e1e1dc;
+  --color-danger: #d94a38;
+  --color-success: #3d8b5b;
+  --shadow-soft: 0 18px 45px rgb(21 21 21 / 8%);
+  --radius-card: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--font-ui);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-ui);
+}
+
+h1,
+.page-title,
+.page-heading h2,
+.hero-title,
+.shop-brand,
+.brand-logo {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
+}
+
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a,
+button,
+input,
+select,
+textarea,
+label,
+table {
+  font-family: var(--font-ui);
+}
+
+.page-heading h2,
+h1.page-title,
+.hero-title,
+.shop-brand {
+  font-family: var(--font-display);
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  color: var(--color-surface);
+  background: var(--color-primary);
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.admin-heading-icon {
+  display: inline-grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  place-items: center;
+  border-radius: var(--radius-card);
+  color: var(--color-surface);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-heading-icon i {
+  font-size: 1.25rem;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.table-shell,
+.table-wrap,
+.table-container {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.table-shell table,
+.table-wrap table,
+.table-container table {
+  width: 100%;
+  min-width: 760px;
+  table-layout: auto;
+}
+
+.form-details {
+  overflow: hidden;
+}
+
+.form-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 900;
+  list-style: none;
+}
+
+.form-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.form-details summary::after {
+  content: "+";
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-surface);
+  background: var(--color-primary);
+}
+
+.form-details[open] summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-details[open] summary::after {
+  content: "×";
+}
+
+/* Distribución visual consistente para tablas administrativas */
+.table-shell table,
+.table-wrap table,
+.table-container table {
+  width: 100%;
+  min-width: 860px;
+  table-layout: auto;
+}
+
+.table-shell th,
+.table-wrap th,
+.table-container th {
+  white-space: nowrap;
+}
+
+.table-shell td,
+.table-wrap td,
+.table-container td {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.table-shell td strong,
+.table-shell td span:not(.status-badge),
+.table-shell td code,
+.table-wrap td strong,
+.table-wrap td span:not(.status-badge),
+.table-wrap td code,
+.table-container td strong,
+.table-container td span:not(.status-badge),
+.table-container td code {
+  white-space: nowrap;
+}
+
+.table-actions {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+
+.status-badge {
+  width: fit-content;
+  min-width: 82px;
+  justify-content: center;
+  white-space: nowrap;
+}
+.table-shell .status-badge,
+.table-wrap .status-badge,
+.table-container .status-badge {
+  display: inline-flex !important;
+  width: fit-content !important;
+  min-width: 82px;
+  max-width: 120px;
+}
+
+.table-shell .table-actions,
+.table-wrap .table-actions,
+.table-container .table-actions,
+.data-table .action-buttons {
+  display: inline-flex;
+  width: auto;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+/* Correccion final: botones de acciones sin cortes */
+.table-shell th:last-child,
+.table-shell td:last-child,
+.table-wrap th:last-child,
+.table-wrap td:last-child,
+.table-container th:last-child,
+.table-container td:last-child {
+  width: 310px !important;
+  min-width: 310px !important;
+}
+
+.table-shell .table-actions,
+.table-wrap .table-actions,
+.table-container .table-actions,
+.data-table .action-buttons {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: auto !important;
+  min-width: max-content;
+  flex-wrap: nowrap !important;
+  white-space: nowrap;
+}
+
+.table-shell .table-actions button,
+.table-wrap .table-actions button,
+.table-container .table-actions button,
+.data-table .action-buttons button {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+  word-break: keep-all;
+}
+
+.table-shell th:nth-last-child(2),
+.table-shell td:nth-last-child(2),
+.table-wrap th:nth-last-child(2),
+.table-wrap td:nth-last-child(2),
+.table-container th:nth-last-child(2),
+.table-container td:nth-last-child(2) {
+  width: 140px !important;
+  min-width: 140px !important;
+}
+
+.table-shell table,
+.table-wrap table,
+.table-container table {
+  min-width: 900px !important;
+}
+
+@media (max-width: 640px) {
+  .page-heading {
+    gap: 12px;
+  }
+
+  .admin-heading-icon {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  .page-heading h2,
+  h1.page-title,
+  .hero-title {
+    font-size: clamp(2rem, 12vw, 3.1rem);
+    line-height: 0.95;
+  }
+
+  .panel,
+  .panel-card,
+  .card {
+    border-radius: 14px;
+  }
+
+  .panel-header,
+  .panel-actions {
+    align-items: stretch;
+  }
+
+  .panel-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .panel-actions button {
+    flex: 1 1 180px;
+  }
+
+  .filter-row,
+  .toolbar,
+  .form-row,
+  .form-actions {
+    grid-template-columns: 1fr !important;
+  }
+}

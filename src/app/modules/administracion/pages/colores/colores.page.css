@@ -1,0 +1,31 @@
+@import "../admin-crud.shared.css";
+
+.color-cell,
+.hex-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-swatch,
+.hex-preview {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.hex-preview {
+  width: 40px;
+  height: 40px;
+}
+
+code {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--color-primary);
+  background: #fafaf8;
+}

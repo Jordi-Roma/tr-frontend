@@ -1,0 +1,50 @@
+<section class="para-ti-header">
+  <p>StyleAR · recomendaciones con IA</p>
+  <h1>Para ti</h1>
+  <span>Prendas relacionadas con tus favoritos y compras completadas. No necesitas indicar tus gustos para explorar.</span>
+</section>
+
+<section class="gustos" aria-labelledby="gustos-title">
+  <h2 id="gustos-title">Tus gustos (opcional)</h2>
+  <p>Elige categorías que te interesan. Tus favoritos y compras completadas también ayudan a encontrar prendas afines.</p>
+  <div class="categorias">
+    @for (categoria of categorias(); track categoria.id) {
+      <button type="button" [class.activa]="preferencias().categorias.includes(categoria.id)"
+        (click)="alternarCategoria(categoria.id)">{{ categoria.nombre }}</button>
+    }
+  </div>
+  <label><input type="checkbox" [checked]="preferencias().usar_historial" (change)="alternarHistorial($event)" />
+    Usar mis favoritos, compras y gustos para «Para ti»
+  </label>
+  <button type="button" class="guardar" [disabled]="guardando()" (click)="guardarGustos()">
+    {{ guardando() ? 'Guardando...' : 'Guardar preferencias' }}
+  </button>
+  @if (mensaje()) { <p role="status">{{ mensaje() }}</p> }
+</section>
+
+@if (cargando()) {
+  <p class="estado">Buscando prendas para ti...</p>
+} @else if (error()) {
+  <p class="estado">{{ error() }}</p>
+} @else if (items().length === 0) {
+  <section class="estado">
+    <h2>Aún no tenemos recomendaciones para ti</h2>
+    <p>Explora el catálogo y guarda las prendas que te gustan. Las sugerencias aparecerán cuando haya productos relacionados disponibles.</p>
+    <a routerLink="/catalogo">Explorar catálogo</a>
+  </section>
+} @else {
+  <div class="prendas" aria-label="Prendas recomendadas para ti">
+    @for (item of items(); track item.producto_id) {
+      <a class="prenda" [routerLink]="['/producto', item.producto_id]">
+        <div class="imagen">
+          @if (item.imagen_principal) { <img [src]="item.imagen_principal" [alt]="item.nombre" /> }
+          @else { <span>{{ item.categoria.slice(0, 2).toUpperCase() }}</span> }
+        </div>
+        <small>{{ item.categoria }}</small>
+        <strong>{{ item.nombre }}</strong>
+        <em>{{ item.motivo }}</em>
+        <b>{{ precio(item) }}</b>
+      </a>
+    }
+  </div>
+}

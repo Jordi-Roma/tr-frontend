@@ -1,0 +1,181 @@
+@if (usaPanelAdmin()) {
+  <div class="layout-shell admin-shell">
+    @if (sidebarAbierto()) {
+      <button
+        type="button"
+        class="sidebar-overlay"
+        aria-label="Cerrar menu"
+        (click)="cerrarSidebar()"
+      ></button>
+    }
+
+    <aside
+      class="sidebar"
+      [class.sidebar-open]="sidebarAbierto()"
+      aria-label="Navegacion administrativa"
+    >
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">SA</span>
+        <div>
+          <p class="brand-title">StyleAR</p>
+          <p class="brand-subtitle">Panel admin</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        @for (group of menuGroups(); track group.title) {
+          <section class="menu-group" [attr.aria-label]="group.title">
+            <button
+              type="button"
+              class="menu-group-toggle"
+              [attr.aria-expanded]="grupoAbierto(group.title)"
+              (click)="alternarGrupo(group.title)"
+            >
+              <span>
+                <i [class]="group.icon" aria-hidden="true"></i>
+                {{ group.title }}
+              </span>
+              <i
+                class="pi"
+                [class.pi-chevron-down]="grupoAbierto(group.title)"
+                [class.pi-chevron-right]="!grupoAbierto(group.title)"
+                aria-hidden="true"
+              ></i>
+            </button>
+
+            @if (grupoAbierto(group.title)) {
+              <div class="menu-group-items">
+                @for (item of group.items; track item.path) {
+                  <a
+                    [routerLink]="item.path"
+                    routerLinkActive="active-link"
+                    [routerLinkActiveOptions]="{ exact: true }"
+                    (click)="cerrarSidebar()"
+                  >
+                    <i [class]="item.icon" aria-hidden="true"></i>
+                    {{ item.label }}
+                  </a>
+                }
+              </div>
+            }
+          </section>
+        }
+      </nav>
+
+      <div class="sidebar-account">
+        @if (cuentaAbierta()) {
+          <div class="account-menu">
+            <button type="button" (click)="irPerfil()">
+              <i class="pi pi-user" aria-hidden="true"></i>
+              Perfil
+            </button>
+            <button type="button" (click)="cerrarSesion()">
+              <i class="pi pi-sign-out" aria-hidden="true"></i>
+              Cerrar sesion
+            </button>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="account-toggle"
+          [attr.aria-expanded]="cuentaAbierta()"
+          (click)="alternarCuenta()"
+        >
+          <span class="account-avatar" aria-hidden="true">
+            {{ usuario()?.nombre?.charAt(0) || 'U' }}{{ usuario()?.apellido?.charAt(0) || '' }}
+          </span>
+          <span class="account-copy">
+            <strong>{{ usuario()?.nombre }} {{ usuario()?.apellido }}</strong>
+            <small>@{{ usuario()?.username }} · {{ usuario()?.roles?.join(', ') }}</small>
+          </span>
+          <i
+            class="pi"
+            [class.pi-chevron-up]="!cuentaAbierta()"
+            [class.pi-chevron-down]="cuentaAbierta()"
+            aria-hidden="true"
+          ></i>
+        </button>
+      </div>
+    </aside>
+
+    <div class="content-shell">
+      <header class="topbar admin-topbar">
+        <button
+          type="button"
+          class="menu-button"
+          aria-label="Abrir menu principal"
+          (click)="alternarSidebar()"
+        >
+          <i class="pi pi-bars" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <main class="main-content">
+        <router-outlet />
+      </main>
+    </div>
+  </div>
+} @else {
+  <div class="shop-shell">
+    <header class="shop-navbar">
+      <a class="shop-brand" routerLink="/inicio" aria-label="Ir al inicio">Style<span>AR</span></a>
+
+      <nav class="shop-nav" aria-label="Navegacion de tienda">
+        @for (item of tiendaMenu; track item.path) {
+          @if (puedeVerItemTienda(item)) {
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="active-link"
+              [routerLinkActiveOptions]="{ exact: true }"
+            >
+              <i [class]="item.icon" aria-hidden="true"></i>
+              {{ item.label }}
+            </a>
+          }
+        }
+      </nav>
+
+      <div class="shop-actions">
+        <form class="search-box" aria-label="Buscar productos" (submit)="buscarDesdeNavbar($event)">
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <input
+            type="search"
+            placeholder="Buscar productos..."
+            [value]="busquedaTienda()"
+            (input)="actualizarBusquedaTienda($event)"
+          />
+        </form>
+
+        <a class="icon-link" routerLink="/favoritos" aria-label="Favoritos">
+          <i class="pi pi-heart" aria-hidden="true"></i>
+        </a>
+
+        <a class="icon-link cart-link" routerLink="/carrito" aria-label="Carrito">
+          <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+          <span>{{ totalCarrito() }}</span>
+        </a>
+
+        @if (autenticado()) {
+          <a class="icon-link" routerLink="/perfil" aria-label="Perfil">
+            <i class="pi pi-user" aria-hidden="true"></i>
+          </a>
+
+          <button type="button" class="logout-button" (click)="cerrarSesion()">
+            Salir
+          </button>
+        } @else {
+          <a class="login-button" routerLink="/login">
+            Ingresar
+          </a>
+        }
+      </div>
+    </header>
+
+    <main class="shop-content">
+      <router-outlet />
+    </main>
+
+    <app-asistente-chat />
+  </div>
+}

@@ -1,0 +1,38 @@
+<section class="favorites-header" aria-labelledby="favorites-title">
+  <p class="eyebrow">Favoritos</p>
+  <h1 id="favorites-title">Prendas guardadas</h1>
+  <p>Ten a mano las prendas que quieres revisar antes de comprar.</p>
+</section>
+
+@if (favoritos().length === 0) {
+  <section class="empty-card">
+    <i class="pi pi-heart" aria-hidden="true"></i>
+    <h2>No tienes favoritos aun</h2>
+    <p>Marca productos desde el catalogo para guardarlos aqui.</p>
+    <a routerLink="/catalogo">Explorar catalogo</a>
+  </section>
+} @else {
+  <section class="favorite-grid" aria-label="Productos favoritos">
+    @for (item of favoritos(); track item.id) {
+      <article class="favorite-card">
+        <div class="product-visual" aria-hidden="true">
+          <span>{{ item.categoria.slice(0, 2).toUpperCase() }}</span>
+        </div>
+        <p>{{ item.categoria }}</p>
+        <h2>
+          <a [routerLink]="['/producto', item.id]">{{ item.nombre }}</a>
+        </h2>
+        <strong>{{ formatPrecio(item.precio) }}</strong>
+        <div class="actions">
+          <button type="button" (click)="agregarAlCarrito(item)">
+            <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+            Carrito
+          </button>
+          <button type="button" class="secondary" (click)="quitarFavorito(item)">
+            <i class="pi pi-trash" aria-hidden="true"></i>
+          </button>
+        </div>
+      </article>
+    }
+  </section>
+}

@@ -1,0 +1,62 @@
+<a class="back-link" [routerLink]="vistaCliente() ? '/mis-deliveries' : '/delivery'">Volver</a>
+
+@if (cargando()) {
+  <p class="status">Cargando delivery...</p>
+} @else if (error()) {
+  <p class="status error">{{ error() }}</p>
+} @else if (delivery(); as item) {
+  <section class="hero">
+    <p class="eyebrow">Delivery</p>
+    <h1>{{ item.estado === 'ENTREGADO' ? 'Tu pedido ha sido entregado' : 'Seguimiento de delivery' }}</h1>
+    <p>{{ item.direccion_entrega }}</p>
+    <span class="state">{{ item.estado }}</span>
+  </section>
+
+  @if (mensaje()) {
+    <p class="status success">{{ mensaje() }}</p>
+  }
+
+  <section class="detail-grid">
+    <article class="card">
+      <h2>Datos del envío</h2>
+      <dl>
+        <div><dt>Venta</dt><dd>{{ item.venta_codigo || ('#' + item.venta_id) }}</dd></div>
+        <div><dt>Sucursal origen</dt><dd>{{ item.sucursal_nombre || '-' }}</dd></div>
+        <div><dt>Dirección</dt><dd>{{ item.direccion_entrega }}</dd></div>
+        <div><dt>Referencia</dt><dd>{{ item.referencia || '-' }}</dd></div>
+        <div><dt>Distancia</dt><dd>{{ item.distancia_km || '0' }} km</dd></div>
+        <div><dt>Tiempo estimado</dt><dd>{{ item.tiempo_estimado_min || 0 }} min</dd></div>
+        <div><dt>Costo delivery</dt><dd>{{ formatPrecio(item.costo_delivery) }}</dd></div>
+        <div><dt>Total venta</dt><dd>{{ formatPrecio(item.total_venta) }}</dd></div>
+        <div><dt>Fecha</dt><dd>{{ formatFecha(item.fecha_creacion) }}</dd></div>
+      </dl>
+    </article>
+
+    <article class="card">
+      <h2>Mapa</h2>
+      <iframe class="map" title="Mapa de delivery" [src]="mapaUrl()" loading="lazy"></iframe>
+      <p class="muted">Ruta estimada entre sucursal y domicilio. No representa rastreo en tiempo real.</p>
+    </article>
+  </section>
+
+  @if (!vistaCliente()) {
+    <section class="card manage-card">
+      <h2>Actualizar estado</h2>
+      <label>
+        Estado
+        <select [value]="nuevoEstado()" (change)="actualizarEstado($event)">
+          <option value="PENDIENTE">Pendiente</option>
+          <option value="EN_PREPARACION">En preparación</option>
+          <option value="EN_CAMINO">En camino</option>
+          <option value="ENTREGADO">Entregado</option>
+          <option value="CANCELADO">Cancelado</option>
+        </select>
+      </label>
+      <label>
+        Observación
+        <textarea [value]="observacion()" (input)="actualizarObservacion($event)" rows="3"></textarea>
+      </label>
+      <button type="button" [disabled]="guardando()" (click)="guardarEstado()">Guardar estado</button>
+    </section>
+  }
+}

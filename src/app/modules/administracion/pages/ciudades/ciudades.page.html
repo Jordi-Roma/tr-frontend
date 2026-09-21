@@ -1,0 +1,136 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-map-marker"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Ciudades</p>
+    <h2>Gestion de ciudades</h2>
+    <p>Administra ciudades activas e inactivas del sistema comercial.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando ciudades...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="ciudades-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="ciudades-title">Ciudades registradas</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ ciudadesFiltradas().length }} ciudades</span>
+        <button type="button" (click)="abrirNuevaCiudad()">
+          <i class="pi pi-plus"></i>
+          Nueva ciudad
+        </button>
+      </div>
+    </div>
+
+    <label for="busqueda">Buscar ciudad</label>
+    <input
+      id="busqueda"
+      type="search"
+      [value]="busqueda()"
+      (input)="actualizarBusqueda($event)"
+      placeholder="Nombre o departamento"
+    />
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Ciudad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ciudad of ciudadesFiltradas(); track ciudad.id) {
+            <tr>
+              <td>{{ ciudad.id }}</td>
+              <td>
+                <strong>{{ ciudad.nombre }}</strong>
+                <span>{{ ciudad.departamento || 'Sin departamento' }}</span>
+              </td>
+              <td>
+                <span class="status-badge" [class.inactive]="!ciudad.activo">
+                  {{ ciudad.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarCiudad(ciudad)">
+                    <i class="pi pi-pencil" aria-hidden="true"></i>
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="ciudad.activo"
+                    [class.secondary-button]="!ciudad.activo"
+                    (click)="cambiarEstadoCiudad(ciudad)"
+                    [disabled]="procesando()"
+                  >
+                    {{ ciudad.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4">No se encontraron ciudades.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="ciudadEditandoId() === null ? 'Nueva ciudad' : 'Editar ciudad'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+<form [formGroup]="ciudadForm" (ngSubmit)="guardarCiudad()" novalidate>
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" />
+
+      @if (ciudadForm.controls.nombre.touched && ciudadForm.controls.nombre.errors?.['required']) {
+        <p class="field-error">El nombre de la ciudad es obligatorio.</p>
+      }
+
+      @if (ciudadForm.controls.nombre.touched && ciudadForm.controls.nombre.errors?.['minlength']) {
+        <p class="field-error">El nombre debe tener minimo 2 caracteres.</p>
+      }
+
+      <label for="departamento">Departamento</label>
+      <input id="departamento" type="text" formControlName="departamento" />
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="ciudadForm.invalid || procesando()">
+          <i class="pi pi-check" aria-hidden="true"></i>
+          {{ ciudadEditandoId() === null ? 'Crear ciudad' : 'Guardar ciudad' }}
+        </button>
+
+        @if (ciudadEditandoId() !== null) {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+            Cancelar
+          </button>
+        }
+      </div>
+    </form>
+  </app-modal>
+</div>

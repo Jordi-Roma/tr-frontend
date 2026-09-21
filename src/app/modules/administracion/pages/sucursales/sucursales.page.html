@@ -1,0 +1,208 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-building"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Sucursales</p>
+    <h2>Gestion de sucursales</h2>
+    <p>Administra sucursales y su relacion con ciudades activas.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="status-message">Cargando sucursales...</p>
+}
+
+<div class="content-grid">
+  <section class="panel" aria-labelledby="sucursales-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Listado</p>
+        <h3 id="sucursales-title">Sucursales registradas</h3>
+      </div>
+      <div class="panel-actions">
+        <span class="count-badge">{{ sucursalesFiltradas().length }} sucursales</span>
+        <button type="button" (click)="abrirNuevaSucursal()">
+          <i class="pi pi-plus"></i>
+          Nueva sucursal
+        </button>
+      </div>
+    </div>
+
+    <label for="busqueda">Buscar sucursal</label>
+    <input
+      id="busqueda"
+      type="search"
+      [value]="busqueda()"
+      (input)="actualizarBusqueda($event)"
+      placeholder="Nombre, dirección, teléfono o ciudad"
+    />
+
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Sucursal</th>
+            <th>Ciudad</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (sucursal of sucursalesFiltradas(); track sucursal.id) {
+            <tr>
+              <td>{{ sucursal.id }}</td>
+              <td>
+                <strong>{{ sucursal.nombre }}</strong>
+                <span>{{ sucursal.direccion }}</span>
+                @if (sucursal.latitud !== null && sucursal.longitud !== null) {
+                  <span>Ubicación configurada</span>
+                }
+              </td>
+              <td>
+                {{ sucursal.ciudad_nombre }}
+                <span>ID: {{ sucursal.ciudad_id }}</span>
+              </td>
+              <td>{{ sucursal.telefono || 'Sin teléfono' }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!sucursal.activo">
+                  {{ sucursal.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="seleccionarSucursal(sucursal)">
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="sucursal.activo"
+                    [class.secondary-button]="!sucursal.activo"
+                    (click)="cambiarEstadoSucursal(sucursal)"
+                    [disabled]="procesando()"
+                  >
+                    {{ sucursal.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">No se encontraron sucursales.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <app-modal
+    [open]="formularioAbierto()"
+    [title]="sucursalEditandoId() === null ? 'Nueva sucursal' : 'Editar sucursal'"
+    eyebrow="Formulario"
+    (close)="cerrarFormulario()"
+  >
+<form [formGroup]="sucursalForm" (ngSubmit)="guardarSucursal()" novalidate>
+      <label for="ciudadId">Ciudad</label>
+      <select id="ciudadId" formControlName="ciudadId">
+        <option [ngValue]="null">Selecciona una ciudad</option>
+        @for (ciudad of ciudades(); track ciudad.id) {
+          @if (ciudad.activo) {
+            <option [ngValue]="ciudad.id">
+              {{ ciudad.nombre }}{{ ciudad.departamento ? ' - ' + ciudad.departamento : '' }}
+            </option>
+          }
+        }
+      </select>
+
+      @if (
+        sucursalForm.controls.ciudadId.invalid &&
+        sucursalForm.controls.ciudadId.touched
+      ) {
+        <p class="field-error">La ciudad es obligatoria.</p>
+      }
+
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" />
+
+      @if (
+        sucursalForm.controls.nombre.touched &&
+        sucursalForm.controls.nombre.errors?.['required']
+      ) {
+        <p class="field-error">El nombre de la sucursal es obligatorio.</p>
+      }
+
+      @if (
+        sucursalForm.controls.nombre.touched &&
+        sucursalForm.controls.nombre.errors?.['minlength']
+      ) {
+        <p class="field-error">El nombre debe tener minimo 2 caracteres.</p>
+      }
+
+      <label for="direccion">Dirección</label>
+      <input
+        id="direccion"
+        type="text"
+        formControlName="direccion"
+        placeholder="Ej. Av. Banzer 4to anillo"
+      />
+
+      @if (
+        sucursalForm.controls.direccion.invalid &&
+        sucursalForm.controls.direccion.touched
+      ) {
+        <p class="field-error">La dirección es obligatoria.</p>
+      }
+
+      <section class="map-card" aria-label="Ubicación exacta de la sucursal">
+        <div class="map-header">
+          <div>
+            <strong>Ubicación para delivery</strong>
+            <span>Busca la dirección o mueve el marcador para guardar el punto exacto.</span>
+          </div>
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="procesando()"
+            (click)="buscarUbicacionSucursal()"
+          >
+            Buscar ubicación
+          </button>
+        </div>
+        <div #sucursalMap class="branch-map"></div>
+      </section>
+
+      @if (
+        (sucursalForm.controls.latitud.invalid || sucursalForm.controls.longitud.invalid) &&
+        (sucursalForm.controls.direccion.touched || sucursalForm.controls.nombre.touched)
+      ) {
+        <p class="field-error">Selecciona la ubicación exacta de la sucursal en el mapa.</p>
+      }
+
+      <label for="telefono">Teléfono</label>
+      <input id="telefono" type="text" formControlName="telefono" />
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="sucursalForm.invalid || procesando()">
+          {{ sucursalEditandoId() === null ? 'Crear sucursal' : 'Guardar sucursal' }}
+        </button>
+
+        @if (sucursalEditandoId() !== null) {
+          <button type="button" class="secondary-button" (click)="cerrarFormulario()">
+            Cancelar
+          </button>
+        }
+      </div>
+    </form>
+  </app-modal>
+</div>

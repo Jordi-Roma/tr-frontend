@@ -1,0 +1,425 @@
+<div class="page-container fade-in">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon-wrapper">
+        <i class="pi pi-shopping-bag" aria-hidden="true"></i>
+      </div>
+      <div>
+        <p class="eyebrow">Administracion</p>
+        <h1 class="page-title">Gestion de productos</h1>
+        <p class="page-subtitle">
+          Administra las prendas de la tienda, sus atributos base y catalogo central.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="content-grid">
+    <div class="list-section">
+      <div class="card panel-card list-panel">
+        <div class="panel-header">
+          <div class="panel-header-content">
+            <h2 class="panel-title">Inventario de productos</h2>
+            <p class="panel-subtitle">Todos los productos registrados</p>
+          </div>
+          <button class="btn btn-primary btn-icon" (click)="abrirNuevoProducto()">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            Nuevo producto
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <i class="pi pi-search search-icon" aria-hidden="true"></i>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar por nombre, descripcion, marca..."
+              (input)="actualizarBusqueda($event)"
+              [value]="busqueda()"
+            />
+          </div>
+
+          <select
+            class="form-control filter-select"
+            (change)="actualizarFiltroEstado($event)"
+            [value]="filtroEstado()"
+          >
+            <option value="todos">Todos los estados</option>
+            <option value="activos">Solo activos</option>
+            <option value="inactivos">Solo inactivos</option>
+          </select>
+        </div>
+
+        @if (cargando()) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando productos...</p>
+          </div>
+        } @else if (productosFiltrados().length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon">
+              <i class="pi pi-inbox" aria-hidden="true"></i>
+            </div>
+            <p>No se encontraron productos con los filtros actuales.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Categoria</th>
+                  <th>Marca</th>
+                  <th>Genero</th>
+                  <th>Estado</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (producto of productosFiltrados(); track producto.id) {
+                  <tr
+                    [class.is-editing]="producto.id === productoEditandoId()"
+                    [class.is-inactive]="!producto.activo"
+                    (click)="seleccionarProducto(producto)"
+                  >
+                    <td>
+                      <div class="product-cell">
+                        @if (obtenerImagenPrincipal(producto); as imagenUrl) {
+                          <img
+                            [src]="imagenUrl"
+                            [alt]="producto.nombre"
+                            class="product-thumb"
+                          />
+                        } @else {
+                          <span class="product-placeholder" aria-hidden="true">
+                            {{ producto.nombre.charAt(0).toUpperCase() }}
+                          </span>
+                        }
+                        <div>
+                          <div class="cell-primary">{{ producto.nombre }}</div>
+                          <div class="cell-secondary">
+                            {{ producto.material || 'Sin material especificado' }}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{{ producto.categoria_nombre }}</td>
+                    <td>{{ producto.marca_nombre || '-' }}</td>
+                    <td>{{ producto.genero || 'Unisex' }}</td>
+                    <td>
+                      <span
+                        class="status-badge"
+                        [class.status-active]="producto.activo"
+                        [class.status-inactive]="!producto.activo"
+                      >
+                        {{ producto.activo ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td class="text-right" (click)="$event.stopPropagation()">
+                      <div class="action-buttons">
+                        <button
+                          class="btn-icon-only"
+                          title="Editar"
+                          (click)="seleccionarProducto(producto)"
+                        >
+                          <i class="pi pi-pencil" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          class="btn-icon-only"
+                          [class.text-danger]="producto.activo"
+                          [class.text-success]="!producto.activo"
+                          [title]="producto.activo ? 'Desactivar' : 'Activar'"
+                          [disabled]="procesando()"
+                          (click)="cambiarEstadoProducto(producto)"
+                        >
+                          <i
+                            [class]="producto.activo ? 'pi pi-ban' : 'pi pi-refresh'"
+                            aria-hidden="true"
+                          ></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+
+    <app-drawer
+      [open]="formularioAbierto()"
+      [title]="productoEditandoId() === null ? 'Nuevo producto' : 'Editar producto'"
+      eyebrow="Productos"
+      (close)="cerrarFormulario()"
+    >
+<div class="card panel-card form-panel" [class.is-editing]="productoEditandoId() !== null">
+        <div class="panel-header">
+          <div class="panel-header-content">
+            <h2 class="panel-title">
+              {{ productoEditandoId() === null ? 'Nuevo producto' : 'Editar producto' }}
+            </h2>
+            <p class="panel-subtitle">
+              {{
+                productoEditandoId() === null
+                  ? 'Ingresa los datos de la nueva prenda'
+                  : 'Modifica los datos del producto seleccionado'
+              }}
+            </p>
+          </div>
+          @if (productoEditandoId() !== null) {
+            <button class="btn-icon-only btn-close" (click)="cerrarFormulario()" title="Cancelar edicion">
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+          }
+        </div>
+
+        @if (mensaje()) {
+          <div class="alert alert-success">
+            <i class="pi pi-check-circle" aria-hidden="true"></i>
+            {{ mensaje() }}
+          </div>
+        }
+
+        @if (error()) {
+          <div class="alert alert-danger">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            {{ error() }}
+          </div>
+        }
+
+        <form [formGroup]="productoForm" (ngSubmit)="guardarProducto()" class="form-content">
+          <div class="form-group">
+            <label class="form-label" for="nombre">Nombre <span class="required">*</span></label>
+            <input
+              type="text"
+              id="nombre"
+              class="form-control"
+              formControlName="nombre"
+              placeholder="Ej: Polera Classic"
+              [class.is-invalid]="productoForm.get('nombre')?.invalid && productoForm.get('nombre')?.touched"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="categoria_id">Categoria <span class="required">*</span></label>
+              <select
+                id="categoria_id"
+                class="form-control"
+                formControlName="categoria_id"
+                [class.is-invalid]="productoForm.get('categoria_id')?.invalid && productoForm.get('categoria_id')?.touched"
+              >
+                <option [ngValue]="null">Selecciona una categoria</option>
+                @for (categoria of categorias(); track categoria.id) {
+                  <option [value]="categoria.id">{{ categoria.nombre }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="marca_id">Marca</label>
+              <select id="marca_id" class="form-control" formControlName="marca_id">
+                <option [ngValue]="null">Sin marca</option>
+                @for (marca of marcas(); track marca.id) {
+                  <option [value]="marca.id">{{ marca.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="material">Material</label>
+              <input
+                type="text"
+                id="material"
+                class="form-control"
+                formControlName="material"
+                placeholder="Ej: 100% Algodon"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="genero">Genero</label>
+              <select id="genero" class="form-control" formControlName="genero">
+                <option [ngValue]="null">Unisex / N/A</option>
+                <option value="MASCULINO">Masculino</option>
+                <option value="FEMENINO">Femenino</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="descripcion">Descripcion</label>
+            <textarea
+              id="descripcion"
+              class="form-control textarea"
+              formControlName="descripcion"
+              placeholder="Descripcion detallada del producto"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <!-- SECCIÓN VESTIDOR VIRTUAL / REALIDAD AUMENTADA -->
+          <div class="ar-config-box" style="margin: 1.25rem 0; padding: 1.25rem; background: var(--surface-hover, #f8fafc); border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0);">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <i class="pi pi-sparkles" style="color: var(--primary-color, #6366f1); font-size: 1.1rem;" aria-hidden="true"></i>
+              <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Configuración de Realidad Aumentada y Medidas</h3>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary, #64748b); margin-bottom: 1rem;">
+              Define la silueta y proporciones para el ajuste automático en el vestidor virtual (RA).
+            </p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="tipo_prenda">Tipo de prenda</label>
+                <select id="tipo_prenda" class="form-control" formControlName="tipo_prenda">
+                  <option value="SUPERIOR">Prenda Superior (Polera, Camisa, Casaca, Polerón)</option>
+                  <option value="INFERIOR">Prenda Inferior (Pantalón, Short, Jean, Falda)</option>
+                  <option value="VESTIDO">Cuerpo Completo / Vestido</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="tipo_corte">Tipo de corte / Silueta</label>
+                <select id="tipo_corte" class="form-control" formControlName="tipo_corte">
+                  <option value="REGULAR_FIT">Regular Fit: Corte Estándar (Recto y equilibrado, caída tradicional)</option>
+                  <option value="SLIM_FIT">Slim Fit: Corte Ajustado (Entallado al cuerpo, silueta ceñida)</option>
+                  <option value="OVERSIZE">Oversize: Corte Holgado (Amplio, hombros caídos y volumen holgado)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="colecciones">Colecciones asociadas</label>
+            <select id="colecciones" class="form-control" multiple size="4" (change)="onColeccionesChange($event)">
+              @for (coleccion of colecciones(); track coleccion.id) {
+                <option
+                  [value]="coleccion.id"
+                  [selected]="productoForm.get('colecciones_ids')?.value?.includes(coleccion.id)"
+                >
+                  {{ coleccion.temporada_nombre }} - {{ coleccion.nombre }}
+                </option>
+              }
+            </select>
+            <span class="help-text">Manten presionado Ctrl (o Cmd) para seleccionar multiples</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="proveedores">Proveedores</label>
+            <select id="proveedores" class="form-control" multiple size="4" (change)="onProveedoresChange($event)">
+              @for (proveedor of proveedores(); track proveedor.id) {
+                <option
+                  [value]="proveedor.id"
+                  [selected]="productoForm.get('proveedores_ids')?.value?.includes(proveedor.id)"
+                >
+                  {{ proveedor.nombre }}
+                </option>
+              }
+            </select>
+            <span class="help-text">Manten presionado Ctrl (o Cmd) para seleccionar multiples</span>
+          </div>
+
+          <div class="form-group images-section">
+            <label class="form-label">Imagenes del producto</label>
+            <span class="help-text">Agrega imagenes por URL o sube archivos desde tu equipo (la primera o marcada con estrella sera la principal).</span>
+
+            <div class="image-inputs-bar">
+              <div class="url-input-wrapper">
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="url_imagen_nueva"
+                  placeholder="Pegar URL de imagen (https://...)"
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline btn-sm"
+                  (click)="agregarImagen()"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  Agregar URL
+                </button>
+              </div>
+
+              <div class="file-upload-wrapper">
+                <input
+                  #fileInput
+                  type="file"
+                  accept="image/*"
+                  style="display: none"
+                  (change)="onFileSelected($event)"
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline btn-sm btn-upload"
+                  (click)="fileInput.click()"
+                >
+                  <i class="pi pi-upload" aria-hidden="true"></i>
+                  Subir desde equipo
+                </button>
+              </div>
+            </div>
+
+            @if (imagenesEditando().length > 0) {
+              <div class="images-preview-grid">
+                @for (img of imagenesEditando(); track $index) {
+                  <div class="image-preview-card" [class.is-principal]="img.es_principal">
+                    <img [src]="img.url" alt="Vista previa de prenda" class="preview-img" />
+                    <div class="image-overlay">
+                      <button
+                        type="button"
+                        class="badge-star"
+                        [class.active]="img.es_principal"
+                        [title]="img.es_principal ? 'Imagen principal' : 'Marcar como principal'"
+                        (click)="setPrincipal($index)"
+                      >
+                        <i [class]="img.es_principal ? 'pi pi-star-fill' : 'pi pi-star'" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="badge-delete"
+                        title="Eliminar imagen"
+                        (click)="quitarImagen($index)"
+                      >
+                        <i class="pi pi-trash" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                    @if (img.es_principal) {
+                      <span class="principal-tag">Principal</span>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="no-images-hint">
+                <i class="pi pi-images" aria-hidden="true"></i>
+                <span>No hay imagenes agregadas aun. Puedes ingresar una URL o seleccionar una de tu PC.</span>
+              </div>
+            }
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" (click)="cerrarFormulario()" [disabled]="procesando()">
+              <i class="pi pi-times" aria-hidden="true"></i>
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="productoForm.invalid || procesando()">
+              @if (procesando()) {
+                <div class="spinner spinner-sm"></div>
+                Guardando...
+              } @else {
+                <i class="pi pi-check" aria-hidden="true"></i>
+                {{ productoEditandoId() === null ? 'Crear producto' : 'Guardar cambios' }}
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </app-drawer>
+  </div>
+</div>
