@@ -5,10 +5,12 @@ import { CatalogoSucursal } from '../../../catalogo/models/catalogo-publico.mode
 import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publico.service';
 import { MovimientoInventarioResponse } from '../../models/inventario.models';
 import { VarianteResponse } from '../../../administracion/models/variante.models';
+import { ProveedorResponse } from '../../../administracion/models/proveedor.models';
 import { InventarioService } from '../../services/inventario.service';
+import { ProveedorService } from '../../../administracion/services/proveedor.service';
 import { VarianteService } from '../../../administracion/services/variante.service';
 
-type MovimientoCampo = 'sucursal_id' | 'producto_variante_id' | 'tipo' | 'cantidad' | 'motivo';
+type MovimientoCampo = 'sucursal_id' | 'producto_variante_id' | 'tipo' | 'cantidad' | 'motivo' | 'proveedor_id';
 
 @Component({
   selector: 'app-movimientos-inventario-page',
@@ -19,11 +21,13 @@ export class MovimientosInventarioPage implements OnInit {
   private readonly inventarioService = inject(InventarioService);
   private readonly catalogoService = inject(CatalogoPublicoService);
   private readonly varianteService = inject(VarianteService);
+  private readonly proveedorService = inject(ProveedorService);
 
   protected readonly tipos = ['ENTRADA', 'SALIDA', 'AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO'];
   protected readonly movimientos = signal<MovimientoInventarioResponse[]>([]);
   protected readonly sucursales = signal<CatalogoSucursal[]>([]);
   protected readonly variantes = signal<VarianteResponse[]>([]);
+  protected readonly proveedores = signal<ProveedorResponse[]>([]);
   protected readonly filtroSucursalId = signal<number | null>(null);
   protected readonly tipoFiltro = signal('');
   protected readonly form = signal({
@@ -32,6 +36,7 @@ export class MovimientosInventarioPage implements OnInit {
     tipo: 'ENTRADA',
     cantidad: 1,
     motivo: '',
+    proveedor_id: null as number | null,
   });
   protected readonly cargando = signal(false);
   protected readonly guardando = signal(false);
@@ -57,8 +62,14 @@ export class MovimientosInventarioPage implements OnInit {
     const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
     const parsedValue = ['sucursal_id', 'producto_variante_id', 'cantidad'].includes(campo)
       ? Number(value)
+      : campo === 'proveedor_id'
+        ? (value === '' ? null : Number(value))
       : value;
-    this.form.update((actual) => ({ ...actual, [campo]: parsedValue }));
+    this.form.update((actual) => ({
+      ...actual,
+      [campo]: parsedValue,
+      ...(campo === 'tipo' && value !== 'ENTRADA' ? { proveedor_id: null } : {}),
+    }));
   }
 
   protected registrarMovimiento(): void {
@@ -78,6 +89,7 @@ export class MovimientosInventarioPage implements OnInit {
         tipo: data.tipo,
         cantidad: data.cantidad,
         motivo: data.motivo || null,
+        proveedor_id: data.tipo === 'ENTRADA' ? data.proveedor_id : null,
       })
       .pipe(finalize(() => this.guardando.set(false)))
       .subscribe({
@@ -104,13 +116,15 @@ export class MovimientosInventarioPage implements OnInit {
     forkJoin({
       sucursales: this.catalogoService.listarSucursales(),
       variantes: this.varianteService.listarVariantes(),
+      proveedores: this.proveedorService.listarProveedores(),
       movimientos: this.inventarioService.listarMovimientos(),
     })
       .pipe(finalize(() => this.cargando.set(false)))
       .subscribe({
-        next: ({ sucursales, variantes, movimientos }) => {
+        next: ({ sucursales, variantes, proveedores, movimientos }) => {
           this.sucursales.set(sucursales);
           this.variantes.set(variantes.filter((variante) => variante.activo));
+          this.proveedores.set(proveedores.filter((proveedor) => proveedor.activo));
           this.movimientos.set(movimientos);
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),

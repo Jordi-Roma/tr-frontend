@@ -13,6 +13,7 @@ import { MarcasPage } from './pages/marcas/marcas.page';
 import { ProductosPage } from './pages/productos/productos.page';
 import { PromocionesPage } from './pages/promociones/promociones.page';
 import { VariantesPage } from './pages/variantes/variantes.page';
+import { PanelProveedorPage } from './pages/proveedores/panel-proveedor.page';
 
 export const ADMINISTRACION_ROUTES: Routes = [
   {
@@ -117,6 +118,14 @@ export const ADMINISTRACION_ROUTES: Routes = [
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
+    },
+  },
+  {
+    path: 'panel-proveedor',
+    component: PanelProveedorPage,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['PROVEEDOR'],
     },
   },
 ];

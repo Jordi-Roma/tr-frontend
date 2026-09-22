@@ -10,6 +10,8 @@ import { finalize, Observable } from 'rxjs';
 import { ProveedorResponse } from '../../models/proveedor.models';
 import { ProveedorService } from '../../services/proveedor.service';
 import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
+import { UsuarioAdminResponse } from '../../../autenticacion/models/usuario-admin.models';
+import { UsuarioAdminService } from '../../../autenticacion/services/usuario-admin.service';
 
 @Component({
   imports: [ReactiveFormsModule, AppModalComponent],
@@ -19,8 +21,10 @@ import { AppModalComponent } from '../../../../shared/components/app-modal/app-m
 })
 export class ProveedoresPage {
   private readonly proveedorService = inject(ProveedorService);
+  private readonly usuarioAdminService = inject(UsuarioAdminService);
 
   protected readonly proveedores = signal<ProveedorResponse[]>([]);
+  protected readonly usuarios = signal<UsuarioAdminResponse[]>([]);
   protected readonly busqueda = signal('');
   protected readonly filtroEstado = signal<'todos' | 'activos' | 'inactivos'>('todos');
   protected readonly cargando = signal(false);
@@ -68,8 +72,13 @@ export class ProveedoresPage {
     direccion: new FormControl<string | null>(null),
   });
 
+  protected readonly vinculoForm = new FormGroup({
+    usuario_id: new FormControl<number | null>(null, { validators: [Validators.required] }),
+  });
+
   constructor() {
     this.cargarProveedores();
+    this.cargarUsuarios();
   }
 
   protected actualizarBusqueda(event: Event): void {
@@ -94,6 +103,7 @@ export class ProveedoresPage {
       direccion: proveedor.direccion,
     });
     this.proveedorForm.controls.nit.disable();
+    this.vinculoForm.reset();
     this.formularioAbierto.set(true);
     this.limpiarMensajes();
   }
@@ -186,6 +196,83 @@ export class ProveedoresPage {
     });
   }
 
+  protected usuariosProveedor(): UsuarioAdminResponse[] {
+    const proveedor = this.proveedorActual();
+    if (!proveedor) {
+      return [];
+    }
+    const ids = new Set(proveedor.usuarios_ids ?? []);
+    return this.usuarios().filter((usuario) => ids.has(usuario.id));
+  }
+
+  protected usuariosDisponiblesParaVincular(): UsuarioAdminResponse[] {
+    const proveedor = this.proveedorActual();
+    if (!proveedor) {
+      return [];
+    }
+    const vinculados = new Set(proveedor.usuarios_ids ?? []);
+    return this.usuarios()
+      .filter((usuario) => usuario.activo && usuario.roles.includes('PROVEEDOR') && !vinculados.has(usuario.id))
+      .sort((a, b) => `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`));
+  }
+
+  protected etiquetaUsuario(usuario: UsuarioAdminResponse): string {
+    return `${usuario.nombre} ${usuario.apellido} (@${usuario.username})`;
+  }
+
+  protected vincularUsuario(): void {
+    const proveedorId = this.proveedorEditandoId();
+    const usuarioId = this.vinculoForm.controls.usuario_id.value;
+    if (proveedorId === null || usuarioId === null) {
+      this.error.set('Selecciona un proveedor y un usuario proveedor.');
+      return;
+    }
+    this.procesando.set(true);
+    this.limpiarMensajes();
+    this.proveedorService
+      .vincularUsuario(proveedorId, usuarioId)
+      .pipe(finalize(() => this.procesando.set(false)))
+      .subscribe({
+        next: (proveedor) => {
+          this.actualizarProveedorEnLista(proveedor);
+          this.vinculoForm.reset();
+          this.mensaje.set('Usuario vinculado al proveedor.');
+        },
+        error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+      });
+  }
+
+  protected desvincularUsuario(usuarioId: number): void {
+    const proveedorId = this.proveedorEditandoId();
+    if (proveedorId === null) {
+      return;
+    }
+    this.procesando.set(true);
+    this.limpiarMensajes();
+    this.proveedorService
+      .desvincularUsuario(proveedorId, usuarioId)
+      .pipe(finalize(() => this.procesando.set(false)))
+      .subscribe({
+        next: (proveedor) => {
+          this.actualizarProveedorEnLista(proveedor);
+          this.mensaje.set('Usuario desvinculado del proveedor.');
+        },
+        error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+      });
+  }
+
+  private proveedorActual(): ProveedorResponse | null {
+    const id = this.proveedorEditandoId();
+    if (id === null) {
+      return null;
+    }
+    return this.proveedores().find((proveedor) => proveedor.id === id) ?? null;
+  }
+
+  private actualizarProveedorEnLista(proveedor: ProveedorResponse): void {
+    this.proveedores.update((items) => items.map((item) => (item.id === proveedor.id ? proveedor : item)));
+  }
+
   private cargarProveedores(): void {
     this.cargando.set(true);
     this.error.set('');
@@ -201,6 +288,13 @@ export class ProveedoresPage {
           this.error.set(this.obtenerMensajeError(error));
         },
       });
+  }
+
+  private cargarUsuarios(): void {
+    this.usuarioAdminService.listarUsuarios().subscribe({
+      next: (usuarios) => this.usuarios.set(usuarios),
+      error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+    });
   }
 
   private limpiarMensajes(): void {

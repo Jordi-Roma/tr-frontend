@@ -179,5 +179,39 @@
         }
       </div>
     </form>
+
+    @if (proveedorEditandoId() !== null) {
+      <hr />
+      <section class="provider-users">
+        <h3>Usuarios vinculados</h3>
+        <p class="field-hint">Solo usuarios con rol PROVEEDOR pueden entrar al panel de este proveedor.</p>
+
+        @if (usuariosProveedor().length === 0) {
+          <p class="field-hint">Este proveedor todavía no tiene usuarios vinculados.</p>
+        } @else {
+          <ul>
+            @for (usuario of usuariosProveedor(); track usuario.id) {
+              <li>
+                <span>{{ etiquetaUsuario(usuario) }}</span>
+                <button type="button" class="secondary-button" [disabled]="procesando()" (click)="desvincularUsuario(usuario.id)">
+                  Quitar
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        <form [formGroup]="vinculoForm" (ngSubmit)="vincularUsuario()" novalidate>
+          <label for="usuarioProveedor">Vincular usuario proveedor</label>
+          <select id="usuarioProveedor" formControlName="usuario_id">
+            <option [ngValue]="null">Selecciona un usuario con rol PROVEEDOR</option>
+            @for (usuario of usuariosDisponiblesParaVincular(); track usuario.id) {
+              <option [ngValue]="usuario.id">{{ etiquetaUsuario(usuario) }}</option>
+            }
+          </select>
+          <button type="submit" [disabled]="vinculoForm.invalid || procesando()">Vincular usuario</button>
+        </form>
+      </section>
+    }
   </app-modal>
 </div>

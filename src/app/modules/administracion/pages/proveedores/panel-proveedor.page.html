@@ -1,0 +1,132 @@
+<section class="provider-hero">
+  <p class="eyebrow">Panel proveedor</p>
+  <h1>{{ perfil()?.nombre || 'Mi proveedor' }}</h1>
+  <p>Consulta tus productos vinculados, stock disponible y entregas registradas.</p>
+</section>
+
+@if (error()) {
+  <p class="feedback error">{{ error() }}</p>
+}
+
+@if (cargando()) {
+  <p class="feedback">Cargando panel proveedor...</p>
+} @else {
+  <section class="summary-grid">
+    <article>
+      <span>Productos activos</span>
+      <strong>{{ productosActivos() }}</strong>
+    </article>
+    <article>
+      <span>Stock real total</span>
+      <strong>{{ stockTotal() }}</strong>
+    </article>
+    <article>
+      <span>Bajo stock</span>
+      <strong>{{ bajoStock() }}</strong>
+    </article>
+    <article>
+      <span>Entregas</span>
+      <strong>{{ entregas().length }}</strong>
+    </article>
+  </section>
+
+  <nav class="tabs" aria-label="Secciones proveedor">
+    <button type="button" [class.active]="tab() === 'perfil'" (click)="cambiarTab('perfil')">Perfil</button>
+    <button type="button" [class.active]="tab() === 'productos'" (click)="cambiarTab('productos')">Mis productos</button>
+    <button type="button" [class.active]="tab() === 'stock'" (click)="cambiarTab('stock')">Stock</button>
+    <button type="button" [class.active]="tab() === 'entregas'" (click)="cambiarTab('entregas')">Entregas</button>
+  </nav>
+
+  @if (tab() === 'perfil' && perfil(); as item) {
+    <section class="card">
+      <h2>Datos del proveedor</h2>
+      <dl class="detail-list">
+        <div><dt>Nombre</dt><dd>{{ item.nombre }}</dd></div>
+        <div><dt>NIT</dt><dd>{{ item.nit || '-' }}</dd></div>
+        <div><dt>Teléfono</dt><dd>{{ item.telefono || '-' }}</dd></div>
+        <div><dt>Correo</dt><dd>{{ item.correo || '-' }}</dd></div>
+        <div><dt>Dirección</dt><dd>{{ item.direccion || '-' }}</dd></div>
+        <div><dt>Estado</dt><dd>{{ item.activo ? 'Activo' : 'Inactivo' }}</dd></div>
+      </dl>
+    </section>
+  }
+
+  @if (tab() === 'productos') {
+    <section class="card table-wrap">
+      <h2>Mis productos</h2>
+      <table>
+        <thead>
+          <tr><th>Producto</th><th>Categoría</th><th>Marca</th><th>Variantes</th><th>Costo ref.</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          @for (producto of productos(); track producto.producto_id) {
+            <tr>
+              <td>{{ producto.nombre }}</td>
+              <td>{{ producto.categoria }}</td>
+              <td>{{ producto.marca || '-' }}</td>
+              <td>{{ producto.variantes }}</td>
+              <td>{{ producto.costo_referencia ? formatPrecio(producto.costo_referencia) : '-' }}</td>
+              <td>{{ producto.activo ? 'Activo' : 'Inactivo' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6">No tienes productos vinculados.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  @if (tab() === 'stock') {
+    <section class="card table-wrap">
+      <h2>Stock de mis productos</h2>
+      <table>
+        <thead>
+          <tr><th>Sucursal</th><th>Producto</th><th>SKU</th><th>Talla/color</th><th>Disponible</th><th>Reservado</th><th>Real</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          @for (item of stock(); track item.producto_variante_id + '-' + item.sucursal_id) {
+            <tr>
+              <td>{{ item.ciudad }} - {{ item.sucursal }}</td>
+              <td>{{ item.producto }}</td>
+              <td>{{ item.sku }}</td>
+              <td>{{ item.talla }} / {{ item.color }}</td>
+              <td>{{ item.stock_disponible }}</td>
+              <td>{{ item.stock_reservado }}</td>
+              <td><strong>{{ item.stock_real }}</strong></td>
+              <td><span class="pill" [class.warn]="item.bajo_stock">{{ item.bajo_stock ? 'Bajo stock' : 'OK' }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8">No hay stock registrado para tus productos.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  @if (tab() === 'entregas') {
+    <section class="card table-wrap">
+      <h2>Mis entregas</h2>
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th>Sucursal</th><th>Producto</th><th>SKU</th><th>Talla/color</th><th>Cantidad</th><th>Stock nuevo</th><th>Motivo</th></tr>
+        </thead>
+        <tbody>
+          @for (entrega of entregas(); track entrega.id) {
+            <tr>
+              <td>{{ formatFecha(entrega.fecha_movimiento) }}</td>
+              <td>{{ entrega.ciudad }} - {{ entrega.sucursal }}</td>
+              <td>{{ entrega.producto }}</td>
+              <td>{{ entrega.sku }}</td>
+              <td>{{ entrega.talla }} / {{ entrega.color }}</td>
+              <td>{{ entrega.cantidad }}</td>
+              <td>{{ entrega.stock_nuevo }}</td>
+              <td>{{ entrega.motivo || '-' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8">Todavía no hay entregas registradas para tu proveedor.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+}

@@ -63,6 +63,17 @@
       Cantidad
       <input type="number" min="1" [value]="form().cantidad" (input)="actualizarCampo('cantidad', $event)" />
     </label>
+    @if (form().tipo === 'ENTRADA') {
+      <label>
+        Proveedor
+        <select [value]="form().proveedor_id ?? ''" (change)="actualizarCampo('proveedor_id', $event)">
+          <option value="">Sin proveedor específico</option>
+          @for (proveedor of proveedores(); track proveedor.id) {
+            <option [value]="proveedor.id">{{ proveedor.nombre }}</option>
+          }
+        </select>
+      </label>
+    }
     <label>
       Motivo
       <input type="text" [value]="form().motivo" (input)="actualizarCampo('motivo', $event)" placeholder="Compra, ajuste, merma..." />
@@ -77,7 +88,7 @@
     <table class="movements-table">
       <thead>
         <tr>
-          <th>Fecha</th><th>Sucursal</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock anterior</th><th>Stock nuevo</th><th>Motivo</th>
+          <th>Fecha</th><th>Sucursal</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock anterior</th><th>Stock nuevo</th><th>Proveedor</th><th>Motivo</th>
         </tr>
       </thead>
       <tbody>
@@ -90,10 +101,11 @@
             <td>{{ movimiento.cantidad }}</td>
             <td>{{ movimiento.stock_anterior }}</td>
             <td><strong>{{ movimiento.stock_nuevo }}</strong></td>
+            <td>{{ movimiento.proveedor || '-' }}</td>
             <td>{{ movimiento.motivo || '-' }}</td>
           </tr>
         } @empty {
-          <tr><td colspan="8">No hay movimientos registrados.</td></tr>
+          <tr><td colspan="9">No hay movimientos registrados.</td></tr>
         }
       </tbody>
     </table>

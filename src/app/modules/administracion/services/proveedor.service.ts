@@ -6,7 +6,11 @@ import {
   ActualizarProveedorRequest,
   CrearProveedorRequest,
   MensajeResponse,
+  ProveedorEntregaPanel,
+  ProveedorPerfil,
+  ProveedorProductoPanel,
   ProveedorResponse,
+  ProveedorStockPanel,
 } from '../models/proveedor.models';
 
 @Injectable({
@@ -15,6 +19,7 @@ import {
 export class ProveedorService {
   private readonly http = inject(HttpClient);
   private readonly proveedoresUrl = `${API_BASE_URL}/api/v1/proveedores`;
+  private readonly proveedorPanelUrl = `${API_BASE_URL}/api/v1/proveedor-panel`;
 
   listarProveedores(): Observable<ProveedorResponse[]> {
     return this.http.get<ProveedorResponse[]>(this.proveedoresUrl);
@@ -50,5 +55,31 @@ export class ProveedorService {
       `${this.proveedoresUrl}/${proveedorId}/activar`,
       {}
     );
+  }
+
+  vincularUsuario(proveedorId: number, usuarioId: number): Observable<ProveedorResponse> {
+    return this.http.post<ProveedorResponse>(`${this.proveedoresUrl}/${proveedorId}/usuarios`, {
+      usuario_id: usuarioId,
+    });
+  }
+
+  desvincularUsuario(proveedorId: number, usuarioId: number): Observable<ProveedorResponse> {
+    return this.http.delete<ProveedorResponse>(`${this.proveedoresUrl}/${proveedorId}/usuarios/${usuarioId}`);
+  }
+
+  obtenerPerfilPanel(): Observable<ProveedorPerfil> {
+    return this.http.get<ProveedorPerfil>(`${this.proveedorPanelUrl}/perfil`);
+  }
+
+  listarProductosPanel(): Observable<ProveedorProductoPanel[]> {
+    return this.http.get<ProveedorProductoPanel[]>(`${this.proveedorPanelUrl}/productos`);
+  }
+
+  listarStockPanel(): Observable<ProveedorStockPanel[]> {
+    return this.http.get<ProveedorStockPanel[]>(`${this.proveedorPanelUrl}/stock`);
+  }
+
+  listarEntregasPanel(): Observable<ProveedorEntregaPanel[]> {
+    return this.http.get<ProveedorEntregaPanel[]>(`${this.proveedorPanelUrl}/entregas`);
   }
 }

@@ -29,6 +29,7 @@ interface MenuGroup {
 const ADMIN = ['ADMINISTRADOR'];
 const ADMIN_O_ENCARGADO = ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL'];
 const ADMIN_ENCARGADO_CAJERO = ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL', 'CAJERO'];
+const PROVEEDOR = ['PROVEEDOR'];
 
 @Component({
   imports: [RouterOutlet, RouterLink, RouterLinkActive, AsistenteChatComponent],
@@ -75,6 +76,7 @@ export class MainLayout {
       items: [
         { label: 'Dashboard', path: '/dashboard', icon: 'pi pi-chart-line', roles: ADMIN },
         { label: 'Perfil', path: '/perfil', icon: 'pi pi-user' },
+        { label: 'Panel proveedor', path: '/panel-proveedor', icon: 'pi pi-truck', roles: PROVEEDOR },
       ],
     },
     {

@@ -22,6 +22,7 @@ export interface MovimientoInventarioRequest {
   tipo: string;
   cantidad: number;
   motivo?: string | null;
+  proveedor_id?: number | null;
 }
 
 export interface MovimientoInventarioResponse {
@@ -39,6 +40,8 @@ export interface MovimientoInventarioResponse {
   stock_anterior: number;
   stock_nuevo: number;
   motivo?: string | null;
+  proveedor_id?: number | null;
+  proveedor?: string | null;
   referencia_tipo?: string | null;
   referencia_id?: number | null;
   fecha_movimiento: string;
