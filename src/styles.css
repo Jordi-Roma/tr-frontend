@@ -27,19 +27,33 @@
 
 html {
   color-scheme: light;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   margin: 0;
   color: var(--color-text);
   background: var(--color-bg);
   font-family: var(--font-ui);
 }
 
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
 button,
 input,
 select,
 textarea {
+  max-width: 100%;
   font-family: var(--font-ui);
 }
 
