@@ -292,6 +292,20 @@
                 </select>
               </div>
             </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label class="form-label" for="modelo_3d_url">Enlace de Calibración / Motor AR 3D</label>
+              <input
+                id="modelo_3d_url"
+                type="url"
+                class="form-control"
+                formControlName="modelo_3d_url"
+                placeholder="https://... enlace oficial de tracking 3D o sensor biométrico"
+              />
+              <span class="help-text">
+                Enlace de calibración 3D para el vestidor virtual. Si se deja vacío, el botón de Vestidor aparecerá deshabilitado (en gris) para esta prenda.
+              </span>
+            </div>
           </div>
 
           <div class="form-group">
