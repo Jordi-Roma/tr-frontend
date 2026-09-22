@@ -54,7 +54,7 @@ export class CarritoPage implements OnInit {
   protected readonly tipoEntrega = signal<'RECOJO_SUCURSAL' | 'DELIVERY'>('RECOJO_SUCURSAL');
   protected readonly direccionEntrega = signal('');
   protected readonly referenciaEntrega = signal('');
-  protected readonly fechaCita = signal(this.fechaLocalDesdeHoy(1));
+  protected readonly fechaCita = signal(this.fechaLocalDesdeHoy(0));
   protected readonly latitudEntrega = signal(-17.783327);
   protected readonly longitudEntrega = signal(-63.18214);
   protected readonly cotizacionDelivery = signal<DeliveryCotizacionResponse | null>(null);
@@ -296,6 +296,10 @@ export class CarritoPage implements OnInit {
   protected formatPrecio(precio: number | string | null | undefined): string {
     const value = this.toNumber(precio);
     return value > 0 ? `Bs ${value.toFixed(2)}` : 'Precio pendiente';
+  }
+
+  protected formatMonto(monto: number | string | null | undefined): string {
+    return `Bs ${this.toNumber(monto).toFixed(2)}`;
   }
 
   protected entregaLista(): boolean {
