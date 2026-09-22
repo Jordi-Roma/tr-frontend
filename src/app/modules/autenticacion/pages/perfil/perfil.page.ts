@@ -89,6 +89,9 @@ export class PerfilPage {
   protected readonly errorPassword = signal('');
   protected readonly errorDireccion = signal('');
   protected readonly passwordNuevoValor = signal('');
+  protected readonly passwordActualVisible = signal(false);
+  protected readonly passwordNuevoVisible = signal(false);
+  protected readonly confirmarPasswordNuevoVisible = signal(false);
 
   protected readonly passwordRequirements = computed<PasswordRequirement[]>(() => {
     const password = this.passwordNuevoValor();
@@ -374,6 +377,18 @@ export class PerfilPage {
 
   protected actualizarPasswordChecklist(): void {
     this.passwordNuevoValor.set(this.passwordForm.controls.passwordNuevo.value);
+  }
+
+  protected alternarPasswordActualVisible(): void {
+    this.passwordActualVisible.update((visible) => !visible);
+  }
+
+  protected alternarPasswordNuevoVisible(): void {
+    this.passwordNuevoVisible.update((visible) => !visible);
+  }
+
+  protected alternarConfirmarPasswordNuevoVisible(): void {
+    this.confirmarPasswordNuevoVisible.update((visible) => !visible);
   }
 
   private cargarPerfil(): void {

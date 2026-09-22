@@ -66,13 +66,24 @@
       }
 
       <label for="password">Contrasena</label>
-      <input
-        id="password"
-        type="password"
-        formControlName="password"
-        autocomplete="new-password"
-        (input)="actualizarPasswordChecklist()"
-      />
+      <div class="password-field">
+        <input
+          id="password"
+          [type]="passwordVisible() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="new-password"
+          (input)="actualizarPasswordChecklist()"
+        />
+        <button
+          class="password-toggle"
+          type="button"
+          (click)="alternarPasswordVisible()"
+          [attr.aria-label]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          [attr.title]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        >
+          <i [class]="passwordVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+        </button>
+      </div>
 
       <ul class="password-checklist" aria-label="Requisitos de contrasena">
         @for (requirement of passwordRequirements(); track requirement.texto) {
@@ -98,12 +109,23 @@
       }
 
       <label for="confirmarPassword">Confirmar contrasena</label>
-      <input
-        id="confirmarPassword"
-        type="password"
-        formControlName="confirmarPassword"
-        autocomplete="new-password"
-      />
+      <div class="password-field">
+        <input
+          id="confirmarPassword"
+          [type]="confirmarPasswordVisible() ? 'text' : 'password'"
+          formControlName="confirmarPassword"
+          autocomplete="new-password"
+        />
+        <button
+          class="password-toggle"
+          type="button"
+          (click)="alternarConfirmarPasswordVisible()"
+          [attr.aria-label]="confirmarPasswordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          [attr.title]="confirmarPasswordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        >
+          <i [class]="confirmarPasswordVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+        </button>
+      </div>
 
       @if (
         registroForm.controls.confirmarPassword.invalid &&

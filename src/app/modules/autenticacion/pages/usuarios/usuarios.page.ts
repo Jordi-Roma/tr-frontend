@@ -32,6 +32,7 @@ export class UsuariosPage {
   protected readonly roles = signal<RolResponse[]>([]);
   protected readonly mensaje = signal('');
   protected readonly error = signal('');
+  protected readonly passwordVisible = signal(false);
 
   protected readonly busquedaControl = new FormControl('', {
     nonNullable: true,
@@ -122,6 +123,7 @@ export class UsuariosPage {
   protected cancelarCreacion(): void {
     this.mostrarCreacion.set(false);
     this.crearUsuarioForm.reset();
+    this.passwordVisible.set(false);
   }
 
   protected crearUsuario(): void {
@@ -150,6 +152,10 @@ export class UsuariosPage {
       },
       error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
     });
+  }
+
+  protected alternarPasswordVisible(): void {
+    this.passwordVisible.update((visible) => !visible);
   }
 
   private cargarRoles(): void {

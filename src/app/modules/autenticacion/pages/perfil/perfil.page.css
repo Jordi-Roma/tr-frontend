@@ -182,6 +182,38 @@ select:focus {
   outline: 3px solid rgb(124 143 90 / 22%);
 }
 
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-muted);
+  background: transparent;
+  padding: 0;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  outline: none;
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+}
+
 .checkbox-field {
   display: flex;
   align-items: center;

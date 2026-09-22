@@ -178,20 +178,47 @@
 >
   <form [formGroup]="passwordForm" (ngSubmit)="cambiarPassword()" novalidate>
     <label for="passwordActual">Contraseña actual</label>
-    <input id="passwordActual" type="password" formControlName="passwordActual" autocomplete="current-password" />
+    <div class="password-field">
+      <input
+        id="passwordActual"
+        [type]="passwordActualVisible() ? 'text' : 'password'"
+        formControlName="passwordActual"
+        autocomplete="current-password"
+      />
+      <button
+        class="password-toggle"
+        type="button"
+        (click)="alternarPasswordActualVisible()"
+        [attr.aria-label]="passwordActualVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        [attr.title]="passwordActualVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+      >
+        <i [class]="passwordActualVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+      </button>
+    </div>
 
     @if (passwordForm.controls.passwordActual.invalid && passwordForm.controls.passwordActual.touched) {
       <p class="field-error">La contraseña actual es obligatoria.</p>
     }
 
     <label for="passwordNuevo">Nueva contraseña</label>
-    <input
-      id="passwordNuevo"
-      type="password"
-      formControlName="passwordNuevo"
-      autocomplete="new-password"
-      (input)="actualizarPasswordChecklist()"
-    />
+    <div class="password-field">
+      <input
+        id="passwordNuevo"
+        [type]="passwordNuevoVisible() ? 'text' : 'password'"
+        formControlName="passwordNuevo"
+        autocomplete="new-password"
+        (input)="actualizarPasswordChecklist()"
+      />
+      <button
+        class="password-toggle"
+        type="button"
+        (click)="alternarPasswordNuevoVisible()"
+        [attr.aria-label]="passwordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        [attr.title]="passwordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+      >
+        <i [class]="passwordNuevoVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+      </button>
+    </div>
 
     <ul class="password-checklist" aria-label="Requisitos de contraseña">
       @for (requirement of passwordRequirements(); track requirement.texto) {
@@ -211,7 +238,23 @@
     }
 
     <label for="confirmarPasswordNuevo">Confirmar nueva contraseña</label>
-    <input id="confirmarPasswordNuevo" type="password" formControlName="confirmarPasswordNuevo" autocomplete="new-password" />
+    <div class="password-field">
+      <input
+        id="confirmarPasswordNuevo"
+        [type]="confirmarPasswordNuevoVisible() ? 'text' : 'password'"
+        formControlName="confirmarPasswordNuevo"
+        autocomplete="new-password"
+      />
+      <button
+        class="password-toggle"
+        type="button"
+        (click)="alternarConfirmarPasswordNuevoVisible()"
+        [attr.aria-label]="confirmarPasswordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        [attr.title]="confirmarPasswordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+      >
+        <i [class]="confirmarPasswordNuevoVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+      </button>
+    </div>
 
     @if (passwordForm.controls.confirmarPasswordNuevo.invalid && passwordForm.controls.confirmarPasswordNuevo.touched) {
       <p class="field-error">Debes confirmar la nueva contraseña.</p>

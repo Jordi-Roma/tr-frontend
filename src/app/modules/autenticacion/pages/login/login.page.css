@@ -146,6 +146,40 @@ input:focus {
   box-shadow: 0 0 0 4px rgb(124 143 90 / 18%);
 }
 
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-muted);
+  background: transparent;
+  padding: 0;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  outline: none;
+  background: var(--color-accent-soft);
+  box-shadow: none;
+  color: var(--color-primary);
+  transform: none;
+}
+
 button {
   margin-top: 10px;
   border: 0;

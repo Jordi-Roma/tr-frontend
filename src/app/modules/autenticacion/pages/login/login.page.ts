@@ -17,6 +17,7 @@ export class LoginPage {
 
   protected readonly cargando = signal(false);
   protected readonly mensajeError = signal('');
+  protected readonly passwordVisible = signal(false);
 
   protected readonly loginForm = new FormGroup({
     identificador: new FormControl('', {
@@ -51,6 +52,10 @@ export class LoginPage {
           this.mensajeError.set('Credenciales incorrectas o usuario no disponible.');
         },
       });
+  }
+
+  protected alternarPasswordVisible(): void {
+    this.passwordVisible.update((visible) => !visible);
   }
 
   private obtenerRutaDestino(): string {

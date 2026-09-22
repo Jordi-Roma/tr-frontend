@@ -104,6 +104,38 @@ select:focus {
   outline: 3px solid rgb(90 166 223 / 22%);
 }
 
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  place-items: center;
+  border-radius: 999px;
+  color: #4c6075;
+  background: transparent;
+  padding: 0;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  outline: none;
+  background: #e8f2f5;
+  color: #17385f;
+}
+
 button {
   border: 0;
   border-radius: 14px;

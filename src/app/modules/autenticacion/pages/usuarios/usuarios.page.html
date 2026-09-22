@@ -83,7 +83,23 @@
         <div class="field"><label for="crearCorreo">Correo</label><input id="crearCorreo" type="email" formControlName="correo" /></div>
         <div class="field">
           <label for="crearPassword">Contrasena</label>
-          <input id="crearPassword" type="password" formControlName="password" autocomplete="new-password" />
+          <div class="password-field">
+            <input
+              id="crearPassword"
+              [type]="passwordVisible() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="new-password"
+            />
+            <button
+              class="password-toggle"
+              type="button"
+              (click)="alternarPasswordVisible()"
+              [attr.aria-label]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              [attr.title]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              <i [class]="passwordVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+            </button>
+          </div>
           <small>Mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo.</small>
         </div>
         <div class="field">

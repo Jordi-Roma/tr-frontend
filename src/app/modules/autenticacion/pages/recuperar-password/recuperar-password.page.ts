@@ -61,6 +61,8 @@ export class RecuperarPasswordPage {
   protected readonly mensaje = signal('');
   protected readonly error = signal('');
   protected readonly passwordNuevoValor = signal('');
+  protected readonly passwordNuevoVisible = signal(false);
+  protected readonly confirmarPasswordNuevoVisible = signal(false);
 
   protected readonly passwordRequirements = computed<PasswordRequirement[]>(() => {
     const password = this.passwordNuevoValor();
@@ -173,6 +175,14 @@ export class RecuperarPasswordPage {
 
   protected actualizarPasswordChecklist(): void {
     this.passwordNuevoValor.set(this.resetForm.controls.passwordNuevo.value);
+  }
+
+  protected alternarPasswordNuevoVisible(): void {
+    this.passwordNuevoVisible.update((visible) => !visible);
+  }
+
+  protected alternarConfirmarPasswordNuevoVisible(): void {
+    this.confirmarPasswordNuevoVisible.update((visible) => !visible);
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {

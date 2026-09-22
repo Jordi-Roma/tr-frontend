@@ -73,6 +73,8 @@ export class RegistroPage {
   protected readonly mensajeError = signal('');
   protected readonly mensajeExito = signal('');
   protected readonly passwordValor = signal('');
+  protected readonly passwordVisible = signal(false);
+  protected readonly confirmarPasswordVisible = signal(false);
 
   protected readonly passwordRequirements = computed<PasswordRequirement[]>(() => {
     const password = this.passwordValor();
@@ -181,6 +183,14 @@ export class RegistroPage {
 
   protected actualizarPasswordChecklist(): void {
     this.passwordValor.set(this.registroForm.controls.password.value);
+  }
+
+  protected alternarPasswordVisible(): void {
+    this.passwordVisible.update((visible) => !visible);
+  }
+
+  protected alternarConfirmarPasswordVisible(): void {
+    this.confirmarPasswordVisible.update((visible) => !visible);
   }
 
   protected passwordsNoCoinciden(): boolean {
