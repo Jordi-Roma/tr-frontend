@@ -125,6 +125,7 @@ export class RegistroPage {
         nonNullable: true,
         validators: [Validators.required, Validators.email],
       }),
+      telefono: new FormControl<string | null>(null),
       password: new FormControl('', {
         nonNullable: true,
         validators: [Validators.required, passwordSeguro],
@@ -148,7 +149,7 @@ export class RegistroPage {
     }
 
     this.cargando.set(true);
-    const { nombre, apellido, username, correo, password } =
+    const { nombre, apellido, username, correo, telefono, password } =
       this.registroForm.getRawValue();
 
     this.authService
@@ -157,6 +158,7 @@ export class RegistroPage {
         apellido: apellido.trim(),
         username: username.trim().toLowerCase(),
         correo: correo.trim(),
+        telefono: this.limpiarTextoOpcional(telefono),
         password,
       })
       .pipe(finalize(() => this.cargando.set(false)))
@@ -203,6 +205,15 @@ export class RegistroPage {
   private normalizarUsername(): void {
     const username = this.registroForm.controls.username.value.trim().toLowerCase();
     this.registroForm.controls.username.setValue(username);
+  }
+
+  private limpiarTextoOpcional(valor: string | null): string | null {
+    if (valor === null) {
+      return null;
+    }
+
+    const limpio = valor.trim();
+    return limpio === '' ? null : limpio;
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {

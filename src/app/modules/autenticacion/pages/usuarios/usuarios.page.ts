@@ -93,6 +93,7 @@ export class UsuariosPage {
       nonNullable: true,
       validators: [Validators.required, Validators.email],
     }),
+    telefono: new FormControl<string | null>(null),
     password: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.minLength(8)],
@@ -142,6 +143,7 @@ export class UsuariosPage {
       apellido: datos.apellido.trim(),
       username: datos.username.trim().toLowerCase(),
       correo: datos.correo.trim().toLowerCase(),
+      telefono: this.limpiarTextoOpcional(datos.telefono),
       password: datos.password,
       rol_id: datos.rolId,
     }).pipe(finalize(() => this.procesando.set(false))).subscribe({
@@ -156,6 +158,15 @@ export class UsuariosPage {
 
   protected alternarPasswordVisible(): void {
     this.passwordVisible.update((visible) => !visible);
+  }
+
+  private limpiarTextoOpcional(valor: string | null): string | null {
+    if (valor === null) {
+      return null;
+    }
+
+    const limpio = valor.trim();
+    return limpio === '' ? null : limpio;
   }
 
   private cargarRoles(): void {

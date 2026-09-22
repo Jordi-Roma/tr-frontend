@@ -30,6 +30,7 @@ export interface RegistroRequest {
   username: string;
   correo: string;
   password: string;
+  telefono?: string | null;
 }
 
 export interface RegistroResponse {

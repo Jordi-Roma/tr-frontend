@@ -20,6 +20,7 @@ export interface ActualizarUsuarioRequest {
 export interface CrearUsuarioRequest extends ActualizarUsuarioRequest {
   password: string;
   rol_id: number;
+  telefono?: string | null;
 }
 
 export interface MensajeResponse {
