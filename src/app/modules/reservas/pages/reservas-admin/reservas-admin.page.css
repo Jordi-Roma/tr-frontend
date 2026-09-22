@@ -43,10 +43,12 @@
 
 .table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
-  width: 100%;
+  width: max-content;
+  min-width: 1240px;
   border-collapse: collapse;
 }
 
@@ -69,22 +71,71 @@ td {
   color: var(--color-primary);
 }
 
+td:nth-child(1) {
+  min-width: 150px;
+}
+
+td:nth-child(2) {
+  min-width: 170px;
+}
+
+td:nth-child(3) {
+  min-width: 290px;
+}
+
+td:nth-child(4),
+td:nth-child(5),
+td:nth-child(6),
+td:nth-child(7) {
+  min-width: 130px;
+}
+
+td:nth-child(8) {
+  min-width: 190px;
+}
+
+td:nth-child(9) {
+  min-width: 300px;
+}
+
 .estado-pill {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 7px 12px;
   color: var(--color-surface);
   background: var(--color-primary);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.estado-pendiente-anticipo {
+  color: #5b3600;
+  background: #ffe2a8;
+}
+
+.estado-pendiente {
+  color: #233011;
+  background: var(--color-accent-soft);
+}
+
+.estado-preparada,
+.estado-en-atencion {
+  color: #123763;
+  background: #d8ebff;
 }
 
 .estado-cancelada,
 .estado-vencida {
+  color: var(--color-surface);
   background: var(--color-danger);
 }
 
 .estado-completada {
+  color: var(--color-surface);
   background: var(--color-accent);
 }
 
@@ -92,6 +143,11 @@ td {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 300px;
+  white-space: nowrap;
+}
+
+.state-select {
   min-width: 220px;
 }
 

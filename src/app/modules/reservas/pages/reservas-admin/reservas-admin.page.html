@@ -79,7 +79,7 @@
                 <td>{{ formatPrecio(reserva.monto_reserva) }}</td>
                 <td>{{ formatPrecio(reserva.total) }}</td>
                 <td>
-                  <span class="estado-pill" [class]="estadoClase(reserva.estado)">
+                  <span [class]="'estado-pill ' + estadoClase(reserva.estado)">
                     {{ reserva.estado }}
                   </span>
                 </td>
