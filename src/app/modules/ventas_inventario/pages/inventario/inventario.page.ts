@@ -3,6 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
 import { CatalogoSucursal } from '../../../catalogo/models/catalogo-publico.models';
 import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publico.service';
+import { AuthService } from '../../../autenticacion/services/auth.service';
 import { InventarioResponse } from '../../models/inventario.models';
 import { InventarioService } from '../../services/inventario.service';
 
@@ -14,6 +15,7 @@ import { InventarioService } from '../../services/inventario.service';
 export class InventarioPage implements OnInit {
   private readonly inventarioService = inject(InventarioService);
   private readonly catalogoService = inject(CatalogoPublicoService);
+  private readonly authService = inject(AuthService);
 
   protected readonly inventario = signal<InventarioResponse[]>([]);
   protected readonly sucursales = signal<CatalogoSucursal[]>([]);
@@ -22,12 +24,15 @@ export class InventarioPage implements OnInit {
   protected readonly cargando = signal(false);
   protected readonly error = signal('');
   protected readonly mensaje = signal('');
+  protected readonly esAdmin = this.authService.tieneRol('ADMINISTRADOR');
+  protected readonly sucursalAsignada = signal<string>('');
 
   ngOnInit(): void {
     this.cargarDatos();
   }
 
   protected cambiarSucursal(event: Event): void {
+    if (!this.esAdmin) return;
     const value = (event.target as HTMLSelectElement).value;
     this.sucursalId.set(value === '' ? null : Number(value));
     this.cargarInventario();
@@ -61,6 +66,7 @@ export class InventarioPage implements OnInit {
         next: ({ filtros, inventario }) => {
           this.sucursales.set(filtros.sucursales);
           this.inventario.set(inventario);
+          this.actualizarSucursalAsignada(inventario);
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
       });
@@ -76,9 +82,18 @@ export class InventarioPage implements OnInit {
       })
       .pipe(finalize(() => this.cargando.set(false)))
       .subscribe({
-        next: (items) => this.inventario.set(items),
+        next: (items) => {
+          this.inventario.set(items);
+          this.actualizarSucursalAsignada(items);
+        },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
       });
+  }
+
+  private actualizarSucursalAsignada(items: InventarioResponse[]): void {
+    if (this.esAdmin) return;
+    const item = items[0];
+    this.sucursalAsignada.set(item ? `${item.ciudad} - ${item.sucursal}` : 'Sucursal asignada');
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {

@@ -6,15 +6,22 @@
       <p>Consulta stock disponible, reservado y real.</p>
     </div>
     <div class="filters-row">
-      <label>
-        Sucursal
-        <select [value]="sucursalId() ?? ''" (change)="cambiarSucursal($event)">
-          <option value="">Todas</option>
-          @for (sucursal of sucursales(); track sucursal.id) {
-            <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
-          }
-        </select>
-      </label>
+      @if (esAdmin) {
+        <label>
+          Sucursal
+          <select [value]="sucursalId() ?? ''" (change)="cambiarSucursal($event)">
+            <option value="">Todas</option>
+            @for (sucursal of sucursales(); track sucursal.id) {
+              <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+            }
+          </select>
+        </label>
+      } @else {
+        <div class="readonly-filter">
+          <span>Sucursal asignada</span>
+          <strong>{{ sucursalAsignada() }}</strong>
+        </div>
+      }
       <label class="check-control">
         <input type="checkbox" [checked]="soloBajoStock()" (change)="cambiarBajoStock($event)" />
         Bajo stock
@@ -39,7 +46,13 @@
             <td>{{ item.stock_disponible }}</td>
             <td>{{ item.stock_reservado }}</td>
             <td><strong>{{ item.stock_real }}</strong></td>
-            <td><input class="mini-input" type="number" min="0" [value]="item.stock_minimo" (change)="actualizarMinimo(item, $event)" /></td>
+            <td>
+              @if (esAdmin) {
+                <input class="mini-input" type="number" min="0" [value]="item.stock_minimo" (change)="actualizarMinimo(item, $event)" />
+              } @else {
+                {{ item.stock_minimo }}
+              }
+            </td>
             <td><span class="pill" [class.warn]="item.bajo_stock">{{ item.bajo_stock ? 'Bajo stock' : 'OK' }}</span></td>
           </tr>
         } @empty {
