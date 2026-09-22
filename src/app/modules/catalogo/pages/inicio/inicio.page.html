@@ -112,9 +112,18 @@
           <p>{{ item.descripcion || 'Prenda disponible en el catalogo StyleAR.' }}</p>
 
           <div class="product-meta">
-            <strong>{{ formatPrecio(item.precio_final ?? item.precio_vigente) }}</strong>
+            <div class="price-stack" [class.has-offer]="item.tiene_promocion">
+              @if (item.tiene_promocion && item.precio_vigente) {
+                <span class="old-price">{{ formatPrecio(item.precio_vigente) }}</span>
+              }
+              <strong>{{ formatPrecio(item.precio_final ?? item.precio_vigente) }}</strong>
+            </div>
             <span>{{ item.stock_total }} en stock</span>
           </div>
+
+          @if (item.tiene_promocion) {
+            <span class="promo-badge">OFERTA</span>
+          }
 
           <div class="size-list" aria-label="Tallas disponibles">
             @if (item.tallas.length === 0) {

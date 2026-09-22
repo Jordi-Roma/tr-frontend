@@ -270,9 +270,25 @@ h1 {
   color: var(--color-muted);
 }
 
+.price-stack {
+  display: grid;
+  gap: 2px;
+}
+
+.old-price {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-decoration: line-through;
+}
+
 .product-meta strong {
   color: var(--color-primary);
   font-size: 1.25rem;
+}
+
+.price-stack.has-offer strong {
+  color: var(--color-danger);
 }
 
 .promo-badge {
@@ -281,9 +297,10 @@ h1 {
   border-radius: 999px;
   padding: 5px 10px;
   color: var(--color-surface);
-  background: var(--color-accent);
+  background: var(--color-danger);
   font-size: 0.76rem;
   font-weight: 900;
+  letter-spacing: 0.08em;
 }
 
 .stock-row {

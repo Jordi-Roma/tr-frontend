@@ -85,6 +85,23 @@ h1 {
   font-size: 2rem;
 }
 
+.price-stack {
+  display: grid;
+  gap: 3px;
+}
+
+.old-price {
+  color: var(--color-muted);
+  font-size: 1rem;
+  font-weight: 800;
+  text-decoration: line-through;
+}
+
+.price-stack.has-offer .price,
+.variant-offer-price {
+  color: var(--color-danger);
+}
+
 .price-row {
   display: flex;
   align-items: center;
@@ -93,13 +110,14 @@ h1 {
   margin-top: 22px;
 }
 
-.price-row span {
+.promo-badge {
   border-radius: 999px;
   padding: 6px 11px;
   color: var(--color-surface);
-  background: var(--color-accent);
+  background: var(--color-danger);
   font-size: 0.78rem;
   font-weight: 900;
+  letter-spacing: 0.08em;
 }
 
 .info-grid {
@@ -195,6 +213,10 @@ h1 {
   color: var(--color-primary);
   background: #fafaf8;
   font-weight: 800;
+}
+
+.variant-list s {
+  color: var(--color-muted);
 }
 
 .availability-list > div {

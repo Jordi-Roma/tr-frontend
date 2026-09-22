@@ -84,6 +84,21 @@ export class ProductoDetallePage implements OnInit {
     return this.toNumber(producto?.precio_final ?? producto?.precio_vigente);
   });
 
+  protected readonly precioOriginal = computed(() => {
+    const variantes = this.variantesFiltradas();
+    const precios = variantes
+      .filter((variante) => variante.tiene_promocion)
+      .map((variante) => this.toNumber(variante.precio_vigente))
+      .filter((precio) => precio > 0);
+
+    if (precios.length > 0) {
+      return Math.min(...precios);
+    }
+
+    const producto = this.producto();
+    return producto?.tiene_promocion ? this.toNumber(producto.precio_vigente) : 0;
+  });
+
   protected readonly stockSeleccionado = computed(() =>
     this.disponibilidadFiltrada().reduce(
       (total, item) => total + Math.max(item.stock_disponible - item.stock_reservado, 0),

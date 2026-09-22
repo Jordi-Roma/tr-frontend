@@ -27,10 +27,15 @@
       </p>
 
       <div class="price-row">
-        <strong class="price">{{ formatPrecio(precio()) }}</strong>
         @if (item.tiene_promocion) {
-          <span>Promocion activa</span>
+          <span class="promo-badge">OFERTA</span>
         }
+        <div class="price-stack" [class.has-offer]="item.tiene_promocion">
+          @if (item.tiene_promocion && precioOriginal() > 0) {
+            <span class="old-price">{{ formatPrecio(precioOriginal()) }}</span>
+          }
+          <strong class="price">{{ formatPrecio(precio()) }}</strong>
+        </div>
       </div>
 
       <div class="info-grid">
@@ -87,7 +92,13 @@
             @for (variante of variantesFiltradas(); track variante.id) {
               <span>
                 {{ varianteLabel(variante) }}
-                · {{ formatPrecio(variante.precio_final ?? variante.precio_vigente) }}
+                ·
+                @if (variante.tiene_promocion && variante.precio_vigente) {
+                  <s>{{ formatPrecio(variante.precio_vigente) }}</s>
+                  <strong class="variant-offer-price">{{ formatPrecio(variante.precio_final ?? variante.precio_vigente) }}</strong>
+                } @else {
+                  {{ formatPrecio(variante.precio_final ?? variante.precio_vigente) }}
+                }
                 · {{ variante.stock_total }} disponible(s)
               </span>
             }
