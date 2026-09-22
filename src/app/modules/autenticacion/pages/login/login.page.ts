@@ -78,6 +78,10 @@ export class LoginPage {
       return '/inventario';
     }
 
+    if (roles.includes('PROVEEDOR')) {
+      return '/panel-proveedor';
+    }
+
     return '/inicio';
   }
 
@@ -88,6 +92,10 @@ export class LoginPage {
 
     if (roles.includes('CLIENTE')) {
       return true;
+    }
+
+    if (roles.includes('PROVEEDOR')) {
+      return returnUrl === '/panel-proveedor' || returnUrl.startsWith('/panel-proveedor/');
     }
 
     return ![
