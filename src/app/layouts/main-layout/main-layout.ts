@@ -102,6 +102,7 @@ export class MainLayout {
         { label: 'Sucursales', path: '/sucursales', icon: 'pi pi-building', roles: ADMIN },
         { label: 'Empleados', path: '/empleados', icon: 'pi pi-id-card', roles: ADMIN },
         { label: 'Variantes', path: '/variantes', icon: 'pi pi-sitemap', roles: ADMIN },
+        { label: 'Promociones', path: '/promociones', icon: 'pi pi-percentage', roles: ADMIN },
         { label: 'Reservas', path: '/reservas-admin', icon: 'pi pi-calendar-check', roles: ADMIN_O_ENCARGADO },
       ],
     },

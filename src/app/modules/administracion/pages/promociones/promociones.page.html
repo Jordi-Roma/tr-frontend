@@ -1,0 +1,203 @@
+<section class="page-heading">
+  <span class="admin-heading-icon" aria-hidden="true">
+    <i class="pi pi-percentage"></i>
+  </span>
+  <div>
+    <p class="eyebrow">Promociones</p>
+    <h2>Gestión de promociones</h2>
+    <p>Crea descuentos por producto para que el catálogo pueda mostrar ofertas activas.</p>
+  </div>
+</section>
+
+@if (mensaje()) {
+  <p class="success-message">{{ mensaje() }}</p>
+}
+
+@if (error()) {
+  <p class="error-message">{{ error() }}</p>
+}
+
+<section class="panel tools-panel" aria-label="Herramientas de promociones">
+  <div class="filter-field">
+    <label for="busqueda">Buscar promoción</label>
+    <input
+      id="busqueda"
+      type="search"
+      [value]="busqueda()"
+      placeholder="Nombre, tipo o producto"
+      (input)="actualizarBusqueda($event)"
+    />
+  </div>
+
+  <div class="panel-actions">
+    <button type="button" (click)="abrirNuevaPromocion()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Nueva promoción
+    </button>
+  </div>
+</section>
+
+@if (formularioAbierto()) {
+  <section class="panel form-panel" aria-labelledby="promocion-form-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Formulario</p>
+        <h3 id="promocion-form-title">
+          {{ promocionEditandoId() === null ? 'Nueva promoción' : 'Editar promoción' }}
+        </h3>
+      </div>
+    </div>
+
+    <form [formGroup]="promocionForm" (ngSubmit)="guardarPromocion()" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" type="text" formControlName="nombre" placeholder="Ej: Promo invierno" />
+          @if (promocionForm.controls.nombre.invalid && promocionForm.controls.nombre.touched) {
+            <p class="field-error">El nombre es obligatorio.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="tipoDescuento">Tipo de descuento</label>
+          <select id="tipoDescuento" formControlName="tipoDescuento">
+            <option value="PORCENTAJE">Porcentaje</option>
+            <option value="MONTO_FIJO">Monto fijo</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="valor">Valor</label>
+          <input id="valor" type="number" min="0.01" step="0.01" formControlName="valor" />
+          @if (promocionForm.controls.valor.invalid && promocionForm.controls.valor.touched) {
+            <p class="field-error">Ingresa un valor válido.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="fechaInicio">Fecha inicio</label>
+          <input id="fechaInicio" type="date" formControlName="fechaInicio" />
+        </div>
+
+        <div class="field">
+          <label for="fechaFin">Fecha fin</label>
+          <input id="fechaFin" type="date" formControlName="fechaFin" />
+        </div>
+      </div>
+
+      <label for="descripcion">Descripción</label>
+      <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
+
+      <div class="products-picker">
+        <div class="picker-header">
+          <div>
+            <label>Productos incluidos</label>
+            <p class="field-hint">Selecciona uno o varios productos para aplicar el descuento.</p>
+          </div>
+          <span class="count-badge">{{ productoIdsSeleccionados().size }} seleccionados</span>
+        </div>
+
+        <div class="product-options">
+          @for (producto of productosActivos(); track producto.id) {
+            <label class="product-option" [class.selected]="productoSeleccionado(producto.id)">
+              <input
+                type="checkbox"
+                [checked]="productoSeleccionado(producto.id)"
+                (change)="alternarProducto(producto.id, $event)"
+              />
+              <span>
+                <strong>{{ producto.nombre }}</strong>
+                <small>{{ producto.categoria_nombre }}{{ producto.marca_nombre ? ' · ' + producto.marca_nombre : '' }}</small>
+              </span>
+            </label>
+          } @empty {
+            <p class="status-message">No hay productos activos para promocionar.</p>
+          }
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="promocionForm.invalid || procesando()">
+          <i class="pi pi-check" aria-hidden="true"></i>
+          {{ promocionEditandoId() === null ? 'Crear promoción' : 'Guardar cambios' }}
+        </button>
+        <button type="button" class="secondary-button" (click)="cancelarFormulario()">Cancelar</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel" aria-labelledby="promociones-title">
+  <div class="panel-header">
+    <div>
+      <p class="eyebrow">Listado</p>
+      <h3 id="promociones-title">Promociones registradas</h3>
+    </div>
+    <span class="count-badge">{{ promocionesFiltradas().length }} promociones</span>
+  </div>
+
+  @if (cargando()) {
+    <p class="status-message">Cargando promociones...</p>
+  } @else {
+    <div class="table-shell">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Promoción</th>
+            <th>Descuento</th>
+            <th>Vigencia</th>
+            <th>Productos</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (promocion of promocionesFiltradas(); track promocion.id) {
+            <tr>
+              <td>{{ promocion.id }}</td>
+              <td>
+                <strong>{{ promocion.nombre }}</strong>
+                <span>{{ promocion.descripcion || 'Sin descripción' }}</span>
+              </td>
+              <td>
+                <strong>{{ resumenDescuento(promocion) }}</strong>
+                <span>{{ promocion.tipo_descuento === 'PORCENTAJE' ? 'Porcentaje' : 'Monto fijo' }}</span>
+              </td>
+              <td>
+                {{ promocion.fecha_inicio }}<br />
+                <span>hasta {{ promocion.fecha_fin }}</span>
+              </td>
+              <td>{{ resumenProductos(promocion) }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!promocion.activo">
+                  {{ promocion.activo ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="secondary-button" (click)="editarPromocion(promocion)">
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    [class.danger-button]="promocion.activo"
+                    [class.secondary-button]="!promocion.activo"
+                    [disabled]="procesando()"
+                    (click)="cambiarEstado(promocion)"
+                  >
+                    {{ promocion.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7">No se encontraron promociones.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

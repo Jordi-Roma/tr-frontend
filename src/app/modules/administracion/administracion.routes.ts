@@ -11,6 +11,7 @@ import { TemporadasPage } from './pages/temporadas/temporadas.page';
 import { ColeccionesPage } from './pages/colecciones/colecciones.page';
 import { MarcasPage } from './pages/marcas/marcas.page';
 import { ProductosPage } from './pages/productos/productos.page';
+import { PromocionesPage } from './pages/promociones/promociones.page';
 import { VariantesPage } from './pages/variantes/variantes.page';
 
 export const ADMINISTRACION_ROUTES: Routes = [
@@ -105,6 +106,14 @@ export const ADMINISTRACION_ROUTES: Routes = [
   {
     path: 'variantes',
     component: VariantesPage,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+    },
+  },
+  {
+    path: 'promociones',
+    component: PromocionesPage,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
