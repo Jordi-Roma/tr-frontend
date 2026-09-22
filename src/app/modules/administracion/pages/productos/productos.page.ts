@@ -90,6 +90,7 @@ export class ProductosPage implements OnInit {
     tipo_corte: new FormControl<string>('REGULAR_FIT', { nonNullable: true }),
     ancho_base_cm: new FormControl<number | null>(53.0),
     largo_base_cm: new FormControl<number | null>(72.0),
+    modelo_3d_url: new FormControl<string | null>(null),
     colecciones_ids: new FormControl<number[]>([]),
     proveedores_ids: new FormControl<number[]>([]),
     url_imagen_nueva: new FormControl<string | null>(null),
@@ -159,6 +160,7 @@ export class ProductosPage implements OnInit {
       tipo_corte: producto.tipo_corte || 'REGULAR_FIT',
       ancho_base_cm: producto.ancho_base_cm ?? 53.0,
       largo_base_cm: producto.largo_base_cm ?? 72.0,
+      modelo_3d_url: producto.modelo_3d_url ?? null,
       colecciones_ids: producto.colecciones_ids,
       proveedores_ids: producto.proveedores_ids,
     });
@@ -293,6 +295,7 @@ export class ProductosPage implements OnInit {
       tipo_corte: value.tipo_corte || 'REGULAR_FIT',
       ancho_base_cm: value.ancho_base_cm !== null ? Number(value.ancho_base_cm) : 53.0,
       largo_base_cm: value.largo_base_cm !== null ? Number(value.largo_base_cm) : 72.0,
+      modelo_3d_url: value.modelo_3d_url ? value.modelo_3d_url.trim() : null,
       colecciones_ids: value.colecciones_ids || [],
       proveedores_ids: value.proveedores_ids || [],
       imagenes: this.imagenesEditando(),

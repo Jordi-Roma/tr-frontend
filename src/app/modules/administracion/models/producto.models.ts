@@ -26,6 +26,7 @@ export interface ProductoResponse {
   tipo_corte?: string;
   ancho_base_cm?: number | null;
   largo_base_cm?: number | null;
+  modelo_3d_url?: string | null;
   activo: boolean;
   fecha_creacion: string;
   colecciones_ids: number[];
@@ -44,6 +45,7 @@ export interface CrearProductoRequest {
   tipo_corte?: string;
   ancho_base_cm?: number | null;
   largo_base_cm?: number | null;
+  modelo_3d_url?: string | null;
   colecciones_ids: number[];
   proveedores_ids: number[];
   imagenes: ImagenProductoRequest[];
@@ -60,6 +62,7 @@ export interface ActualizarProductoRequest {
   tipo_corte?: string;
   ancho_base_cm?: number | null;
   largo_base_cm?: number | null;
+  modelo_3d_url?: string | null;
   colecciones_ids: number[];
   proveedores_ids: number[];
   imagenes: ImagenProductoRequest[];
