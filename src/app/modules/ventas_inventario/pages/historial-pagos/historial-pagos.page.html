@@ -1,5 +1,5 @@
-<section class="admin-page-shell">
-  <div class="admin-page-header">
+<section class="payment-page-shell">
+  <div class="payment-page-header">
     <div>
       <p class="admin-eyebrow">Pagos</p>
       <h1>{{ vistaCliente() ? 'Mis pagos' : 'Historial de pagos' }}</h1>
@@ -11,7 +11,7 @@
         }}
       </p>
     </div>
-    <div class="filters-row">
+    <div class="filters-row" [class.admin-view]="!vistaCliente()">
       <label>
         Estado
         <select [value]="estado()" (change)="actualizarEstado($event)">
@@ -50,11 +50,11 @@
     <p class="feedback error">{{ error() }}</p>
   }
 
-  <div class="admin-card table-wrap">
+  <div class="payment-card payment-table-scroll">
     @if (cargando()) {
       <p class="status-message">Cargando pagos...</p>
     } @else {
-      <table class="payments-table">
+      <table class="payments-table" [class.admin-view]="!vistaCliente()">
         <thead>
           <tr>
             <th>Orden</th>

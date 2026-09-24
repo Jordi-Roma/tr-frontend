@@ -1,5 +1,5 @@
-<section class="admin-page-shell">
-  <div class="admin-page-header">
+<section class="payment-page-shell">
+  <div class="payment-page-header">
     <div>
       <p class="admin-eyebrow">Pagos</p>
       <h1>Detalle del pago</h1>
@@ -13,12 +13,12 @@
   }
 
   @if (cargando()) {
-    <div class="admin-card">
+    <div class="payment-card">
       <p class="status-message">Cargando pago...</p>
     </div>
   } @else if (pago(); as item) {
     <div class="detail-grid">
-      <article class="admin-card summary-card">
+      <article class="payment-card summary-card">
         <div>
           <span class="status-pill {{ estadoClase(item.estado) }}">{{ estadoEtiqueta(item.estado) }}</span>
           <p class="status-description">{{ estadoDescripcion(item.estado) }}</p>
@@ -28,7 +28,7 @@
         <strong>{{ formatMonto(item.monto_total) }}</strong>
       </article>
 
-      <article class="admin-card info-grid">
+      <article class="payment-card info-grid">
         <div><span>Método</span><strong>{{ item.metodo }}</strong></div>
         <div><span>Proveedor</span><strong>{{ item.proveedor }}</strong></div>
         <div><span>Fecha creación</span><strong>{{ formatFecha(item.fecha_creacion) }}</strong></div>
@@ -41,7 +41,7 @@
       </article>
     </div>
 
-    <div class="admin-card table-wrap products-table-wrap">
+    <div class="payment-card payment-products-scroll">
       <h3>Productos</h3>
       <table class="products-table">
         <thead>

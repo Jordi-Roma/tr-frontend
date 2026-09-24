@@ -1,110 +1,51 @@
-.filters-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: end;
-}
+:host { display: block; min-width: 0; }
 
-.filters-row label {
-  display: grid;
-  gap: 6px;
-  color: var(--color-muted);
-  font-weight: 900;
-}
+.payment-page-shell { width: min(100%, 1500px); min-width: 0; margin: 0 auto; padding: clamp(20px, 3vw, 42px); }
+.payment-page-header { display: grid; gap: 22px; margin-bottom: 24px; }
+.payment-page-header > div:first-child { min-width: 0; }
+.payment-page-header h1 { margin: 0 0 8px; color: var(--color-primary); font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.35rem); letter-spacing: -0.04em; line-height: 1.08; }
+.payment-page-header p:not(.admin-eyebrow) { margin: 0; color: var(--color-muted); line-height: 1.55; }
+.admin-eyebrow { margin: 0 0 8px; color: var(--color-accent); font-size: 0.76rem; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; }
+.filters-row { display: grid; grid-template-columns: repeat(3, minmax(145px, 1fr)) auto auto; align-items: end; gap: 12px; border: 1px solid var(--color-border); border-radius: 16px; padding: 16px; background: var(--color-surface); box-shadow: 0 10px 28px rgb(21 21 21 / 4%); }
+.filters-row.admin-view { grid-template-columns: repeat(5, minmax(125px, 1fr)) auto auto; }
+.filters-row label { display: grid; min-width: 0; gap: 6px; color: var(--color-muted); font-size: 0.82rem; font-weight: 800; }
+.filters-row select, .filters-row input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--color-border); border-radius: 11px; padding: 9px 11px; background: var(--color-surface); color: var(--color-primary); font: inherit; font-weight: 600; }
+.filters-row button { min-height: 44px; border: 0; border-radius: 11px; padding: 10px 16px; font: inherit; font-weight: 900; cursor: pointer; white-space: nowrap; }
+.primary-action { color: var(--color-surface); background: var(--color-primary); }
+.secondary-action { color: var(--color-primary); background: var(--color-accent-soft); }
+.payment-card { min-width: 0; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-surface); box-shadow: 0 12px 32px rgb(21 21 21 / 5%); }
+.payment-table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.payments-table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: auto; }
+.payments-table.admin-view { min-width: 1480px; }
+.payments-table th, .payments-table td { border-bottom: 1px solid var(--color-border); padding: 15px 16px; text-align: left; vertical-align: middle; }
+.payments-table tbody tr:last-child td { border-bottom: 0; }
+.payments-table tbody tr:hover { background: #fafaf8; }
+.payments-table th { color: var(--color-muted); background: #fafaf8; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; }
+.payments-table td { color: var(--color-primary); line-height: 1.45; white-space: nowrap; }
+.payments-table td small { display: block; margin-top: 4px; color: var(--color-muted); white-space: normal; }
+.payments-table td:nth-child(2) { min-width: 150px; }
+.payments-table td:nth-child(3) { min-width: 130px; }
+.payments-table td:nth-child(4) { min-width: 120px; }
+.payments-table td:nth-child(5) { min-width: 120px; }
+.payments-table td:nth-last-child(2) { min-width: 180px; }
+.status-pill { display: inline-flex; align-items: center; width: fit-content; border-radius: 999px; padding: 7px 12px; font-size: 0.78rem; font-weight: 900; line-height: 1.2; white-space: nowrap; }
+.status-pill.pagado { color: #2f6f3e; background: #e7f1e5; }
+.status-pill.pendiente { color: #8a5a0a; background: #fff2d6; }
+.status-pill.rechazado { color: #a83429; background: #fae8e5; }
+.status-pill.neutro { color: #505650; background: #eceee9; }
+.table-link { display: inline-flex; border-radius: 9px; padding: 8px 10px; color: var(--color-primary); background: var(--color-accent-soft); font-weight: 900; text-decoration: none; white-space: nowrap; }
+.table-link:hover { background: #d1ddc0; }
+.feedback { margin: 0 0 18px; border-radius: 12px; padding: 13px 16px; font-weight: 700; }
+.error { color: var(--color-danger); background: rgba(178, 74, 61, 0.1); }
+.status-message { margin: 0; padding: 24px; color: var(--color-muted); }
 
-.filters-row select,
-.filters-row input {
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 9px 10px;
-  background: var(--color-surface);
-  color: var(--color-primary);
-  font-weight: 800;
+@media (max-width: 1050px) {
+  .filters-row, .filters-row.admin-view { grid-template-columns: repeat(3, minmax(130px, 1fr)); }
+  .filters-row button { justify-self: start; }
 }
-
-.primary-action,
-.secondary-action {
-  border: 0;
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-weight: 900;
-  cursor: pointer;
+@media (max-width: 680px) {
+  .payment-page-shell { padding: 20px 16px 32px; }
+  .filters-row, .filters-row.admin-view { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 13px; }
+  .filters-row button { width: 100%; }
 }
-
-.primary-action {
-  background: var(--color-primary);
-  color: var(--color-surface);
-}
-
-.secondary-action {
-  background: var(--color-accent-soft);
-  color: var(--color-primary);
-}
-
-.table-wrap {
-  overflow-x: auto;
-}
-
-.feedback {
-  border-radius: 14px;
-  padding: 10px 12px;
-  font-weight: 900;
-}
-
-.error {
-  background: rgba(178, 74, 61, 0.1);
-  color: var(--color-danger);
-}
-
-.payments-table {
-  width: 100%;
-  min-width: 1120px;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  border-bottom: 1px solid var(--color-border);
-  padding: 12px;
-  text-align: left;
-  vertical-align: middle;
-}
-
-th {
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-}
-
-td small {
-  display: block;
-  color: var(--color-muted);
-  margin-top: 4px;
-}
-
-.status-pill {
-  border-radius: 999px;
-  padding: 5px 9px;
-  font-weight: 900;
-  background: var(--color-accent-soft);
-}
-
-.status-pill.pagado {
-  background: rgba(68, 133, 82, 0.14);
-  color: #2f6f3e;
-}
-
-.status-pill.pendiente {
-  background: rgba(219, 157, 48, 0.16);
-  color: #9a6814;
-}
-
-.status-pill.rechazado {
-  background: rgba(178, 74, 61, 0.12);
-  color: var(--color-danger);
-}
-
-.table-link {
-  font-weight: 900;
-  color: var(--color-primary);
-}
+@media (max-width: 420px) { .filters-row, .filters-row.admin-view { grid-template-columns: minmax(0, 1fr); } }
