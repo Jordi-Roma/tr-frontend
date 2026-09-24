@@ -86,7 +86,10 @@
               <td><strong>{{ formatMonto(pago.monto_total) }}</strong></td>
               <td>{{ pago.metodo }}</td>
               <td>{{ pago.proveedor }}</td>
-              <td><span class="status-pill {{ estadoClase(pago.estado) }}">{{ pago.estado }}</span></td>
+              <td>
+                <span class="status-pill {{ estadoClase(pago.estado) }}">{{ estadoEtiqueta(pago.estado) }}</span>
+                <small>{{ estadoDescripcion(pago.estado) }}</small>
+              </td>
               <td>{{ formatFecha(pago.fecha_pago || pago.fecha_creacion) }}</td>
               <td><a class="table-link" [routerLink]="detalleLink(pago)">Ver detalle</a></td>
             </tr>

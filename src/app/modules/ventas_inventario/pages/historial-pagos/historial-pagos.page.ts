@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+import { obtenerEstadoPagoVisual } from '../../models/pago-estado.util';
 import { PagoFiltros, PagoHistorialItem } from '../../models/pago.models';
 import { PagoService } from '../../services/pago.service';
 
@@ -80,11 +81,15 @@ export class HistorialPagosPage implements OnInit {
   }
 
   protected estadoClase(estado: string): string {
-    const normalizado = estado.toUpperCase();
-    if (normalizado === 'PAGADO') return 'pagado';
-    if (normalizado === 'PENDIENTE') return 'pendiente';
-    if (['RECHAZADO', 'EXPIRADO', 'CANCELADO'].includes(normalizado)) return 'rechazado';
-    return 'neutro';
+    return obtenerEstadoPagoVisual(estado).clase;
+  }
+
+  protected estadoEtiqueta(estado: string): string {
+    return obtenerEstadoPagoVisual(estado).etiqueta;
+  }
+
+  protected estadoDescripcion(estado: string): string {
+    return obtenerEstadoPagoVisual(estado).descripcion;
   }
 
   private cargarPagos(): void {

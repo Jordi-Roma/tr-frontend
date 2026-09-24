@@ -17,7 +17,8 @@
     </article>
   } @else if (orden(); as item) {
     <article class="result-card" [class]="estadoClase()">
-      <span class="status-pill">{{ item.estado }}</span>
+      <span class="status-pill">{{ estadoEtiqueta(item.estado) }}</span>
+      <p class="status-description">{{ estadoDescripcion(item.estado) }}</p>
       <h2>Orden #{{ item.orden_id }}</h2>
       <div class="info-grid">
         <div>

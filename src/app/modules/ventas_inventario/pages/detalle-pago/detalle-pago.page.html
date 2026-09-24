@@ -20,7 +20,8 @@
     <div class="detail-grid">
       <article class="admin-card summary-card">
         <div>
-          <span class="status-pill {{ estadoClase(item.estado) }}">{{ item.estado }}</span>
+          <span class="status-pill {{ estadoClase(item.estado) }}">{{ estadoEtiqueta(item.estado) }}</span>
+          <p class="status-description">{{ estadoDescripcion(item.estado) }}</p>
           <h2>Orden #{{ item.orden_id }}</h2>
           <p>{{ item.venta_codigo || ('Venta #' + item.venta_id) }}</p>
         </div>

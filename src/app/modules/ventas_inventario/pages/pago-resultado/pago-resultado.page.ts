@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+import { obtenerEstadoPagoVisual } from '../../models/pago-estado.util';
 import { OrdenPagoResponse } from '../../models/pago.models';
 import { PagoService } from '../../services/pago.service';
 
@@ -55,10 +56,15 @@ export class PagoResultadoPage implements OnInit {
   }
 
   protected estadoClase(): string {
-    const estado = this.orden()?.estado;
-    if (estado === 'PAGADO') return 'pagado';
-    if (estado === 'RECHAZADO' || estado === 'CANCELADO' || estado === 'EXPIRADO') return 'rechazado';
-    return 'pendiente';
+    return obtenerEstadoPagoVisual(this.orden()?.estado).clase;
+  }
+
+  protected estadoEtiqueta(estado: string): string {
+    return obtenerEstadoPagoVisual(estado).etiqueta;
+  }
+
+  protected estadoDescripcion(estado: string): string {
+    return obtenerEstadoPagoVisual(estado).descripcion;
   }
 
   private cargarOrden(ordenId: number): void {

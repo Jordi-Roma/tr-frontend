@@ -21,6 +21,8 @@ h1 { margin: 0 0 10px; font-family: var(--font-display); font-size: clamp(2.5rem
 .status-pill { justify-self: start; border-radius: 999px; padding: 8px 12px; font-weight: 900; background: var(--color-accent-soft); color: var(--color-primary); }
 .pagado .status-pill { background: rgba(104, 142, 88, .16); }
 .rechazado .status-pill { color: var(--color-danger); background: rgba(178, 74, 61, .12); }
+.pendiente .status-pill { color: #9a6814; background: rgba(219, 157, 48, .16); }
+.status-description { margin: -8px 0 0; color: var(--color-muted); font-weight: 800; }
 
 .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 .info-grid div { border: 1px solid var(--color-border); border-radius: 16px; padding: 14px; }
