@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+import { TiendaStateService } from '../../../../core/services/tienda-state.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -14,6 +15,7 @@ export class LoginPage {
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly tiendaState = inject(TiendaStateService);
 
   protected readonly cargando = signal(false);
   protected readonly mensajeError = signal('');
@@ -40,6 +42,9 @@ export class LoginPage {
 
     this.cargando.set(true);
     const { identificador, password } = this.loginForm.getRawValue();
+    this.tiendaState.vaciarCarrito();
+    this.tiendaState.seleccionarSucursalCarrito(null);
+    this.tiendaState.reemplazarFavoritos([]);
 
     this.authService
       .login({ identificador, password })
