@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { DetallePagoPage } from './pages/detalle-pago/detalle-pago.page';
+import { DevolucionesPage } from './pages/historial-pagos/devoluciones.page';
 import { DetalleDeliveryPage } from './pages/detalle-delivery/detalle-delivery.page';
 import { HistorialDeliveryPage } from './pages/historial-delivery/historial-delivery.page';
 import { HistorialPagosPage } from './pages/historial-pagos/historial-pagos.page';
@@ -11,6 +12,18 @@ import { TransferenciasStockPage } from './pages/transferencias-stock/transferen
 import { VentaPresencialPage } from './pages/venta-presencial/venta-presencial.page';
 
 export const VENTAS_INVENTARIO_ROUTES: Routes = [
+  {
+    path: 'devoluciones',
+    component: DevolucionesPage,
+    canActivate: [roleGuard],
+    data: { roles: ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL', 'CAJERO'] },
+  },
+  {
+    path: 'mis-devoluciones',
+    component: DevolucionesPage,
+    canActivate: [roleGuard],
+    data: { roles: ['CLIENTE'], vista: 'cliente' },
+  },
   {
     path: 'inventario',
     component: InventarioPage,

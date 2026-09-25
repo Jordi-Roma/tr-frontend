@@ -1,0 +1,161 @@
+<main class="returns-page">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">{{ esCliente() ? 'COMPRAS' : 'VENTAS E INVENTARIO' }}</span>
+      <h1>{{ esCliente() ? 'Mis devoluciones' : 'Gestión de devoluciones' }}</h1>
+      <p>{{ esCliente() ? 'Solicita y sigue la devolución de tus compras.' : 'Revisa solicitudes, recibe artículos e informa el reembolso.' }}</p>
+    </div>
+    @if (!esCliente()) {
+      <label class="filter-control">Estado
+        <select (change)="cambiarFiltro($event)">
+          <option value="">Todos</option>
+          <option value="SOLICITADA">Solicitada</option>
+          <option value="APROBADA">Aprobada</option>
+          <option value="REEMBOLSO_PENDIENTE">Reembolso pendiente</option>
+          <option value="ERROR_REEMBOLSO">Error de reembolso</option>
+          <option value="REEMBOLSADA">Reembolsada</option>
+          <option value="RECHAZADA">Rechazada</option>
+          <option value="CANCELADA">Cancelada</option>
+        </select>
+      </label>
+    }
+  </header>
+
+  @if (mensaje()) { <div class="notice success">{{ mensaje() }}</div> }
+  @if (error()) { <div class="notice error">{{ error() }}</div> }
+  @if (cargando()) { <div class="empty-state">Cargando devoluciones…</div> }
+
+  @if (esCliente()) {
+    <section class="panel">
+      <div class="section-heading">
+        <div><span class="eyebrow">ELEGIBLES</span><h2>Compras que puedes devolver</h2></div>
+        <span class="muted">Plazo: 30 días desde la compra</span>
+      </div>
+      @if (!ventas().length && !cargando()) {
+        <p class="empty-state">No tienes compras elegibles para devolución.</p>
+      }
+      <div class="purchase-list">
+        @for (venta of ventas(); track venta.venta_id) {
+          <article class="purchase-card">
+            <div class="purchase-top">
+              <div><strong>{{ venta.venta_codigo }}</strong><span>{{ venta.sucursal }} · {{ fecha(venta.fecha_venta) }}</span></div>
+              <strong>{{ monto(venta.total) }}</strong>
+            </div>
+            <div class="line-items">
+              @for (item of venta.detalles; track item.venta_detalle_id) {
+                <div class="line-item">
+                  <span>{{ item.producto }} · {{ item.talla }} / {{ item.color }}</span>
+                  <span>Disponibles: {{ item.cantidad_disponible }}</span>
+                </div>
+              }
+            </div>
+            <button class="button secondary" type="button" (click)="iniciarSolicitud(venta)">Solicitar devolución</button>
+          </article>
+        }
+      </div>
+    </section>
+
+    @if (ventaSeleccionada(); as venta) {
+      <section class="panel request-panel">
+        <div class="section-heading"><div><span class="eyebrow">{{ venta.venta_codigo }}</span><h2>Artículos y cantidades</h2></div>
+          <button class="icon-button" type="button" (click)="cerrarSolicitud()" aria-label="Cerrar">×</button>
+        </div>
+        @for (item of venta.detalles; track item.venta_detalle_id) {
+          <label class="quantity-row"><span>{{ item.producto }} · {{ item.talla }} / {{ item.color }} <small>({{ item.cantidad_disponible }} disponibles)</small></span>
+            <input type="number" min="0" [max]="item.cantidad_disponible" [value]="cantidades()[item.venta_detalle_id] ?? 0" (input)="actualizarCantidad(item.venta_detalle_id, $event)" aria-label="Cantidad a devolver">
+          </label>
+        }
+        <label class="field">Motivo <input maxlength="500" [value]="motivo()" (input)="cambiarMotivo($event)" placeholder="Describe por qué solicitas la devolución"></label>
+        <label class="field">Observación (opcional) <textarea maxlength="1000" [value]="observacion()" (input)="cambiarObservacion($event)" rows="3"></textarea></label>
+        <p class="hint">El costo de delivery no se incluye. La tienda revisará los artículos antes de confirmar el importe y reponer stock.</p>
+        <button class="button primary" type="button" [disabled]="guardando()" (click)="enviarSolicitud()">{{ guardando() ? 'Enviando…' : 'Enviar solicitud' }}</button>
+      </section>
+    }
+  }
+
+  <section class="panel">
+    <div class="section-heading"><div><span class="eyebrow">SEGUIMIENTO</span><h2>{{ esCliente() ? 'Tus solicitudes' : 'Solicitudes recibidas' }}</h2></div></div>
+    @if (!devoluciones().length && !cargando()) { <p class="empty-state">Todavía no hay solicitudes para mostrar.</p> }
+    <div class="return-list">
+      @for (item of devoluciones(); track item.id) {
+        <article class="return-card">
+          <div class="return-main">
+            <div><strong>{{ item.codigo }} · {{ item.venta_codigo }}</strong>
+              @if (!esCliente()) { <span>{{ item.cliente_nombre || item.cliente_correo || 'Cliente' }} · {{ item.sucursal }}</span> }
+              <span>{{ fecha(item.fecha_solicitud) }}</span>
+            </div>
+            <span [class]="estadoClase(item.estado)">{{ etiquetaEstado(item.estado) }}</span>
+          </div>
+          <div class="return-summary"><span>{{ item.detalles.length }} línea(s)</span><span>Solicitado: {{ monto(item.monto_solicitado) }}</span>
+            @if (tieneMonto(item.monto_aprobado)) { <strong>Aprobado: {{ monto(item.monto_aprobado) }}</strong> }
+          </div>
+          <div class="card-actions">
+            @if (esCliente()) { <button class="button secondary" type="button" (click)="seleccionar(item)">Ver detalle</button> }
+            @if (esCliente() && item.estado === 'SOLICITADA') { <button class="button secondary" type="button" [disabled]="guardando()" (click)="cancelar(item)">Cancelar solicitud</button> }
+            @if (!esCliente()) { <button class="button secondary" type="button" (click)="seleccionar(item)">Gestionar</button> }
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+
+  @if (esCliente()) {
+    @if (devolucionSeleccionada(); as item) {
+      <section class="panel management-panel">
+        <div class="section-heading"><div><span class="eyebrow">{{ item.codigo }}</span><h2>{{ item.venta_codigo }}</h2></div>
+          <button class="icon-button" type="button" (click)="cerrarDetalle()" aria-label="Cerrar">×</button>
+        </div>
+        <p><strong>Estado:</strong> <span [class]="estadoClase(item.estado)">{{ etiquetaEstado(item.estado) }}</span></p>
+        <p><strong>Motivo:</strong> {{ item.motivo }}</p>
+        <p>Importe solicitado: {{ monto(item.monto_solicitado) }} · Importe aprobado: {{ monto(item.monto_aprobado) }}</p>
+        <div class="line-items">
+          @for (detalle of item.detalles; track detalle.id) {
+            <div class="line-item"><span>{{ detalle.producto }} · {{ detalle.talla }} / {{ detalle.color }}</span>
+              <span>Solicitado {{ detalle.cantidad_solicitada }} · Aceptado {{ detalle.cantidad_aceptada }} · Rechazado {{ detalle.cantidad_rechazada }}</span>
+              @if (tieneMonto(detalle.monto_aprobado)) { <strong>{{ monto(detalle.monto_aprobado) }}</strong> }
+            </div>
+          }
+        </div>
+        @if (item.estado === 'REEMBOLSO_PENDIENTE') { <p class="hint">La tienda registró la recepción. El reembolso aún está pendiente.</p> }
+        @if (item.estado === 'REEMBOLSADA') { <p class="notice success">Reembolso confirmado: {{ item.metodo_reembolso }} · {{ item.referencia_reembolso || item.proveedor_refund_estado || 'Registrado' }}</p> }
+        @if (item.estado === 'RECHAZADA' || item.estado === 'ERROR_REEMBOLSO') { <p class="notice error">{{ item.error_reembolso || item.observacion || 'Consulta con la tienda para más información.' }}</p> }
+      </section>
+    }
+  }
+
+  @if (!esCliente() && devolucionSeleccionada(); as item) {
+    <section class="panel management-panel">
+      <div class="section-heading"><div><span class="eyebrow">{{ item.codigo }}</span><h2>{{ item.venta_codigo }} · {{ item.cliente_nombre || 'Cliente' }}</h2></div>
+        <button class="icon-button" type="button" (click)="cerrarDetalle()" aria-label="Cerrar">×</button>
+      </div>
+      <p><strong>Motivo:</strong> {{ item.motivo }}</p>
+      <p><strong>Estado:</strong> <span [class]="estadoClase(item.estado)">{{ etiquetaEstado(item.estado) }}</span></p>
+      <div class="line-items">
+        @for (detalle of item.detalles; track detalle.id) {
+          <div class="line-item"><span>{{ detalle.producto }} · {{ detalle.talla }} / {{ detalle.color }}</span>
+            <span>Pidió {{ detalle.cantidad_solicitada }} de {{ detalle.cantidad_vendida }}</span>
+            @if (item.estado === 'APROBADA') {
+              <label>Recibidas y aceptadas <input type="number" min="0" [max]="detalle.cantidad_solicitada" [value]="cantidadesRecibidas()[detalle.id] ?? 0" (input)="actualizarRecepcion(detalle.id, $event)"></label>
+            }
+            @if (detalle.cantidad_aceptada > 0) { <span>Aceptadas: {{ detalle.cantidad_aceptada }} · {{ monto(detalle.monto_aprobado) }}</span> }
+          </div>
+        }
+      </div>
+      <label class="field">Nota de gestión / rechazo <textarea rows="2" [value]="notaGestion()" (input)="cambiarNota($event)"></textarea></label>
+      @if (item.estado === 'SOLICITADA' && puedeRevisar()) {
+        <div class="card-actions"><button class="button primary" type="button" [disabled]="guardando()" (click)="revisar(true)">Aprobar</button><button class="button danger-button" type="button" [disabled]="guardando()" (click)="revisar(false)">Rechazar</button></div>
+      }
+      @if (item.estado === 'APROBADA') { <button class="button primary" type="button" [disabled]="guardando()" (click)="registrarRecepcion()">Registrar recepción e inspección</button> }
+      @if ((item.estado === 'REEMBOLSO_PENDIENTE' || item.estado === 'ERROR_REEMBOLSO') && puedeReembolsar()) {
+        @if (item.proveedor_pago_original?.toUpperCase() !== 'STRIPE') {
+          <div class="manual-refund"><label class="field">Método<select (change)="cambiarMetodo($event)"><option>EFECTIVO</option><option>QR</option><option>OTRO</option></select></label>
+            <label class="field">Referencia / comprobante<input [value]="referencia()" (input)="cambiarReferencia($event)" placeholder="N.º de operación o recibo"></label>
+          </div>
+        } @else { <p class="hint">El reembolso se procesará por Stripe. Solo se mostrará como completo cuando Stripe lo confirme.</p> }
+        <button class="button primary" type="button" [disabled]="guardando()" (click)="procesarReembolso()">{{ item.proveedor_pago_original?.toUpperCase() === 'STRIPE' ? 'Procesar / reintentar Stripe' : 'Registrar reembolso manual' }}</button>
+        @if (item.error_reembolso) { <p class="notice error">{{ item.error_reembolso }}</p> }
+      }
+      @if (item.estado === 'REEMBOLSADA') { <p class="notice success">Reembolso confirmado. {{ item.metodo_reembolso }} · {{ monto(item.monto_aprobado) }} · {{ item.referencia_reembolso || item.proveedor_refund_estado || 'Registrado' }}</p> }
+    </section>
+  }
+</main>
