@@ -3,8 +3,10 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import {
+  CheckoutQrResponse,
   CheckoutStripeResponse,
   ConfirmarPagoPruebaRequest,
+  CrearCheckoutQrRequest,
   CrearCheckoutStripeRequest,
   OrdenPagoResponse,
   PagoFiltros,
@@ -19,6 +21,14 @@ export class PagoService {
 
   crearCheckoutStripe(request: CrearCheckoutStripeRequest): Observable<CheckoutStripeResponse> {
     return this.http.post<CheckoutStripeResponse>(`${this.apiUrl}/stripe/checkout`, request);
+  }
+
+  crearCheckoutQr(request: CrearCheckoutQrRequest): Observable<CheckoutQrResponse> {
+    return this.http.post<CheckoutQrResponse>(`${this.apiUrl}/qr/checkout`, request);
+  }
+
+  confirmarPagoQr(ordenId: number): Observable<OrdenPagoResponse> {
+    return this.http.post<OrdenPagoResponse>(`${this.apiUrl}/qr/confirmar/${ordenId}`, {});
   }
 
   obtenerOrden(ordenId: number): Observable<OrdenPagoResponse> {

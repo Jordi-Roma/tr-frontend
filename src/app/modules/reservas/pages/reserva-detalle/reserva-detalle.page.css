@@ -225,36 +225,105 @@ h1 {
   display: grid;
   justify-items: center;
   gap: 14px;
-  border: 1px dashed var(--color-accent);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: var(--radius-card);
-  padding: 18px;
+  padding: 20px;
   background: var(--color-surface);
   text-align: center;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+.qr-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.qr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eef2ff;
+  color: #3730a3;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.qr-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .qr-panel h3 {
-  margin: 0 0 4px;
+  margin: 0;
   color: var(--color-primary);
+  font-size: 1.2rem;
 }
 
 .qr-image {
-  width: min(260px, 80vw);
+  width: min(240px, 80vw);
   height: auto;
-  border: 12px solid #fff;
+  border: 8px solid #fff;
   border-radius: 14px;
   background: #fff;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
-.qr-panel pre {
-  max-width: 100%;
-  margin: 0;
-  border-radius: 14px;
-  padding: 10px 12px;
-  color: var(--color-primary);
-  background: rgba(136, 153, 104, 0.1);
-  white-space: pre-wrap;
+.qr-details-table {
+  width: 100%;
+  max-width: 360px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   text-align: left;
+}
+
+.qr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.qr-label {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.qr-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.copy-btn {
+  background: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 3px 6px;
+  cursor: pointer;
+  color: var(--color-primary);
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: #e2e8f0;
 }
 
 .qr-actions {
@@ -262,7 +331,14 @@ h1 {
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
+  margin-top: 4px;
 }
+
+.qr-confirm-btn {
+  background: #16a34a !important;
+  color: #fff !important;
+}
+
 
 .success-message {
   border-radius: 16px;

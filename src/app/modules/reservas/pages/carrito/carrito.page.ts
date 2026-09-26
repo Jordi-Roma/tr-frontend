@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import * as L from 'leaflet';
+import QRCode from 'qrcode';
 import { finalize, forkJoin } from 'rxjs';
 import { CarritoItemResponse, CarritoResponse } from '../../models/carrito.models';
 import { CatalogoSucursal } from '../../../catalogo/models/catalogo-publico.models';
@@ -10,6 +11,7 @@ import { CarritoService } from '../../../reservas/services/carrito.service';
 import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publico.service';
 import { ReservasService } from '../../services/reservas.service';
 import { DeliveryCheckoutRequest, DeliveryCotizacionResponse } from '../../../ventas_inventario/models/delivery.models';
+import { CheckoutQrResponse } from '../../../ventas_inventario/models/pago.models';
 import { DeliveryService } from '../../../ventas_inventario/services/delivery.service';
 import { PagoService } from '../../../ventas_inventario/services/pago.service';
 import { TiendaStateService } from '../../../../core/services/tienda-state.service';
@@ -20,7 +22,7 @@ import { TiendaStateService } from '../../../../core/services/tienda-state.servi
   styleUrl: './carrito.page.css',
   templateUrl: './carrito.page.html',
 })
-export class CarritoPage implements OnInit {
+export class CarritoPage implements OnInit, OnDestroy {
   private readonly carritoService = inject(CarritoService);
   private readonly catalogoService = inject(CatalogoPublicoService);
   private readonly reservasService = inject(ReservasService);
@@ -58,6 +60,22 @@ export class CarritoPage implements OnInit {
   protected readonly latitudEntrega = signal(-17.783327);
   protected readonly longitudEntrega = signal(-63.18214);
   protected readonly cotizacionDelivery = signal<DeliveryCotizacionResponse | null>(null);
+
+  protected readonly metodoPagoDigital = signal<'QR' | 'STRIPE'>('QR');
+  protected readonly mostrandoModalQr = signal(false);
+  protected readonly checkoutQr = signal<CheckoutQrResponse | null>(null);
+  protected readonly qrDataUrl = signal('');
+  protected readonly segundosRestantesQr = signal(15 * 60);
+  protected readonly copiadoQr = signal<string | null>(null);
+  protected readonly errorQr = signal('');
+  private timerQr?: ReturnType<typeof setInterval>;
+
+  protected readonly tiempoRestanteQrFormateado = computed(() => {
+    const s = this.segundosRestantesQr();
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const seg = (s % 60).toString().padStart(2, '0');
+    return `${m}:${seg}`;
+  });
 
   protected readonly items = computed(() => this.carrito()?.items ?? []);
   protected readonly subtotal = computed(() => this.toNumber(this.carrito()?.total));
@@ -255,6 +273,115 @@ export class CarritoPage implements OnInit {
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
       });
+  }
+
+  protected pagarConQr(): void {
+    const sucursalId = this.sucursalId();
+
+    if (sucursalId === null) {
+      this.error.set('Selecciona una sucursal para pagar con QR.');
+      return;
+    }
+    const delivery = this.deliveryCheckout();
+    if (this.tipoEntrega() === 'DELIVERY' && delivery === null) {
+      this.error.set('Completa y cotiza la direccion de delivery antes de pagar.');
+      return;
+    }
+
+    this.guardando.set(true);
+    this.error.set('');
+    this.mensaje.set('');
+
+    this.pagoService
+      .crearCheckoutQr({
+        sucursal_id: sucursalId,
+        tipo_entrega: this.tipoEntrega(),
+        delivery,
+      })
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: async (checkout) => {
+          this.checkoutQr.set(checkout);
+          try {
+            const dataUrl = await QRCode.toDataURL(checkout.qr_payload, {
+              errorCorrectionLevel: 'M',
+              margin: 2,
+              scale: 8,
+              color: { dark: '#0f172a', light: '#ffffff' },
+            });
+            this.qrDataUrl.set(dataUrl);
+            this.mostrandoModalQr.set(true);
+            this.iniciarTimerQr();
+          } catch {
+            this.error.set('No se pudo generar la imagen del código QR.');
+          }
+        },
+        error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+      });
+  }
+
+  protected confirmarPagoQr(): void {
+    const checkout = this.checkoutQr();
+    if (!checkout) return;
+
+    this.guardando.set(true);
+    this.errorQr.set('');
+
+    this.pagoService
+      .confirmarPagoQr(checkout.orden_id)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
+        next: () => {
+          this.cerrarModalQr();
+          // Navegar al comprobante en Mis Pagos
+          void this.router.navigate(['/mis-pagos', checkout.orden_id]);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.errorQr.set(this.obtenerMensajeError(error));
+        },
+      });
+  }
+
+  protected cerrarModalQr(): void {
+    this.detenerTimerQr();
+    this.mostrandoModalQr.set(false);
+    this.qrDataUrl.set('');
+    this.checkoutQr.set(null);
+    this.errorQr.set('');
+  }
+
+  protected reintentarCarga(): void {
+    this.error.set('');
+    this.cargarCarrito();
+  }
+
+  protected copiarQr(texto: string, campo: string): void {
+    void navigator.clipboard.writeText(texto);
+    this.copiadoQr.set(campo);
+    setTimeout(() => {
+      if (this.copiadoQr() === campo) {
+        this.copiadoQr.set(null);
+      }
+    }, 2000);
+  }
+
+  private iniciarTimerQr(): void {
+    this.detenerTimerQr();
+    this.segundosRestantesQr.set(15 * 60);
+    this.timerQr = setInterval(() => {
+      if (this.segundosRestantesQr() > 0) {
+        this.segundosRestantesQr.update((s) => s - 1);
+      } else {
+        this.detenerTimerQr();
+      }
+    }, 1000);
+  }
+
+  private detenerTimerQr(): void {
+    if (this.timerQr) {
+      clearInterval(this.timerQr);
+      this.timerQr = undefined;
+    }
   }
 
   protected pagarConStripe(): void {
@@ -662,4 +789,13 @@ export class CarritoPage implements OnInit {
     }
     return this.sucursales().find((sucursal) => Number(sucursal.id) === Number(sucursalId)) ?? null;
   }
+
+  ngOnDestroy(): void {
+    this.detenerTimerQr();
+    if (this.deliveryMap) {
+      this.deliveryMap.remove();
+      this.deliveryMap = undefined;
+    }
+  }
 }
+

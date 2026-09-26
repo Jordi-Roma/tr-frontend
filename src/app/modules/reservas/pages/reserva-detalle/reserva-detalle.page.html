@@ -115,15 +115,47 @@
 
         @if (metodoPago() === 'QR' && mostrandoQr()) {
           <section class="qr-panel">
-            <div>
-              <h3>Pago por QR</h3>
-              <p>Escanea este QR para pagar {{ formatPrecio(saldoAPagar()) }}.</p>
+            <div class="qr-header">
+              <span class="qr-badge"><i class="pi pi-qrcode"></i> {{ banco }} (QR Simple)</span>
+              <h3>Pago por QR Simple</h3>
+              <p>Escanea este código para pagar <strong>{{ formatPrecio(saldoAPagar()) }}</strong></p>
+              <div class="qr-timer">
+                <i class="pi pi-clock"></i> Expira en {{ tiempoRestanteFormateado() }}
+              </div>
             </div>
+
             <img class="qr-image" [src]="qrDataUrl()" alt="QR de pago" />
-            <pre>{{ qrPayload() }}</pre>
+
+            <div class="qr-details-table">
+              <div class="qr-row">
+                <span class="qr-label">Titular:</span>
+                <span class="qr-value">{{ titular }}</span>
+              </div>
+              <div class="qr-row">
+                <span class="qr-label">Cuenta:</span>
+                <span class="qr-value">
+                  {{ cuenta }}
+                  <button type="button" class="copy-btn" (click)="copiar(cuenta, 'cuenta')" title="Copiar cuenta">
+                    <i class="pi" [class.pi-copy]="copiado() !== 'cuenta'" [class.pi-check]="copiado() === 'cuenta'"></i>
+                  </button>
+                </span>
+              </div>
+              <div class="qr-row">
+                <span class="qr-label">Glosa:</span>
+                <span class="qr-value">
+                  {{ glosa() }}
+                  <button type="button" class="copy-btn" (click)="copiar(glosa(), 'glosa')" title="Copiar glosa">
+                    <i class="pi" [class.pi-copy]="copiado() !== 'glosa'" [class.pi-check]="copiado() === 'glosa'"></i>
+                  </button>
+                </span>
+              </div>
+            </div>
+
             <div class="qr-actions">
               <button type="button" class="secondary-button" [disabled]="guardando()" (click)="cerrarQr()">Cambiar método</button>
-              <button type="button" class="primary-button" [disabled]="guardando()" (click)="finalizarReserva()">Confirmar pago QR</button>
+              <button type="button" class="primary-button qr-confirm-btn" [disabled]="guardando()" (click)="finalizarReserva()">
+                <i class="pi pi-check-circle"></i> Confirmar pago QR
+              </button>
             </div>
           </section>
         }

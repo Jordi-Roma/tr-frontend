@@ -13,6 +13,27 @@ export interface CheckoutStripeResponse {
   checkout_url: string;
 }
 
+export interface CrearCheckoutQrRequest {
+  sucursal_id?: number | null;
+  tipo_entrega?: 'RECOJO_SUCURSAL' | 'DELIVERY';
+  delivery?: DeliveryCheckoutRequest | null;
+}
+
+export interface CheckoutQrResponse {
+  orden_id: number;
+  venta_id: number;
+  monto_total: number | string;
+  moneda: string;
+  estado: string;
+  qr_payload: string;
+  alias: string;
+  banco: string;
+  cuenta: string;
+  titular: string;
+  glosa: string;
+  vencimiento: string;
+}
+
 export interface OrdenPagoResponse {
   orden_id: number;
   venta_id: number;

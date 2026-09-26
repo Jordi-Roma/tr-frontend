@@ -14,6 +14,9 @@
     <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
     <h2>No se pudo procesar</h2>
     <p>{{ error() }}</p>
+    <button type="button" class="primary-button" (click)="reintentarCarga()" style="margin-top: 1rem;">
+      <i class="pi pi-refresh"></i> Reintentar
+    </button>
   </section>
 } @else if (items().length === 0) {
   <section class="empty-card">
@@ -211,26 +214,83 @@
         }
       }
 
+      <div class="metodo-pago-selector">
+        <label class="metodo-pago-label">Método de pago:</label>
+        <div class="metodo-pago-tabs">
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="metodoPagoDigital() === 'QR'"
+            (click)="metodoPagoDigital.set('QR')"
+          >
+            <i class="pi pi-qrcode"></i> QR Simple (Bolivia)
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="metodoPagoDigital() === 'STRIPE'"
+            (click)="metodoPagoDigital.set('STRIPE')"
+          >
+            <i class="pi pi-credit-card"></i> Tarjeta / Stripe
+          </button>
+        </div>
+      </div>
+
       @if (tipoEntrega() === 'RECOJO_SUCURSAL') {
-        <button
-          type="button"
-          class="primary-button"
-          [disabled]="guardando() || !entregaLista()"
-          (click)="confirmarReserva()"
-        >
-          <i class="pi pi-calendar-check" aria-hidden="true"></i>
-          Confirmar reserva
-        </button>
+        <div class="checkout-actions-col">
+          @if (metodoPagoDigital() === 'QR') {
+            <button
+              type="button"
+              class="primary-button qr-action-btn"
+              [disabled]="guardando() || !entregaLista()"
+              (click)="pagarConQr()"
+            >
+              <i class="pi pi-qrcode" aria-hidden="true"></i>
+              Pagar con QR Simple y retirar
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="primary-button stripe-action-btn"
+              [disabled]="guardando() || !entregaLista()"
+              (click)="pagarConStripe()"
+            >
+              <i class="pi pi-credit-card" aria-hidden="true"></i>
+              Pagar con Stripe y retirar
+            </button>
+          }
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="guardando() || !entregaLista()"
+            (click)="confirmarReserva()"
+          >
+            <i class="pi pi-calendar-check" aria-hidden="true"></i>
+            Solo reservar (pagar en tienda)
+          </button>
+        </div>
       } @else {
-        <button
-          type="button"
-          class="primary-button"
-          [disabled]="guardando() || !entregaLista()"
-          (click)="pagarConStripe()"
-        >
-          <i class="pi pi-credit-card" aria-hidden="true"></i>
-          Pagar delivery con Stripe
-        </button>
+        @if (metodoPagoDigital() === 'QR') {
+          <button
+            type="button"
+            class="primary-button qr-action-btn"
+            [disabled]="guardando() || !entregaLista()"
+            (click)="pagarConQr()"
+          >
+            <i class="pi pi-qrcode" aria-hidden="true"></i>
+            Pagar delivery con QR Simple
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="primary-button stripe-action-btn"
+            [disabled]="guardando() || !entregaLista()"
+            (click)="pagarConStripe()"
+          >
+            <i class="pi pi-credit-card" aria-hidden="true"></i>
+            Pagar delivery con Stripe
+          </button>
+        }
       }
       <button
         type="button"
@@ -242,4 +302,69 @@
       </button>
     </aside>
   </section>
+
+  @if (mostrandoModalQr() && checkoutQr()) {
+    <div class="qr-modal-backdrop" (click)="cerrarModalQr()">
+      <div class="qr-modal-card" (click)="$event.stopPropagation()">
+        <div class="qr-modal-header">
+          <span class="qr-bank-badge"><i class="pi pi-qrcode"></i> {{ checkoutQr()!.banco }} (QR Simple)</span>
+          <h3>Pagar con QR Simple</h3>
+          <p>Total a pagar: <strong class="qr-monto-destacado">{{ formatPrecio(checkoutQr()!.monto_total) }}</strong></p>
+          <div class="qr-timer-pill">
+            <i class="pi pi-clock"></i> Expira en {{ tiempoRestanteQrFormateado() }}
+          </div>
+        </div>
+
+        <div class="qr-code-wrapper">
+          <img class="qr-modal-img" [src]="qrDataUrl()" alt="Código QR de Pago" />
+        </div>
+
+        <div class="qr-details-box">
+          <div class="qr-info-row">
+            <span class="qr-info-label">Titular:</span>
+            <span class="qr-info-val">{{ checkoutQr()!.titular }}</span>
+          </div>
+          <div class="qr-info-row">
+            <span class="qr-info-label">Cuenta:</span>
+            <span class="qr-info-val">
+              {{ checkoutQr()!.cuenta }}
+              <button type="button" class="qr-copy-btn" (click)="copiarQr(checkoutQr()!.cuenta, 'cuenta')" title="Copiar cuenta">
+                <i class="pi" [class.pi-copy]="copiadoQr() !== 'cuenta'" [class.pi-check]="copiadoQr() === 'cuenta'"></i>
+              </button>
+            </span>
+          </div>
+          <div class="qr-info-row">
+            <span class="qr-info-label">Glosa:</span>
+            <span class="qr-info-val">
+              {{ checkoutQr()!.glosa }}
+              <button type="button" class="qr-copy-btn" (click)="copiarQr(checkoutQr()!.glosa, 'glosa')" title="Copiar glosa">
+                <i class="pi" [class.pi-copy]="copiadoQr() !== 'glosa'" [class.pi-check]="copiadoQr() === 'glosa'"></i>
+              </button>
+            </span>
+          </div>
+        </div>
+
+        @if (errorQr()) {
+          <div class="qr-modal-error">
+            <i class="pi pi-exclamation-circle"></i>
+            <span>{{ errorQr() }}</span>
+          </div>
+        }
+
+        <div class="qr-modal-actions">
+          <button type="button" class="secondary-button" [disabled]="guardando()" (click)="cerrarModalQr()">
+            Cancelar
+          </button>
+          <button type="button" class="primary-button qr-confirm-btn" [disabled]="guardando()" (click)="confirmarPagoQr()">
+            @if (guardando()) {
+              <i class="pi pi-spin pi-spinner"></i> Confirmando...
+            } @else {
+              <i class="pi pi-check-circle"></i> Ya realicé el pago
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 }
+

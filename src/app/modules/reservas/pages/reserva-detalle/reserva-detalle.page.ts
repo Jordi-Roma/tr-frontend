@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import QRCode from 'qrcode';
 import { finalize } from 'rxjs';
@@ -12,7 +12,7 @@ import { ReservasService } from '../../services/reservas.service';
   styleUrl: './reserva-detalle.page.css',
   templateUrl: './reserva-detalle.page.html',
 })
-export class ReservaDetallePage implements OnInit {
+export class ReservaDetallePage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly reservasService = inject(ReservasService);
 
@@ -26,6 +26,13 @@ export class ReservaDetallePage implements OnInit {
   protected readonly observacion = signal('');
   protected readonly mostrandoQr = signal(false);
   protected readonly qrDataUrl = signal('');
+  protected readonly banco = 'Banco de Crédito BCP';
+  protected readonly titular = 'StyleAR Bolivia S.R.L.';
+  protected readonly cuenta = '10000000452319';
+  protected readonly segundosRestantes = signal(15 * 60);
+  protected readonly copiado = signal<string | null>(null);
+  private timerQr?: ReturnType<typeof setInterval>;
+
   protected readonly subtotalSeleccionado = computed(() => {
     const reserva = this.reserva();
     if (!reserva) return 0;
@@ -40,10 +47,29 @@ export class ReservaDetallePage implements OnInit {
     return Math.min(Number(reserva.monto_reserva ?? 0), this.subtotalSeleccionado());
   });
   protected readonly saldoAPagar = computed(() => Math.max(this.subtotalSeleccionado() - this.anticipoAplicado(), 0));
+  protected readonly glosa = computed(() => {
+    const reserva = this.reserva();
+    return reserva ? `RESERVA-${reserva.codigo}` : '';
+  });
+  protected readonly tiempoRestanteFormateado = computed(() => {
+    const s = this.segundosRestantes();
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const seg = (s % 60).toString().padStart(2, '0');
+    return `${m}:${seg}`;
+  });
   protected readonly qrPayload = computed(() => {
     const reserva = this.reserva();
     if (!reserva) return '';
-    return `StyleAR Reserva ${reserva.codigo}\nMonto: ${this.formatPrecio(this.saldoAPagar())}\nPago por QR`;
+    const monto = this.saldoAPagar().toFixed(2);
+    const glosa = this.glosa();
+    return (
+      `000201010212` +
+      `43320016bo.bancobcp.qr0110StyleAR-SRL` +
+      `52044100530306854${monto.length.toString().padStart(2, '0')}${monto}` +
+      `5802BO5915StyleAR BOLIVIA6010SANTA CRUZ` +
+      `62${(glosa.length + 4).toString().padStart(2, '0')}05${glosa.length.toString().padStart(2, '0')}${glosa}` +
+      `6304ABCD`
+    );
   });
 
   ngOnInit(): void {
@@ -221,14 +247,50 @@ export class ReservaDetallePage implements OnInit {
       });
       this.qrDataUrl.set(dataUrl);
       this.mostrandoQr.set(true);
+      this.iniciarTimerQr();
     } catch {
       this.error.set('No se pudo generar el QR de pago.');
       this.ocultarQr();
     }
   }
 
-  private ocultarQr(): void {
+  protected copiar(texto: string, campo: string): void {
+    void navigator.clipboard.writeText(texto);
+    this.copiado.set(campo);
+    setTimeout(() => {
+      if (this.copiado() === campo) {
+        this.copiado.set(null);
+      }
+    }, 2000);
+  }
+
+  private iniciarTimerQr(): void {
+    this.detenerTimerQr();
+    this.segundosRestantes.set(15 * 60);
+    this.timerQr = setInterval(() => {
+      if (this.segundosRestantes() > 0) {
+        this.segundosRestantes.update((s) => s - 1);
+      } else {
+        this.detenerTimerQr();
+      }
+    }, 1000);
+  }
+
+  private detenerTimerQr(): void {
+    if (this.timerQr) {
+      clearInterval(this.timerQr);
+      this.timerQr = undefined;
+    }
+  }
+
+  protected ocultarQr(): void {
+    this.detenerTimerQr();
     this.mostrandoQr.set(false);
     this.qrDataUrl.set('');
   }
+
+  ngOnDestroy(): void {
+    this.detenerTimerQr();
+  }
 }
+
