@@ -59,7 +59,7 @@
       Observación
       <input type="text" [value]="form().observacion" (input)="actualizarCampo('observacion', $event)" />
     </label>
-    <button class="primary-action" type="button" [disabled]="guardando()" (click)="crearTransferencia()">
+    <button class="primary-action" type="button" [appOperacionNueva]="guardando()" (click)="crearTransferencia()">
       {{ guardando() ? 'Guardando...' : 'Registrar transferencia' }}
     </button>
     </div>

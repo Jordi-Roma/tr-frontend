@@ -25,7 +25,7 @@
             <h2 class="panel-title">Directorio de Variantes</h2>
             <p class="panel-subtitle">Todas las variaciones registradas</p>
           </div>
-          <button class="btn btn-primary btn-icon" (click)="abrirNuevaVariante()">
+          <button [appOperacionNueva]="false" class="btn btn-primary btn-icon" (click)="abrirNuevaVariante()">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M5 12h14" />
               <path d="M12 5v14" />
@@ -99,12 +99,12 @@
                 </td>
                 <td class="text-right" (click)="$event.stopPropagation()">
                   <div class="action-buttons">
-                    <button class="btn-icon-only" title="Editar" (click)="seleccionarVariante(variante)">
+                    <button [appOperacionNueva]="false" class="btn-icon-only" title="Editar" (click)="seleccionarVariante(variante)">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                       </svg>
                     </button>
-                    <button class="btn-icon-only" [class.text-danger]="variante.activo" [class.text-success]="!variante.activo" [title]="variante.activo ? 'Desactivar' : 'Activar'" [disabled]="procesando()" (click)="cambiarEstadoVariante(variante)">
+                    <button class="btn-icon-only" [class.text-danger]="variante.activo" [class.text-success]="!variante.activo" [title]="variante.activo ? 'Desactivar' : 'Activar'" [disabled]="procesando() || (!variante.activo && !planEstado.operacionesPermitidas())" (click)="cambiarEstadoVariante(variante)">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         @if (variante.activo) {
                         <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
@@ -244,7 +244,7 @@
             <button type="button" class="btn btn-outline" (click)="cerrarFormulario()" [disabled]="procesando()">
               Cancelar
             </button>
-            <button type="submit" class="btn btn-primary" [disabled]="varianteForm.invalid || procesando()">
+            <button type="submit" class="btn btn-primary" [appOperacionNueva]="varianteForm.invalid || procesando()">
               @if (procesando()) {
               <div class="spinner spinner-sm"></div>
               Guardando...
@@ -283,7 +283,7 @@
                     </div>
                 </div>
                 <div style="text-align: right; margin-bottom: 1.5rem;">
-                    <button type="submit" class="btn btn-secondary" [disabled]="precioForm.invalid || procesando()">
+                    <button type="submit" class="btn btn-secondary" [appOperacionNueva]="precioForm.invalid || procesando()">
                         Añadir Precio
                     </button>
                 </div>

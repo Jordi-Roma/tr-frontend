@@ -12,6 +12,8 @@ export interface LoginResponse {
   username: string;
   correo: string;
   roles: string[];
+  empresa_id: number | null;
+  empresa_codigo: string | null;
   mensaje: string;
 }
 
@@ -22,6 +24,8 @@ export interface UsuarioAutenticado {
   username: string;
   correo: string;
   roles: string[];
+  empresa_id: number | null;
+  empresa_codigo: string | null;
 }
 
 export interface RegistroRequest {
@@ -40,6 +44,8 @@ export interface RegistroResponse {
   username: string;
   correo: string;
   roles: string[];
+  empresa_id: number | null;
+  empresa_codigo: string | null;
   mensaje: string;
 }
 

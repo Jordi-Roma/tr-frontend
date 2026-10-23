@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -8,12 +10,13 @@ import { ProductoService } from '../../services/producto.service';
 import { PromocionService } from '../../services/promocion.service';
 
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule],
   selector: 'app-promociones-page',
   styleUrls: ['../admin-crud.shared.css', './promociones.page.css'],
   templateUrl: './promociones.page.html',
 })
 export class PromocionesPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly promocionService = inject(PromocionService);
   private readonly productoService = inject(ProductoService);
 

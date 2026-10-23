@@ -4,7 +4,8 @@
     <h1 id="registro-title">Crear cuenta</h1>
     <p class="subtitle">Registrate para acceder a la tienda, guardar tu carrito y gestionar tus datos.</p>
 
-    <form [formGroup]="registroForm" (ngSubmit)="registrar()" novalidate>
+    <p><strong>{{ empresa()?.nombre }}</strong> · <a routerLink="/empresa">Cambiar empresa</a></p>
+      <form [formGroup]="registroForm" (ngSubmit)="registrar()" novalidate>
       <div class="form-row">
         <div class="field">
           <label for="nombre">Nombre</label>
@@ -159,7 +160,7 @@
         <p class="loading-message">Registrando usuario...</p>
       }
 
-      <button type="submit" [disabled]="registroForm.invalid || cargando()">
+      <button type="submit" [appOperacionNueva]="registroForm.invalid || cargando()">
         Registrarse
       </button>
 

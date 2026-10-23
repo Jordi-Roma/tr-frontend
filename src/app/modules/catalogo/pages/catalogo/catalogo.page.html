@@ -218,7 +218,7 @@
           }
         </div>
 
-        <button type="button" class="cart-button" (click)="agregarAlCarrito(item)">
+        <button [appOperacionNueva]="false" type="button" class="cart-button" (click)="agregarAlCarrito(item)">
           <i class="pi pi-shopping-cart" aria-hidden="true"></i>
           Elegir variante
         </button>

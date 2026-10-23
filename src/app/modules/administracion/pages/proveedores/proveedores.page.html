@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ proveedoresFiltrados().length }} proveedores</span>
-        <button type="button" (click)="abrirNuevoProveedor()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevoProveedor()">
           <i class="pi pi-plus"></i>
           Nuevo proveedor
         </button>
@@ -97,7 +97,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarProveedor(proveedor)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarProveedor(proveedor)">
                     Editar
                   </button>
                   <button
@@ -105,7 +105,7 @@
                     [class.danger-button]="proveedor.activo"
                     [class.secondary-button]="!proveedor.activo"
                     (click)="cambiarEstadoProveedor(proveedor)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!proveedor.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ proveedor.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -168,7 +168,7 @@
       <input id="direccion" type="text" formControlName="direccion" />
 
       <div class="form-actions">
-        <button type="submit" [disabled]="proveedorForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="proveedorForm.invalid || procesando()">
           {{ proveedorEditandoId() === null ? 'Crear proveedor' : 'Guardar cambios' }}
         </button>
 
@@ -209,7 +209,7 @@
               <option [ngValue]="usuario.id">{{ etiquetaUsuario(usuario) }}</option>
             }
           </select>
-          <button type="submit" [disabled]="vinculoForm.invalid || procesando()">Vincular usuario</button>
+          <button type="submit" [appOperacionNueva]="vinculoForm.invalid || procesando()">Vincular usuario</button>
         </form>
       </section>
     }

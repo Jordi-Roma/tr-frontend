@@ -22,7 +22,7 @@
             <h2 class="panel-title">Inventario de productos</h2>
             <p class="panel-subtitle">Todos los productos registrados</p>
           </div>
-          <button class="btn btn-primary btn-icon" (click)="abrirNuevoProducto()">
+          <button [appOperacionNueva]="false" class="btn btn-primary btn-icon" (click)="abrirNuevoProducto()">
             <i class="pi pi-plus" aria-hidden="true"></i>
             Nuevo producto
           </button>
@@ -118,7 +118,7 @@
                     </td>
                     <td class="text-right" (click)="$event.stopPropagation()">
                       <div class="action-buttons">
-                        <button
+                        <button [appOperacionNueva]="false"
                           class="btn-icon-only"
                           title="Editar"
                           (click)="seleccionarProducto(producto)"
@@ -130,7 +130,7 @@
                           [class.text-danger]="producto.activo"
                           [class.text-success]="!producto.activo"
                           [title]="producto.activo ? 'Desactivar' : 'Activar'"
-                          [disabled]="procesando()"
+                          [disabled]="procesando() || (!producto.activo && !planEstado.operacionesPermitidas())"
                           (click)="cambiarEstadoProducto(producto)"
                         >
                           <i
@@ -408,7 +408,7 @@
               <i class="pi pi-times" aria-hidden="true"></i>
               Cancelar
             </button>
-            <button type="submit" class="btn btn-primary" [disabled]="productoForm.invalid || procesando()">
+            <button type="submit" class="btn btn-primary" [appOperacionNueva]="productoForm.invalid || procesando()">
               @if (procesando()) {
                 <div class="spinner spinner-sm"></div>
                 Guardando...

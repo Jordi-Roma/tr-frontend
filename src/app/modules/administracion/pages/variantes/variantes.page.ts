@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import {
@@ -17,12 +19,13 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { AppDrawerComponent } from '../../../../shared/components/app-drawer/app-drawer.component';
 
 @Component({
-  imports: [ReactiveFormsModule, DatePipe, DecimalPipe, AppDrawerComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, DatePipe, DecimalPipe, AppDrawerComponent],
   selector: 'app-variantes-page',
   styleUrl: './variantes.page.css',
   templateUrl: './variantes.page.html',
 })
 export class VariantesPage implements OnInit {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly varianteService = inject(VarianteService);
   private readonly productoService = inject(ProductoService);
   private readonly catalogoService = inject(CatalogoService);

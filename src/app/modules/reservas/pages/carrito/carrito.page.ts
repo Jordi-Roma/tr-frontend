@@ -1,3 +1,4 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -17,7 +18,7 @@ import { PagoService } from '../../../ventas_inventario/services/pago.service';
 import { TiendaStateService } from '../../../../core/services/tienda-state.service';
 
 @Component({
-  imports: [RouterLink],
+  imports: [OperacionNuevaDirective, RouterLink],
   selector: 'app-carrito-page',
   styleUrl: './carrito.page.css',
   templateUrl: './carrito.page.html',

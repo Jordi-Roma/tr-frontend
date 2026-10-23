@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -12,12 +14,13 @@ import { TallaResponse } from '../../models/catalogo.models';
 import { CatalogoService } from '../../services/catalogo.service';
 
 @Component({
-  imports: [ReactiveFormsModule, AppModalComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppModalComponent],
   selector: 'app-tallas-page',
   styleUrl: './tallas.page.css',
   templateUrl: './tallas.page.html',
 })
 export class TallasPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly catalogoService = inject(CatalogoService);
 
   protected readonly tallas = signal<TallaResponse[]>([]);

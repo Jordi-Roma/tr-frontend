@@ -30,7 +30,7 @@
   </div>
 
   <div class="panel-actions">
-    <button type="button" (click)="abrirNuevaPromocion()">
+    <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaPromocion()">
       <i class="pi pi-plus" aria-hidden="true"></i>
       Nueva promoción
     </button>
@@ -117,7 +117,7 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" [disabled]="promocionForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="promocionForm.invalid || procesando()">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ promocionEditandoId() === null ? 'Crear promoción' : 'Guardar cambios' }}
         </button>
@@ -176,14 +176,14 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="editarPromocion(promocion)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="editarPromocion(promocion)">
                     Editar
                   </button>
                   <button
                     type="button"
                     [class.danger-button]="promocion.activo"
                     [class.secondary-button]="!promocion.activo"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!promocion.activo && !planEstado.operacionesPermitidas())"
                     (click)="cambiarEstado(promocion)"
                   >
                     {{ promocion.activo ? 'Desactivar' : 'Activar' }}

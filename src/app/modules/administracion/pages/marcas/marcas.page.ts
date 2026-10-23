@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -12,12 +14,13 @@ import { CatalogoService } from '../../services/catalogo.service';
 import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
 
 @Component({
-  imports: [ReactiveFormsModule, AppModalComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppModalComponent],
   selector: 'app-marcas-page',
   styleUrl: './marcas.page.css',
   templateUrl: './marcas.page.html',
 })
 export class MarcasPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly catalogoService = inject(CatalogoService);
 
   protected readonly marcas = signal<MarcaResponse[]>([]);

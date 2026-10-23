@@ -1,3 +1,6 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
+import { EmpresaContextoService } from '../../../../core/services/empresa-contexto.service';
+import { mensajeApi } from '../../../../core/services/error-api';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -60,12 +63,13 @@ const passwordsCoinciden: ValidatorFn = (
 };
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, RouterLink],
   selector: 'app-registro-page',
   styleUrl: './registro.page.css',
   templateUrl: './registro.page.html',
 })
 export class RegistroPage {
+  protected readonly empresa = inject(EmpresaContextoService).empresa;
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 

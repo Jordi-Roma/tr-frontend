@@ -78,7 +78,7 @@
       Motivo
       <input type="text" [value]="form().motivo" (input)="actualizarCampo('motivo', $event)" placeholder="Compra, ajuste, merma..." />
     </label>
-    <button class="primary-action" type="button" [disabled]="guardando()" (click)="registrarMovimiento()">
+    <button class="primary-action" type="button" [appOperacionNueva]="guardando()" (click)="registrarMovimiento()">
       {{ guardando() ? 'Guardando...' : 'Registrar movimiento' }}
     </button>
     </div>

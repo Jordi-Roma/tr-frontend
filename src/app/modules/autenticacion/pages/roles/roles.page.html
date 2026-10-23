@@ -33,10 +33,10 @@
     </div>
     <div class="panel-actions">
       <span class="count-badge">{{ rolesFiltrados().length }} roles</span>
-      <button type="button" (click)="abrirNuevoRol()">
+      @if (puedeEditarPlantillas) { <button type="button" (click)="abrirNuevoRol()">
         <i class="pi pi-plus" aria-hidden="true"></i>
         Nuevo rol
-      </button>
+      </button> }
     </div>
   </div>
 
@@ -80,13 +80,13 @@
             </td>
             <td>
               <div class="table-actions">
-                <button type="button" class="secondary-button" (click)="seleccionarRol(rol)">
+                @if (puedeEditarPlantillas) { <button type="button" class="secondary-button" (click)="seleccionarRol(rol)">
                   Editar
-                </button>
-                <button type="button" class="secondary-button" (click)="abrirEditorPermisos(rol)">
+                </button> }
+                @if (puedeEditarPlantillas) { <button type="button" class="secondary-button" (click)="abrirEditorPermisos(rol)">
                   Permisos
-                </button>
-                <button
+                </button> }
+                @if (puedeEditarPlantillas) { <button
                   type="button"
                   [class.danger-button]="rol.activo"
                   [class.secondary-button]="!rol.activo"
@@ -94,7 +94,7 @@
                   [disabled]="procesando()"
                 >
                   {{ rol.activo ? 'Desactivar' : 'Activar' }}
-                </button>
+                </button> }
               </div>
             </td>
           </tr>
@@ -119,10 +119,10 @@
     </div>
     <div class="panel-actions">
       <span class="count-badge">{{ permisos().length }} permisos</span>
-      <button type="button" (click)="abrirNuevoPermiso()">
+      @if (puedeEditarPlantillas) { <button type="button" (click)="abrirNuevoPermiso()">
         <i class="pi pi-plus" aria-hidden="true"></i>
         Nuevo permiso
-      </button>
+      </button> }
     </div>
   </div>
 
@@ -197,7 +197,7 @@
                     <span class="status-badge" [class.inactive]="!permiso.activo">
                       {{ permiso.activo ? 'Activo' : 'Inactivo' }}
                     </span>
-                    <button
+                    @if (puedeEditarPlantillas) { <button
                       type="button"
                       class="permission-action-button"
                       [class.danger-button]="permiso.activo"
@@ -206,7 +206,7 @@
                       [disabled]="procesando()"
                     >
                       {{ permiso.activo ? 'Desactivar' : 'Activar' }}
-                    </button>
+                    </button> }
                   </div>
                 </article>
               }

@@ -1,3 +1,4 @@
+import { empresaGuard } from '../../core/guards/empresa.guard';
 import { Routes } from '@angular/router';
 import { authGuard } from '../../core/guards/auth.guard';
 import { roleGuard } from '../../core/guards/role.guard';
@@ -13,14 +14,17 @@ export const AUTENTICACION_PUBLIC_ROUTES: Routes = [
   {
     path: 'login',
     component: LoginPage,
+    canActivate: [empresaGuard],
   },
   {
     path: 'registro',
     component: RegistroPage,
+    canActivate: [empresaGuard],
   },
   {
     path: 'recuperar-password',
     component: RecuperarPasswordPage,
+    canActivate: [empresaGuard],
   },
 ];
 
@@ -43,7 +47,7 @@ export const AUTENTICACION_ROUTES: Routes = [
     component: RolesPage,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMINISTRADOR'],
+      roles: ['ADMINISTRADOR', 'ADMIN_SAAS'],
     },
   },
   {

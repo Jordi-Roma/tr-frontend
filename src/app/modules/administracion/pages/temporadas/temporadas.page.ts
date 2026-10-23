@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -12,12 +14,13 @@ import { TemporadaResponse } from '../../models/catalogo.models';
 import { TemporadaService } from '../../services/temporada.service';
 
 @Component({
-  imports: [ReactiveFormsModule, AppModalComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppModalComponent],
   selector: 'app-temporadas-page',
   styleUrl: './temporadas.page.css',
   templateUrl: './temporadas.page.html',
 })
 export class TemporadasPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly temporadaService = inject(TemporadaService);
 
   protected readonly temporadas = signal<TemporadaResponse[]>([]);

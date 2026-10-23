@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { CambioContextoService } from './cambio-contexto.service';
+import { inject, Injectable, signal } from '@angular/core';
 
 export interface TiendaProductoItem {
   id: number;
@@ -26,8 +27,17 @@ interface BackendCarritoItemLike {
   providedIn: 'root',
 })
 export class TiendaStateService {
-  private readonly carritoSignal = signal<CarritoItem[]>(this.leerCarrito());
-  private readonly sucursalCarritoSignal = signal<number | null>(this.leerSucursalCarrito());
+  constructor() {
+    localStorage.removeItem(CART_STORAGE_KEY);
+    localStorage.removeItem(CART_BRANCH_STORAGE_KEY);
+    inject(CambioContextoService).cambio$.subscribe(() => {
+      this.carritoSignal.set([]);
+      this.favoritosSignal.set([]);
+      this.sucursalCarritoSignal.set(null);
+    });
+  }
+  private readonly carritoSignal = signal<CarritoItem[]>([]);
+  private readonly sucursalCarritoSignal = signal<number | null>(null);
   private readonly favoritosSignal = signal<TiendaProductoItem[]>([]);
 
   readonly carrito = this.carritoSignal.asReadonly();
@@ -92,7 +102,7 @@ export class TiendaStateService {
       return;
     }
 
-    localStorage.setItem(CART_BRANCH_STORAGE_KEY, String(sucursalId));
+
   }
 
   alternarFavorito(producto: TiendaProductoItem): void {
@@ -114,34 +124,8 @@ export class TiendaStateService {
     return this.favoritosSignal().some((item) => item.id === productoId);
   }
 
-  private leerCarrito(): CarritoItem[] {
-    return this.leerStorage<CarritoItem[]>(CART_STORAGE_KEY, []);
-  }
-
-  private leerSucursalCarrito(): number | null {
-    const value = localStorage.getItem(CART_BRANCH_STORAGE_KEY);
-    const parsed = Number(value);
-    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
-  }
-
-
-  private leerStorage<T>(key: string, fallback: T): T {
-    const value = localStorage.getItem(key);
-
-    if (value === null) {
-      return fallback;
-    }
-
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      localStorage.removeItem(key);
-      return fallback;
-    }
-  }
-
   private persistirCarrito(items: CarritoItem[]): CarritoItem[] {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+
     return items;
   }
 

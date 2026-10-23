@@ -62,7 +62,7 @@
       Observación
       <input type="text" [value]="form().observacion" (input)="actualizarCampo('observacion', $event)" />
     </label>
-    <button class="primary-action" type="button" [disabled]="guardando()" (click)="registrarVenta()">
+    <button class="primary-action" type="button" [appOperacionNueva]="guardando()" (click)="registrarVenta()">
       {{ guardando() ? 'Guardando...' : 'Registrar venta' }}
     </button>
     </div>

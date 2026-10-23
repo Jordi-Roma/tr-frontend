@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ empleadosFiltrados().length }} empleados</span>
-        <button type="button" (click)="abrirNuevoEmpleado()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevoEmpleado()">
           <i class="pi pi-plus"></i>
           Nuevo empleado
         </button>
@@ -82,7 +82,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarEmpleado(empleado)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarEmpleado(empleado)">
                     Editar
                   </button>
                   <button
@@ -90,7 +90,7 @@
                     [class.danger-button]="empleado.activo"
                     [class.secondary-button]="!empleado.activo"
                     (click)="cambiarEstadoEmpleado(empleado)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!empleado.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ empleado.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -190,7 +190,7 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" [disabled]="empleadoForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="empleadoForm.invalid || procesando()">
           {{ empleadoEditandoId() === null ? 'Crear empleado' : 'Guardar empleado' }}
         </button>
 

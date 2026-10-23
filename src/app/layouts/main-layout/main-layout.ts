@@ -1,3 +1,5 @@
+import { EstadoEmpresaComponent } from '../../shared/components/estado-empresa/estado-empresa.component';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
   NavigationEnd,
@@ -32,7 +34,7 @@ const ADMIN_ENCARGADO_CAJERO = ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL', 'CAJERO']
 const PROVEEDOR = ['PROVEEDOR'];
 
 @Component({
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AsistenteChatComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AsistenteChatComponent, EstadoEmpresaComponent],
   selector: 'app-main-layout',
   styleUrl: './main-layout.css',
   templateUrl: './main-layout.html',
@@ -52,9 +54,11 @@ export class MainLayout {
   protected readonly esAdmin = computed(() => this.authService.tieneRol('ADMINISTRADOR'));
   protected readonly usaPanelAdmin = computed(
     () =>
+      this.authService.tieneRol('ADMIN_SAAS') ||
       this.authService.tieneRol('ADMINISTRADOR') ||
       this.authService.tieneRol('ENCARGADO_SUCURSAL') ||
-      this.authService.tieneRol('CAJERO')
+      this.authService.tieneRol('CAJERO') ||
+      this.authService.tieneRol('PROVEEDOR')
   );
   protected readonly totalCarrito = computed(() =>
     this.tiendaState.carrito().reduce((total, item) => total + item.cantidad, 0)
@@ -71,10 +75,17 @@ export class MainLayout {
   ];
 
   private readonly todosLosMenus: MenuGroup[] = [
+    { title: 'PLATAFORMA', icon: 'pi pi-building', items: [
+      { label: 'Empresas', path: '/saas/empresas', icon: 'pi pi-building', roles: ['ADMIN_SAAS'] },
+      { label: 'Planes', path: '/saas/planes', icon: 'pi pi-list', roles: ['ADMIN_SAAS'] },
+      { label: 'Respaldos', path: '/saas/respaldos', icon: 'pi pi-database', roles: ['ADMIN_SAAS'] },
+      { label: 'Eventos de plataforma', path: '/saas/eventos', icon: 'pi pi-history', roles: ['ADMIN_SAAS'] },
+    ] },
     {
       title: 'PANEL',
       icon: 'pi pi-th-large',
       items: [
+        { label: 'Mi plan', path: '/mi-plan', icon: 'pi pi-list', roles: ADMIN },
         { label: 'Dashboard', path: '/dashboard', icon: 'pi pi-chart-line', roles: ADMIN },
         { label: 'Perfil', path: '/perfil', icon: 'pi pi-user' },
         { label: 'Panel proveedor', path: '/panel-proveedor', icon: 'pi pi-truck', roles: PROVEEDOR },
@@ -85,7 +96,7 @@ export class MainLayout {
       icon: 'pi pi-shield',
       items: [
         { label: 'Usuarios', path: '/usuarios', icon: 'pi pi-users', roles: ADMIN },
-        { label: 'Roles y permisos', path: '/roles', icon: 'pi pi-shield', roles: ADMIN },
+        { label: 'Roles y permisos', path: '/roles', icon: 'pi pi-shield', roles: ['ADMINISTRADOR', 'ADMIN_SAAS'] },
         { label: 'Bitacora', path: '/bitacora', icon: 'pi pi-history', roles: ADMIN },
       ],
     },
@@ -101,7 +112,7 @@ export class MainLayout {
         { label: 'Temporadas', path: '/temporadas', icon: 'pi pi-calendar', roles: ADMIN },
         { label: 'Colecciones', path: '/colecciones', icon: 'pi pi-th-large', roles: ADMIN },
         { label: 'Proveedores', path: '/proveedores', icon: 'pi pi-truck', roles: ADMIN },
-        { label: 'Ciudades', path: '/ciudades', icon: 'pi pi-map-marker', roles: ADMIN },
+        { label: 'Ciudades', path: '/ciudades', icon: 'pi pi-map-marker', roles: ['ADMIN_SAAS'] },
         { label: 'Sucursales', path: '/sucursales', icon: 'pi pi-building', roles: ADMIN },
         { label: 'Empleados', path: '/empleados', icon: 'pi pi-id-card', roles: ADMIN },
         { label: 'Variantes', path: '/variantes', icon: 'pi pi-sitemap', roles: ADMIN },
@@ -144,7 +155,7 @@ export class MainLayout {
       .filter((group) => group.items.length > 0);
   });
 
-  protected readonly gruposAbiertos = signal<Set<string>>(new Set(['PANEL']));
+  protected readonly gruposAbiertos = signal<Set<string>>(new Set(['PANEL', 'PLATAFORMA']));
 
   constructor() {
     if (this.authService.tieneRol('CLIENTE')) {
@@ -183,7 +194,7 @@ export class MainLayout {
     });
 
     this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), takeUntilDestroyed())
       .subscribe(() => this.sincronizarBusquedaNavbar());
   }
 
@@ -207,7 +218,8 @@ export class MainLayout {
     this.tiendaState.vaciarCarrito();
     this.tiendaState.seleccionarSucursalCarrito(null);
     this.tiendaState.reemplazarFavoritos([]);
-    this.authService.logout().subscribe({ next: () => void this.router.navigateByUrl('/login') });
+    const destino = this.authService.tieneRol('ADMIN_SAAS') ? '/saas/login' : '/login';
+    this.authService.logout().subscribe({ next: () => void this.router.navigateByUrl(destino) });
   }
 
   protected alternarCuenta(): void {

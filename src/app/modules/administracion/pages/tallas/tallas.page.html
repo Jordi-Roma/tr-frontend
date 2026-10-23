@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ tallasFiltradas().length }} tallas</span>
-        <button type="button" (click)="abrirNuevaTalla()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaTalla()">
           <i class="pi pi-plus" aria-hidden="true"></i>
           Nueva talla
         </button>
@@ -111,7 +111,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarTalla(talla)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarTalla(talla)">
                     <i class="pi pi-pencil" aria-hidden="true"></i>
                     Editar
                   </button>
@@ -120,7 +120,7 @@
                     [class.danger-button]="talla.activo"
                     [class.secondary-button]="!talla.activo"
                     (click)="cambiarEstadoTalla(talla)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!talla.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ talla.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -183,7 +183,7 @@
       </p>
 
       <div class="form-actions">
-        <button type="submit" [disabled]="tallaForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="tallaForm.invalid || procesando()">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ tallaEditandoId() === null ? 'Crear talla' : 'Guardar cambios' }}
         </button>

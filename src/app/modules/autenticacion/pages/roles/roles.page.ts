@@ -1,3 +1,4 @@
+import { AuthService } from '../../services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -38,6 +39,7 @@ const MODULOS_ORDENADOS = [
   templateUrl: './roles.page.html',
 })
 export class RolesPage {
+  protected readonly puedeEditarPlantillas = inject(AuthService).tieneRol('ADMIN_SAAS');
   private readonly rolPermisoService = inject(RolPermisoService);
 
   protected readonly roles = signal<RolResponse[]>([]);

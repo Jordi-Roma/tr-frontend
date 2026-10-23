@@ -1,3 +1,4 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -16,7 +17,7 @@ import { RecomendacionesService } from '../../../inteligencia/services/recomenda
 type OrdenCatalogo = 'relevancia' | 'nombre' | 'precio-asc' | 'precio-desc';
 
 @Component({
-  imports: [RouterLink],
+  imports: [OperacionNuevaDirective, RouterLink],
   selector: 'app-catalogo-page',
   styleUrl: './catalogo.page.css',
   templateUrl: './catalogo.page.html',

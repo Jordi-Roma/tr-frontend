@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -12,12 +14,13 @@ import { CiudadSucursalService } from '../../services/ciudad-sucursal.service';
 import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
 
 @Component({
-  imports: [ReactiveFormsModule, AppModalComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppModalComponent],
   selector: 'app-ciudades-page',
   styleUrl: './ciudades.page.css',
   templateUrl: './ciudades.page.html',
 })
 export class CiudadesPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly ciudadSucursalService = inject(CiudadSucursalService);
 
   protected readonly ciudades = signal<CiudadResponse[]>([]);

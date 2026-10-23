@@ -242,7 +242,7 @@
             <button
               type="button"
               class="primary-button qr-action-btn"
-              [disabled]="guardando() || !entregaLista()"
+              [appOperacionNueva]="guardando() || !entregaLista()"
               (click)="pagarConQr()"
             >
               <i class="pi pi-qrcode" aria-hidden="true"></i>
@@ -252,7 +252,7 @@
             <button
               type="button"
               class="primary-button stripe-action-btn"
-              [disabled]="guardando() || !entregaLista()"
+              [appOperacionNueva]="guardando() || !entregaLista()"
               (click)="pagarConStripe()"
             >
               <i class="pi pi-credit-card" aria-hidden="true"></i>
@@ -262,7 +262,7 @@
           <button
             type="button"
             class="secondary-button"
-            [disabled]="guardando() || !entregaLista()"
+            [appOperacionNueva]="guardando() || !entregaLista()"
             (click)="confirmarReserva()"
           >
             <i class="pi pi-calendar-check" aria-hidden="true"></i>
@@ -274,7 +274,7 @@
           <button
             type="button"
             class="primary-button qr-action-btn"
-            [disabled]="guardando() || !entregaLista()"
+            [appOperacionNueva]="guardando() || !entregaLista()"
             (click)="pagarConQr()"
           >
             <i class="pi pi-qrcode" aria-hidden="true"></i>
@@ -284,7 +284,7 @@
           <button
             type="button"
             class="primary-button stripe-action-btn"
-            [disabled]="guardando() || !entregaLista()"
+            [appOperacionNueva]="guardando() || !entregaLista()"
             (click)="pagarConStripe()"
           >
             <i class="pi pi-credit-card" aria-hidden="true"></i>

@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -19,12 +21,13 @@ export interface TreeCategory extends CategoriaResponse {
 }
 
 @Component({
-  imports: [ReactiveFormsModule, AppModalComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppModalComponent],
   selector: 'app-categorias-page',
   styleUrl: './categorias.page.css',
   templateUrl: './categorias.page.html',
 })
 export class CategoriasPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly catalogoService = inject(CatalogoService);
 
   protected readonly categorias = signal<CategoriaResponse[]>([]);

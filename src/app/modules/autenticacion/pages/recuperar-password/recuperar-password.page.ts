@@ -1,3 +1,5 @@
+import { EmpresaContextoService } from '../../../../core/services/empresa-contexto.service';
+import { mensajeApi } from '../../../../core/services/error-api';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -52,6 +54,7 @@ const passwordSeguro: ValidatorFn = (
   templateUrl: './recuperar-password.page.html',
 })
 export class RecuperarPasswordPage {
+  protected readonly empresa = inject(EmpresaContextoService).empresa;
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 

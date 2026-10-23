@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ coloresFiltrados().length }} colores</span>
-        <button type="button" (click)="abrirNuevoColor()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevoColor()">
           <i class="pi pi-plus" aria-hidden="true"></i>
           Nuevo color
         </button>
@@ -104,7 +104,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarColor(color)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarColor(color)">
                     <i class="pi pi-pencil" aria-hidden="true"></i>
                     Editar
                   </button>
@@ -113,7 +113,7 @@
                     [class.danger-button]="color.activo"
                     [class.secondary-button]="!color.activo"
                     (click)="cambiarEstadoColor(color)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!color.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ color.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -171,7 +171,7 @@
       }
 
       <div class="form-actions">
-        <button type="submit" [disabled]="colorForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="colorForm.invalid || procesando()">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ colorEditandoId() === null ? 'Crear color' : 'Guardar cambios' }}
         </button>

@@ -1,3 +1,4 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
@@ -11,6 +12,7 @@ import { VarianteService } from '../../../administracion/services/variante.servi
 type TransferenciaCampo = 'sucursal_origen_id' | 'sucursal_destino_id' | 'producto_variante_id' | 'cantidad' | 'observacion';
 
 @Component({
+  imports: [OperacionNuevaDirective],
   selector: 'app-transferencias-stock-page',
   styleUrls: ['../../../administracion/pages/admin-crud.shared.css', './transferencias-stock.page.css'],
   templateUrl: './transferencias-stock.page.html',

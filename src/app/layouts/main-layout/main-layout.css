@@ -159,7 +159,7 @@
 .menu-group a:focus-visible,
 .menu-group .active-link {
   outline: none;
-  background: var(--color-accent);
+  background: #4d6238;
   color: var(--color-surface);
 }
 
@@ -628,3 +628,5 @@
     padding: 18px 16px 36px;
   }
 }
+
+.menu-group a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }

@@ -24,7 +24,7 @@
         </h2>
         <strong>{{ formatPrecio(item.precio) }}</strong>
         <div class="actions">
-          <button type="button" (click)="agregarAlCarrito(item)">
+          <button [appOperacionNueva]="false" type="button" (click)="agregarAlCarrito(item)">
             <i class="pi pi-shopping-cart" aria-hidden="true"></i>
             Carrito
           </button>

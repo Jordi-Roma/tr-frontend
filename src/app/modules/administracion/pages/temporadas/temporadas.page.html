@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ temporadasFiltradas().length }} temporadas</span>
-        <button type="button" (click)="abrirNuevaTemporada()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaTemporada()">
           <i class="pi pi-plus" aria-hidden="true"></i>
           Nueva temporada
         </button>
@@ -87,7 +87,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarTemporada(temporada)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarTemporada(temporada)">
                     <i class="pi pi-pencil" aria-hidden="true"></i>
                     Editar
                   </button>
@@ -96,7 +96,7 @@
                     [class.danger-button]="temporada.activo"
                     [class.secondary-button]="!temporada.activo"
                     (click)="cambiarEstadoTemporada(temporada)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!temporada.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ temporada.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -140,7 +140,7 @@
       }
 
       <div class="form-actions">
-        <button type="submit" [disabled]="temporadaForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="temporadaForm.invalid || procesando()">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ temporadaEditandoId() === null ? 'Crear temporada' : 'Guardar cambios' }}
         </button>

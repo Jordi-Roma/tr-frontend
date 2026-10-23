@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ coleccionesFiltradas().length }} colecciones</span>
-        <button type="button" (click)="abrirNuevaColeccion()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaColeccion()">
           <i class="pi pi-plus"></i>
           Nueva coleccion
         </button>
@@ -89,7 +89,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarColeccion(coleccion)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarColeccion(coleccion)">
                     Editar
                   </button>
                   <button
@@ -97,7 +97,7 @@
                     [class.danger-button]="coleccion.activo"
                     [class.secondary-button]="!coleccion.activo"
                     (click)="cambiarEstadoColeccion(coleccion)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!coleccion.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ coleccion.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -149,7 +149,7 @@
       <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
 
       <div class="form-actions">
-        <button type="submit" [disabled]="coleccionForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="coleccionForm.invalid || procesando()">
           {{ coleccionEditandoId() === null ? 'Crear colección' : 'Guardar cambios' }}
         </button>
 

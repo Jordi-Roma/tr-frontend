@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -13,12 +15,13 @@ import { TemporadaService } from '../../services/temporada.service';
 import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
 
 @Component({
-  imports: [ReactiveFormsModule, AppModalComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppModalComponent],
   selector: 'app-colecciones-page',
   styleUrl: './colecciones.page.css',
   templateUrl: './colecciones.page.html',
 })
 export class ColeccionesPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly coleccionService = inject(ColeccionService);
   private readonly temporadaService = inject(TemporadaService);
 

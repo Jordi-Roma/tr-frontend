@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ categoriasFiltradasTree().length }} categorias</span>
-        <button type="button" (click)="abrirNuevaCategoria()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaCategoria()">
           <i class="pi pi-plus" aria-hidden="true"></i>
           Nueva categoria
         </button>
@@ -102,7 +102,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarCategoria(categoria)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarCategoria(categoria)">
                     <i class="pi pi-pencil" aria-hidden="true"></i>
                     Editar
                   </button>
@@ -111,7 +111,7 @@
                     [class.danger-button]="categoria.activo"
                     [class.secondary-button]="!categoria.activo"
                     (click)="cambiarEstadoCategoria(categoria)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!categoria.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ categoria.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -157,7 +157,7 @@
       <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
 
       <div class="form-actions">
-        <button type="submit" [disabled]="categoriaForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="categoriaForm.invalid || procesando()">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ categoriaEditandoId() === null ? 'Crear categoria' : 'Guardar cambios' }}
         </button>

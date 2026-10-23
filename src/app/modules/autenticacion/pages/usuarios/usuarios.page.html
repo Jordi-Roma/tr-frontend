@@ -21,7 +21,7 @@
   </div>
 
   <div class="new-user-action">
-    <button type="button" (click)="abrirCreacion()">Nuevo usuario</button>
+    <button [appOperacionNueva]="false" type="button" (click)="abrirCreacion()">Nuevo usuario</button>
   </div>
 
   <details class="form-details user-inline-details">
@@ -43,14 +43,14 @@
     </div>
 
     <div class="role-actions">
-      <button type="button" (click)="asignarRol()" [disabled]="rolForm.invalid || procesando()">
+      <button type="button" (click)="asignarRol()" [appOperacionNueva]="rolForm.invalid || procesando()">
         Asignar rol
       </button>
       <button
         type="button"
         class="secondary-button"
         (click)="activarRol()"
-        [disabled]="rolForm.invalid || procesando()"
+        [appOperacionNueva]="rolForm.invalid || procesando()"
       >
         Activar rol
       </button>
@@ -115,7 +115,7 @@
         <p class="field-error">Completa correctamente todos los campos.</p>
       }
       <div class="form-actions">
-        <button type="submit" [disabled]="crearUsuarioForm.invalid || procesando()">Crear usuario</button>
+        <button type="submit" [appOperacionNueva]="crearUsuarioForm.invalid || procesando()">Crear usuario</button>
         <button type="button" class="secondary-button" (click)="cancelarCreacion()">Cancelar</button>
       </div>
     </form>
@@ -187,7 +187,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarUsuario(usuario)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarUsuario(usuario)">
                     Editar
                   </button>
                   <button
@@ -195,7 +195,7 @@
                     [class.danger-button]="usuario.activo"
                     [class.secondary-button]="!usuario.activo"
                     (click)="cambiarEstadoUsuario(usuario)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!usuario.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ usuario.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -280,7 +280,7 @@
         <div class="form-actions">
           <button
             type="submit"
-            [disabled]="editarUsuarioForm.invalid || procesando()"
+            [appOperacionNueva]="editarUsuarioForm.invalid || procesando()"
           >
             Guardar usuario
           </button>

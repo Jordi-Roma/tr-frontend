@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ ciudadesFiltradas().length }} ciudades</span>
-        <button type="button" (click)="abrirNuevaCiudad()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaCiudad()">
           <i class="pi pi-plus"></i>
           Nueva ciudad
         </button>
@@ -71,7 +71,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarCiudad(ciudad)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarCiudad(ciudad)">
                     <i class="pi pi-pencil" aria-hidden="true"></i>
                     Editar
                   </button>
@@ -80,7 +80,7 @@
                     [class.danger-button]="ciudad.activo"
                     [class.secondary-button]="!ciudad.activo"
                     (click)="cambiarEstadoCiudad(ciudad)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!ciudad.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ ciudad.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -119,7 +119,7 @@
       <input id="departamento" type="text" formControlName="departamento" />
 
       <div class="form-actions">
-        <button type="submit" [disabled]="ciudadForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="ciudadForm.invalid || procesando()">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ ciudadEditandoId() === null ? 'Crear ciudad' : 'Guardar ciudad' }}
         </button>

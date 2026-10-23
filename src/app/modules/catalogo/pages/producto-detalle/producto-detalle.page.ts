@@ -1,3 +1,4 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -14,7 +15,7 @@ import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publ
 import { RecomendacionPrenda, RecomendacionesService } from '../../../inteligencia/services/recomendaciones.service';
 
 @Component({
-  imports: [RouterLink],
+  imports: [OperacionNuevaDirective, RouterLink],
   selector: 'app-producto-detalle-page',
   styleUrl: './producto-detalle.page.css',
   templateUrl: './producto-detalle.page.html',

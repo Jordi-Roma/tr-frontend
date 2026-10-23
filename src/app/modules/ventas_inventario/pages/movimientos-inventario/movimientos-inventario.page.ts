@@ -1,3 +1,4 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
@@ -13,6 +14,7 @@ import { VarianteService } from '../../../administracion/services/variante.servi
 type MovimientoCampo = 'sucursal_id' | 'producto_variante_id' | 'tipo' | 'cantidad' | 'motivo' | 'proveedor_id';
 
 @Component({
+  imports: [OperacionNuevaDirective],
   selector: 'app-movimientos-inventario-page',
   styleUrls: ['../../../administracion/pages/admin-crud.shared.css', './movimientos-inventario.page.css'],
   templateUrl: './movimientos-inventario.page.html',

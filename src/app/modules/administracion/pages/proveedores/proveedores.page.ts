@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -14,12 +16,13 @@ import { UsuarioAdminResponse } from '../../../autenticacion/models/usuario-admi
 import { UsuarioAdminService } from '../../../autenticacion/services/usuario-admin.service';
 
 @Component({
-  imports: [ReactiveFormsModule, AppModalComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppModalComponent],
   selector: 'app-proveedores-page',
   styleUrl: './proveedores.page.css',
   templateUrl: './proveedores.page.html',
 })
 export class ProveedoresPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly proveedorService = inject(ProveedorService);
   private readonly usuarioAdminService = inject(UsuarioAdminService);
 

@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import {
@@ -21,12 +23,13 @@ import { ProveedorResponse } from '../../models/proveedor.models';
 import { AppDrawerComponent } from '../../../../shared/components/app-drawer/app-drawer.component';
 
 @Component({
-  imports: [ReactiveFormsModule, AppDrawerComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppDrawerComponent],
   selector: 'app-productos-page',
   styleUrl: './productos.page.css',
   templateUrl: './productos.page.html',
 })
 export class ProductosPage implements OnInit {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly productoService = inject(ProductoService);
   private readonly catalogoService = inject(CatalogoService);
   private readonly proveedorService = inject(ProveedorService);

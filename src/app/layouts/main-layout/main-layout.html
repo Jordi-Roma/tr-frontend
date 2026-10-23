@@ -112,6 +112,7 @@
       </header>
 
       <main class="main-content">
+        <app-estado-empresa />
         <router-outlet />
       </main>
     </div>
@@ -141,6 +142,7 @@
           <i class="pi pi-search" aria-hidden="true"></i>
           <input
             type="search"
+            aria-label="Buscar productos"
             placeholder="Buscar productos..."
             [value]="busquedaTienda()"
             (input)="actualizarBusquedaTienda($event)"
@@ -173,6 +175,7 @@
     </header>
 
     <main class="shop-content">
+      <app-estado-empresa />
       <router-outlet />
     </main>
 

@@ -1,3 +1,5 @@
+import { EmpresaContextoService } from '../../../../core/services/empresa-contexto.service';
+import { mensajeApi } from '../../../../core/services/error-api';
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -16,6 +18,9 @@ export class LoginPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly tiendaState = inject(TiendaStateService);
+
+  protected readonly empresa = inject(EmpresaContextoService).empresa;
+  protected readonly plataforma = this.route.snapshot.data['plataforma'] === true;
 
   protected readonly cargando = signal(false);
   protected readonly mensajeError = signal('');
@@ -47,14 +52,14 @@ export class LoginPage {
     this.tiendaState.reemplazarFavoritos([]);
 
     this.authService
-      .login({ identificador, password })
+      .login({ identificador, password }, this.plataforma)
       .pipe(finalize(() => this.cargando.set(false)))
       .subscribe({
         next: () => {
           void this.router.navigateByUrl(this.obtenerRutaDestino());
         },
-        error: () => {
-          this.mensajeError.set('Credenciales incorrectas o usuario no disponible.');
+        error: (error: unknown) => {
+          this.mensajeError.set(mensajeApi(error, 'Credenciales incorrectas o usuario no disponible.'));
         },
       });
   }
@@ -64,6 +69,7 @@ export class LoginPage {
   }
 
   private obtenerRutaDestino(): string {
+    if (this.authService.tieneRol('ADMIN_SAAS')) return '/saas/empresas';
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     const roles = this.authService.usuarioActual()?.roles ?? [];
 

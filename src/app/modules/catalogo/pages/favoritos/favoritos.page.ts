@@ -1,10 +1,11 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TiendaStateService, TiendaProductoItem } from '../../../../core/services/tienda-state.service';
 import { RecomendacionesService } from '../../../inteligencia/services/recomendaciones.service';
 
 @Component({
-  imports: [RouterLink],
+  imports: [OperacionNuevaDirective, RouterLink],
   selector: 'app-favoritos-page',
   styleUrl: './favoritos.page.css',
   templateUrl: './favoritos.page.html',

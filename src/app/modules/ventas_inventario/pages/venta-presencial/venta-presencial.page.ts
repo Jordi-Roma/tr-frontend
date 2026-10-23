@@ -1,3 +1,4 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
@@ -11,6 +12,7 @@ import { VentasService } from '../../services/ventas.service';
 type VentaCampo = 'sucursal_id' | 'producto_variante_id' | 'cantidad' | 'descuento' | 'metodo_pago' | 'observacion';
 
 @Component({
+  imports: [OperacionNuevaDirective],
   selector: 'app-venta-presencial-page',
   styleUrls: ['../../../administracion/pages/admin-crud.shared.css', './venta-presencial.page.css'],
   templateUrl: './venta-presencial.page.html',

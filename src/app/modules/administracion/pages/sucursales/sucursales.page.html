@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ sucursalesFiltradas().length }} sucursales</span>
-        <button type="button" (click)="abrirNuevaSucursal()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaSucursal()">
           <i class="pi pi-plus"></i>
           Nueva sucursal
         </button>
@@ -81,7 +81,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarSucursal(sucursal)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarSucursal(sucursal)">
                     Editar
                   </button>
                   <button
@@ -89,7 +89,7 @@
                     [class.danger-button]="sucursal.activo"
                     [class.secondary-button]="!sucursal.activo"
                     (click)="cambiarEstadoSucursal(sucursal)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!sucursal.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ sucursal.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -193,7 +193,7 @@
       <input id="telefono" type="text" formControlName="telefono" />
 
       <div class="form-actions">
-        <button type="submit" [disabled]="sucursalForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="sucursalForm.invalid || procesando()">
           {{ sucursalEditandoId() === null ? 'Crear sucursal' : 'Guardar sucursal' }}
         </button>
 

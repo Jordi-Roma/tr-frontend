@@ -1,3 +1,4 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -9,7 +10,7 @@ import { CatalogoPrendaItem } from '../../models/catalogo-publico.models';
 import { CatalogoPublicoService } from '../../services/catalogo-publico.service';
 
 @Component({
-  imports: [RouterLink],
+  imports: [OperacionNuevaDirective, RouterLink],
   selector: 'app-inicio-page',
   styleUrl: './inicio.page.css',
   templateUrl: './inicio.page.html',

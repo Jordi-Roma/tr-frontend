@@ -16,7 +16,7 @@
   <label><input type="checkbox" [checked]="preferencias().usar_historial" (change)="alternarHistorial($event)" />
     Usar mis favoritos, compras y gustos para «Para ti»
   </label>
-  <button type="button" class="guardar" [disabled]="guardando()" (click)="guardarGustos()">
+  <button type="button" class="guardar" [appOperacionNueva]="guardando()" (click)="guardarGustos()">
     {{ guardando() ? 'Guardando...' : 'Guardar preferencias' }}
   </button>
   @if (mensaje()) { <p role="status">{{ mensaje() }}</p> }

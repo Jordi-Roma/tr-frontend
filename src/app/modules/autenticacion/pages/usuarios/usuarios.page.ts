@@ -1,3 +1,5 @@
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -15,12 +17,13 @@ import { UsuarioAdminService } from '../../services/usuario-admin.service';
 const USERNAME_PATTERN = /^[a-zA-Z0-9_.]+$/;
 
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule],
   selector: 'app-usuarios-page',
   styleUrl: './usuarios.page.css',
   templateUrl: './usuarios.page.html',
 })
 export class UsuariosPage {
+  protected readonly planEstado = inject(EstadoPlanService);
   private readonly usuarioAdminService = inject(UsuarioAdminService);
   private readonly rolPermisoService = inject(RolPermisoService);
 

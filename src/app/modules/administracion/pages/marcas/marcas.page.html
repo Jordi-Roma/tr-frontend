@@ -30,7 +30,7 @@
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ marcasFiltradas().length }} Marcas</span>
-        <button type="button" (click)="abrirNuevaMarca()">
+        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaMarca()">
           <i class="pi pi-plus"></i>
           Nueva marca
         </button>
@@ -87,7 +87,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="secondary-button" (click)="seleccionarMarca(marca)">
+                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarMarca(marca)">
                     <i class="pi pi-pencil" aria-hidden="true"></i>
                     Editar
                   </button>
@@ -96,7 +96,7 @@
                     [class.danger-button]="marca.activo"
                     [class.secondary-button]="!marca.activo"
                     (click)="cambiarEstadoMarca(marca)"
-                    [disabled]="procesando()"
+                    [disabled]="procesando() || (!marca.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ marca.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -134,7 +134,7 @@
       <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
 
       <div class="form-actions">
-        <button type="submit" [disabled]="marcaForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="marcaForm.invalid || procesando()">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ marcaEditandoId() === null ? 'Crear Marca' : 'Guardar cambios' }}
         </button>

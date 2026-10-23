@@ -1,13 +1,17 @@
+import { empresaGuard, alcanceGuard } from './core/guards/empresa.guard';
 import { Routes } from '@angular/router';
 import { MainLayout } from './layouts/main-layout/main-layout';
 import { ForbiddenPage } from './shared/pages/forbidden/forbidden.page';
 import { NotFoundPage } from './shared/pages/not-found/not-found.page';
 
 export const routes: Routes = [
+  { path: 'empresa', loadComponent: () => import('./modules/autenticacion/pages/empresa/empresa.page').then(m => m.EmpresaPage) },
+  { path: 'e/:codigo', loadComponent: () => import('./modules/autenticacion/pages/empresa/empresa.page').then(m => m.EmpresaPage) },
+  { path: 'saas/login', loadComponent: () => import('./modules/autenticacion/pages/login/login.page').then(m => m.LoginPage), data: { plataforma: true } },
   { path: '403', component: ForbiddenPage },
   {
     path: '',
-    redirectTo: 'inicio',
+    redirectTo: 'empresa',
     pathMatch: 'full',
   },
   {
@@ -20,6 +24,8 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayout,
+    canActivate: [empresaGuard],
+    canActivateChild: [alcanceGuard],
     children: [
       {
         path: '',

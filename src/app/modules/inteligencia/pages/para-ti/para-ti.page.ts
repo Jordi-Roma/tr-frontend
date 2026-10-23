@@ -1,3 +1,4 @@
+import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
@@ -8,7 +9,7 @@ import { PreferenciasIA, RecomendacionPrenda, RecomendacionesService } from '../
 
 @Component({
   selector: 'app-para-ti-page',
-  imports: [RouterLink],
+  imports: [OperacionNuevaDirective, RouterLink],
   templateUrl: './para-ti.page.html',
   styleUrl: './para-ti.page.css',
 })

@@ -15,8 +15,10 @@
 
     <div class="auth-box">
       <p class="eyebrow">Bienvenido</p>
-      <h1 id="login-title">Iniciar sesion</h1>
-      <p class="subtitle">Ingresa para comprar, ver tu carrito y gestionar tu perfil.</p>
+      <h1 id="login-title">{{ plataforma ? 'Administración de plataforma' : 'Iniciar sesión' }}</h1>
+      @if (!plataforma) { <p><strong>{{ empresa()?.nombre }}</strong> · <a routerLink="/empresa">Cambiar empresa</a></p> }
+      @else { <p>Acceso exclusivo de Administración SaaS. <a routerLink="/empresa">Entrar a una tienda</a></p> }
+
 
       <form [formGroup]="loginForm" (ngSubmit)="iniciarSesion()" novalidate>
         <label for="identificador">Usuario o correo</label>
@@ -59,12 +61,12 @@
           <p class="field-error">La contrasena es obligatoria.</p>
         }
 
-        <p class="register-text">
+        @if (!plataforma) { <p class="register-text">
           <a class="register-link" routerLink="/recuperar-password">¿Olvidaste tu contraseña?</a>
-        </p>
+        </p> }
 
         @if (mensajeError()) {
-          <p class="error-message">{{ mensajeError() }}</p>
+          <p class="error-message" role="alert">{{ mensajeError() }}</p>
         }
 
         @if (cargando()) {
@@ -75,10 +77,10 @@
           Ingresar
         </button>
 
-        <p class="register-text">
+        @if (!plataforma) { <p class="register-text">
           No tienes cuenta?
           <a class="register-link" routerLink="/registro">Crear cuenta</a>
-        </p>
+        </p> }
       </form>
     </div>
   </section>
