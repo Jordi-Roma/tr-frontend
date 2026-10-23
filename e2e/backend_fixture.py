@@ -26,6 +26,9 @@ helpers = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(helpers)
 actor = helpers.actor.__wrapped__()
 a, b, plan, _ = helpers.empresas.__wrapped__(actor)
+for empresa, nombre in ((a, 'Atelier Norte'), (b, 'Casa Oliva')):
+    helpers.consulta('UPDATE empresa SET nombre=%s WHERE id=%s', (nombre, empresa['id']))
+    empresa['nombre'] = nombre
 sa, pa, va = helpers.mercaderia(a)
 sb, pb, vb = helpers.mercaderia(b)
 helpers.consulta("UPDATE producto SET nombre='Prenda Empresa A' WHERE id=%s", (pa,))

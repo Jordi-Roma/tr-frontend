@@ -30,7 +30,7 @@ En otra terminal, desde `tr-frontend`:
 npm run test:e2e
 ```
 
-La configuración inicia y cierra Angular automáticamente. Se ejecutan 15 casos en Edge, con controles AXE completos en selector, login, pantallas SaaS y Mi plan, y una comprobación de teclado y pantalla estrecha. Las capturas y trazas de fallos quedan en `test-results/`, excluido de Git.
+La configuración inicia y cierra Angular automáticamente. Se ejecutan 17 casos en Edge, con controles AXE completos en el directorio de empresas, login, pantallas SaaS y Mi plan, y una comprobación de teclado y pantalla estrecha. También se verifican búsqueda por nombre, reintento de carga y una empresa cancelada después de cargar sus tarjetas. Las capturas y trazas de fallos quedan en `test-results/`, excluido de Git.
 
 ## Cierre
 

@@ -144,6 +144,16 @@ describe('Contexto y sesión multitenant', () => {
     expect(reset.request.body.empresa_codigo).toBe('empresa-a');
     reset.flush({ mensaje: 'OK' });
   });
+  it('lista empresas sin exponer credenciales ni cambiar la sesión seleccionada', () => {
+    auth.guardarSesion(sesion());
+    contexto.listar().subscribe();
+    const r = backend.expectOne(`${API_BASE_URL}/api/v1/empresas/publicas`);
+    expect(r.request.headers.has('Authorization')).toBe(false);
+    expect(r.request.headers.has('X-Empresa-Codigo')).toBe(false);
+    r.flush([{ id: 2, codigo: 'empresa-b', nombre: 'Empresa B', estado: 'ACTIVA' }]);
+    expect(contexto.empresa()?.codigo).toBe('empresa-a');
+    expect(auth.estaAutenticado()).toBe(true);
+  });
   it('no resuelve códigos públicos con credenciales de la sesión anterior', () => {
     auth.guardarSesion(sesion());
     contexto.resolver('  EMPRESA-B ').subscribe();

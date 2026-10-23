@@ -120,7 +120,7 @@
 } @else {
   <div class="shop-shell">
     <header class="shop-navbar">
-      <a class="shop-brand" routerLink="/inicio" aria-label="Ir al inicio">Style<span>AR</span></a>
+      <a class="shop-brand" routerLink="/inicio" [attr.aria-label]="'Ir al inicio de ' + (empresa()?.nombre || 'la tienda')">{{ empresa()?.nombre || 'StyleAR' }}</a>
 
       <nav class="shop-nav" aria-label="Navegacion de tienda">
         @for (item of tiendaMenu; track item.path) {

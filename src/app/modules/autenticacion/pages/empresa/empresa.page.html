@@ -1,0 +1,120 @@
+<div class="directorio">
+  <header class="cabecera">
+    <a class="marca" routerLink="/empresa" aria-label="StyleAR, directorio de empresas"
+      >Style<span>AR</span></a
+    >
+    <a class="plataforma" routerLink="/saas/login"
+      >Administración de la plataforma <span aria-hidden="true">↗</span></a
+    >
+  </header>
+
+  <main id="contenido">
+    <section class="presentacion" aria-labelledby="empresa-title">
+      <p class="eyebrow">Un lugar, muchas tiendas</p>
+      <h1 id="empresa-title">Elige una empresa.<br /><em>Encuentra tu estilo.</em></h1>
+      <p class="introduccion">Descubre las tiendas de StyleAR y entra a explorar su catálogo.</p>
+      <div class="buscador">
+        <label for="buscar-empresa">Buscar empresa por nombre</label>
+        <div class="campo-busqueda">
+          <svg
+            aria-hidden="true"
+            width="21"
+            height="21"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <circle cx="10.8" cy="10.8" r="6.8" />
+            <path d="m16 16 4.5 4.5" />
+          </svg>
+          <input
+            id="buscar-empresa"
+            type="search"
+            [formControl]="busquedaControl"
+            placeholder="¿Qué tienda estás buscando?"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+    </section>
+
+    @if (errorEntrada()) {
+      <p class="aviso error" role="alert">{{ errorEntrada() }}</p>
+    }
+    @if (abriendo()) {
+      <p class="aviso" role="status">Abriendo la tienda…</p>
+    }
+    @if (pendiente(); as empresa) {
+      <section class="cambio" aria-labelledby="cambio-title">
+        <p class="eyebrow">Cambiar de tienda</p>
+        <h2 id="cambio-title" tabindex="-1">Entrar a {{ empresa.nombre }}</h2>
+        <p>
+          Hay una sesión abierta. Para entrar a esta empresa se cerrará esa sesión y se limpiarán
+          sus datos de este dispositivo.
+        </p>
+        <div class="acciones">
+          <button
+            type="button"
+            class="principal"
+            (click)="confirmarCambio()"
+            [disabled]="abriendo()"
+          >
+            Cerrar sesión y entrar
+          </button>
+          <button type="button" class="secundario" (click)="cancelar()" [disabled]="abriendo()">
+            Conservar mi sesión
+          </button>
+        </div>
+      </section>
+    }
+
+    <section class="tiendas" aria-labelledby="tiendas-title" [attr.aria-busy]="cargando()">
+      <div class="titulo-listado">
+        <h2 id="tiendas-title">Explora las empresas</h2>
+        @if (!cargando() && !errorDirectorio()) {
+          <p class="contador" role="status">
+            {{ filtradas().length }} {{ filtradas().length === 1 ? 'empresa' : 'empresas' }}
+          </p>
+        }
+      </div>
+      @if (cargando()) {
+        <p class="estado" role="status">Cargando empresas…</p>
+      } @else if (errorDirectorio()) {
+        <div class="estado">
+          <p class="error" role="alert">{{ errorDirectorio() }}</p>
+          <button type="button" class="secundario" (click)="cargar()">Volver a intentar</button>
+        </div>
+      } @else {
+        <ul class="empresas">
+          @for (empresa of filtradas(); track empresa.id) {
+            <li>
+              <button
+                type="button"
+                class="empresa"
+                (click)="abrir(empresa.codigo)"
+                [disabled]="abriendo()"
+              >
+                <span class="identidad" aria-hidden="true">{{ iniciales(empresa.nombre) }}</span>
+                <span class="empresa-nombre">{{ empresa.nombre }}</span>
+                <span class="empresa-descripcion">Catálogo y novedades</span>
+                <span class="visitar">Visitar tienda <span aria-hidden="true">↗</span></span>
+              </button>
+            </li>
+          } @empty {
+            <li class="estado vacio">
+              @if (empresas().length) {
+                <h3>No encontramos esa empresa</h3>
+                <p>Prueba con otro nombre para encontrar tu tienda.</p>
+              } @else {
+                <h3>Pronto habrá tiendas para descubrir</h3>
+                <p>Aún no hay empresas disponibles. Vuelve a visitarnos.</p>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </main>
+  <footer>Tu próxima tienda empieza aquí. <span>StyleAR</span></footer>
+</div>

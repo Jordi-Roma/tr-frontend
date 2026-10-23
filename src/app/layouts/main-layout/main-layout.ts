@@ -1,4 +1,5 @@
 import { EstadoEmpresaComponent } from '../../shared/components/estado-empresa/estado-empresa.component';
+import { EmpresaContextoService } from '../../core/services/empresa-contexto.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -40,6 +41,7 @@ const PROVEEDOR = ['PROVEEDOR'];
   templateUrl: './main-layout.html',
 })
 export class MainLayout {
+  protected readonly empresa = inject(EmpresaContextoService).empresa;
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly tiendaState = inject(TiendaStateService);

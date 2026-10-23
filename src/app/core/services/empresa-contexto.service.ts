@@ -25,6 +25,10 @@ export class EmpresaContextoService {
     return localStorage.getItem(CODIGO_KEY);
   }
 
+  listar(): Observable<EmpresaPublica[]> {
+    return this.publico.get<EmpresaPublica[]>(`${API_BASE_URL}/api/v1/empresas/publicas`);
+  }
+
   resolver(codigo: string): Observable<EmpresaPublica> {
     return this.publico.get<EmpresaPublica>(
       `${API_BASE_URL}/api/v1/empresas/publica/${encodeURIComponent(codigo.trim().toLowerCase())}`,

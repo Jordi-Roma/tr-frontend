@@ -378,6 +378,10 @@
 
 .shop-brand {
   flex: 0 0 auto;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-primary);
   font-family: var(--font-display);
   font-size: 1.8rem;

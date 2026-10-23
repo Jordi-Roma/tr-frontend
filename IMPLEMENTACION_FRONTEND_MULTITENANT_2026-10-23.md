@@ -67,3 +67,15 @@ No se modificó Railway ni su base de datos. Los cambios backend previos y los a
 El 23/10/2026 se actualizó `main` del frontend hasta `2bffaa0` y se recuperaron los cambios locales multitenant sin conflictos. Se conservó la eliminación remota del campo de enlace AR/3D en el formulario de productos. Después de integrar: compilación de producción correcta y 13 pruebas unitarias aprobadas. Los cambios multitenant permanecen pendientes de commit y push.
 
 En una actualización separada se descargaron los tres commits pendientes de `tr-mobile` hasta `ad6852b`, conservando el vestidor en vivo, alternancia de cámaras y URL de Railway. Sus dependencias se prepararon respetando `pubspec.lock`, y `flutter analyze --no-pub` terminó sin incidencias. Flutter quedó sin modificaciones locales; esto no implementa todavía su adaptación multitenant ni comprueba cámara/Decart reales.
+
+## Directorio público de empresas: nueva entrada solicitada
+
+El 23/10/2026 se reemplazó el formulario de código de `/empresa` por un directorio de tiendas con búsqueda por nombre, tarjetas y acceso directo a su inicio/catálogo. `/` sigue abriendo esta página. La búsqueda admite mayúsculas y omite diferencias de acentos. Las tarjetas usan las iniciales del nombre; el modelo actual de empresa no tiene un campo de logotipo. La cabecera comercial muestra el nombre de la empresa seleccionada.
+
+El directorio usa el endpoint público nuevo `GET /api/v1/empresas/publicas`. Devuelve exclusivamente `id`, `codigo`, `nombre` y `estado`, ordenados por nombre; incluye empresas activas y suspendidas para conservar consultas y trámites pendientes, y excluye las canceladas. No utiliza el listado privado de AS ni expone usuarios, planes, cuotas o contraseñas. No se necesita una migración nueva.
+
+El visitante ya no introduce códigos. Se conservan internamente para aislar peticiones y mantener los enlaces directos `/e/:codigo`. Cada selección se vuelve a comprobar en el servidor antes de abrir la tienda. Si hay otra sesión, se mantiene la confirmación de cierre y la limpieza de estado. Se incluyen estados de carga, directorio vacío, búsqueda sin resultados, error con reintento y empresa que deja de estar disponible. No se modificaron el probador, los cambios remotos de la compañera, el QR ni Flutter.
+
+Validación de esta actualización: build de producción correcto, **14 pruebas unitarias web, 17 de navegador y 50 del backend aprobadas**. PostgreSQL 16, empresas y pagos fueron ficticios y temporales. Los casos de navegador incluyen entrada por tarjeta, catálogo separado, cabecera de la empresa, búsqueda, cancelación posterior al listado, reintento de carga, foco/teclado, pantalla estrecha y AXE sin infracciones en los recorridos analizados. Las pruebas de backend verifican que las empresas canceladas no se publiquen y que no salgan campos SaaS privados. Se revisaron capturas de escritorio y móvil.
+
+Esta actualización queda local, sin commit, push ni despliegue. Deben publicarse backend y frontend compatibles para que el directorio pueda cargar el endpoint nuevo.

@@ -1,6 +1,6 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import {
@@ -8,209 +8,129 @@ import {
   EmpresaPublica,
 } from '../../../../core/services/empresa-contexto.service';
 import { mensajeApi } from '../../../../core/services/error-api';
+import { FocoService } from '../../../../core/services/foco.service';
 import { AuthService } from '../../services/auth.service';
+
+function normalizar(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLocaleLowerCase('es');
+}
 
 @Component({
   selector: 'app-empresa-page',
   imports: [ReactiveFormsModule, RouterLink],
-  template: `
-    <main class="entrada">
-      <section aria-labelledby="empresa-title" class="tarjeta">
-        <p class="marca">StyleAR</p>
-        <h1 id="empresa-title">Entrar a una empresa</h1>
-        <p>Introduce el código que te compartió la tienda.</p>
-        <form [formGroup]="form" (ngSubmit)="buscar()">
-          <label for="codigo-empresa">Código de empresa</label>
-          <input
-            id="codigo-empresa"
-            formControlName="codigo"
-            autocomplete="organization"
-            required
-            aria-describedby="codigo-ayuda"
-            [attr.aria-invalid]="form.controls.codigo.touched && form.controls.codigo.invalid"
-          />
-          <small id="codigo-ayuda"
-            >Usa entre 2 y 40 letras, números o guiones. Por ejemplo: stylear.</small
-          >
-          <button type="submit" [disabled]="cargando()">
-            {{ cargando() ? 'Buscando…' : 'Continuar' }}
-          </button>
-        </form>
-        @if (error()) {
-          <p role="alert" class="error">{{ error() }}</p>
-        }
-        @if (pendiente(); as empresa) {
-          <section class="cambio" aria-labelledby="cambio-title">
-            <h2 id="cambio-title">Entrar a {{ empresa.nombre }}</h2>
-            <p>
-              Hay una sesión abierta. Para cambiar de empresa se cerrará esa sesión y se limpiarán
-              sus datos de este dispositivo.
-            </p>
-            <button type="button" (click)="confirmarCambio()" [disabled]="cargando()">
-              Cerrar sesión y entrar
-            </button>
-            <button type="button" class="secundario" (click)="cancelar()">
-              Conservar mi sesión
-            </button>
-          </section>
-        }
-        <a routerLink="/saas/login">Administración de la plataforma</a>
-      </section>
-    </main>
-  `,
-  styles: `
-    :host {
-      display: block;
-    }
-    .entrada {
-      min-height: 100dvh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-    }
-    .tarjeta {
-      width: min(100%, 520px);
-      background: white;
-      border: 1px solid #d5d5ce;
-      padding: 36px;
-      border-radius: 12px;
-    }
-    .marca {
-      font-weight: 800;
-      letter-spacing: 0.04em;
-    }
-    h1 {
-      font-size: 2rem;
-    }
-    h2 {
-      font-size: 1.2rem;
-    }
-    form {
-      display: grid;
-      gap: 12px;
-      margin: 28px 0;
-    }
-    label {
-      font-weight: 600;
-    }
-    input {
-      padding: 12px;
-      border: 1px solid #767670;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-    small {
-      color: #4f4f49;
-    }
-    button {
-      padding: 12px 18px;
-      background: #171717;
-      color: white;
-      border: 1px solid #171717;
-      border-radius: 6px;
-      cursor: pointer;
-      font: inherit;
-    }
-    button:disabled {
-      opacity: 0.6;
-      cursor: wait;
-    }
-    .secundario {
-      background: white;
-      color: #171717;
-      margin-top: 10px;
-    }
-    a {
-      color: #292924;
-      text-underline-offset: 3px;
-    }
-    .error {
-      color: #9b2424;
-    }
-    .cambio {
-      border-top: 1px solid #ddd;
-      padding: 18px 0;
-    }
-    :is(button, input, a):focus-visible {
-      outline: 3px solid #426621;
-      outline-offset: 3px;
-    }
-  `,
+  templateUrl: './empresa.page.html',
+  styleUrl: './empresa.page.css',
 })
 export class EmpresaPage {
   private readonly contexto = inject(EmpresaContextoService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroy = inject(DestroyRef);
+  private readonly foco = inject(FocoService);
   private solicitud = 0;
+  protected readonly empresas = signal<EmpresaPublica[]>([]);
   protected readonly cargando = signal(false);
-  protected readonly error = signal('');
+  protected readonly abriendo = signal(false);
+  protected readonly errorDirectorio = signal('');
+  protected readonly errorEntrada = signal('');
   protected readonly pendiente = signal<EmpresaPublica | null>(null);
-  protected readonly form = new FormGroup({
-    codigo: new FormControl(this.contexto.codigoRecordado() ?? '', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/^[a-zA-Z0-9][a-zA-Z0-9-]{1,39}$/)],
-    }),
+  protected readonly busquedaControl = new FormControl('', { nonNullable: true });
+  private readonly busqueda = toSignal(this.busquedaControl.valueChanges, { initialValue: '' });
+  protected readonly filtradas = computed(() => {
+    const busqueda = normalizar(this.busqueda());
+    return this.empresas().filter((empresa) => normalizar(empresa.nombre).includes(busqueda));
   });
 
   constructor() {
     const route = inject(ActivatedRoute);
     if (route.snapshot.queryParamMap.has('error'))
-      this.error.set('La empresa guardada ya no está disponible. Introduce un código válido.');
+      this.errorEntrada.set('La empresa anterior ya no está disponible. Elige otra tienda.');
+    this.cargar();
     route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const codigo = params.get('codigo');
-      if (codigo !== null) {
-        this.form.controls.codigo.setValue(codigo);
-        this.buscar();
-      }
+      if (codigo !== null) this.abrir(codigo);
     });
   }
-  protected buscar(): void {
-    this.form.controls.codigo.setValue(this.form.controls.codigo.value.trim().toLowerCase());
-    this.error.set('');
-    this.pendiente.set(null);
-    const solicitud = ++this.solicitud;
-    if (this.form.invalid) {
-      if (!this.auth.estaAutenticado()) this.contexto.limpiar();
-      this.form.markAllAsTouched();
-      this.error.set('Introduce un código de empresa válido.');
-      return;
-    }
+
+  protected cargar(): void {
+    if (this.cargando()) return;
     this.cargando.set(true);
+    this.errorDirectorio.set('');
     this.contexto
-      .resolver(this.form.controls.codigo.value)
+      .listar()
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.cargando.set(false)),
+      )
+      .subscribe({
+        next: (empresas) => this.empresas.set(empresas),
+        error: (error: unknown) =>
+          this.errorDirectorio.set(
+            mensajeApi(error, 'No se pudieron cargar las empresas. Inténtalo de nuevo.'),
+          ),
+      });
+  }
+
+  protected iniciales(nombre: string): string {
+    return nombre
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((parte) => parte[0] ?? '')
+      .join('')
+      .toLocaleUpperCase('es');
+  }
+
+  protected abrir(codigo: string): void {
+    const solicitud = ++this.solicitud;
+    this.abriendo.set(true);
+    this.errorEntrada.set('');
+    this.pendiente.set(null);
+    // Revalidate a listed company in case its availability has changed.
+    this.contexto
+      .resolver(codigo)
       .pipe(
         takeUntilDestroyed(this.destroy),
         finalize(() => {
-          if (solicitud === this.solicitud) this.cargando.set(false);
+          if (solicitud === this.solicitud) this.abriendo.set(false);
         }),
       )
       .subscribe({
         next: (empresa) => {
           if (solicitud !== this.solicitud) return;
-          if (this.auth.estaAutenticado() && this.auth.usuarioActual()?.empresa_id !== empresa.id)
+          if (this.auth.estaAutenticado() && this.auth.usuarioActual()?.empresa_id !== empresa.id) {
             this.pendiente.set(empresa);
-          else this.entrar(empresa);
+            this.foco.llevar('cambio-title');
+          } else this.entrar(empresa);
         },
         error: (error: unknown) => {
           if (solicitud !== this.solicitud) return;
           if (!this.auth.estaAutenticado()) this.contexto.limpiar();
-          this.error.set(mensajeApi(error, 'No se encontró la empresa. Revisa su código.'));
+          this.errorEntrada.set(
+            mensajeApi(error, 'Esta tienda ya no está disponible. Elige otra empresa.'),
+          );
         },
       });
   }
+
   protected confirmarCambio(): void {
     const empresa = this.pendiente();
-    if (!empresa) return;
-    this.cargando.set(true);
+    if (!empresa || this.abriendo()) return;
+    this.abriendo.set(true);
     this.auth
       .logout()
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe(() => this.entrar(empresa));
   }
+
   protected cancelar(): void {
     void this.router.navigateByUrl(this.auth.tieneRol('ADMIN_SAAS') ? '/saas/empresas' : '/inicio');
   }
+
   private entrar(empresa: EmpresaPublica): void {
     this.contexto.seleccionar(empresa);
     void this.router.navigateByUrl(this.auth.tieneRol('ADMINISTRADOR') ? '/dashboard' : '/inicio');

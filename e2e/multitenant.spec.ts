@@ -3,8 +3,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 
 interface Fixture {
-  a: { id: number; codigo: string };
-  b: { id: number; codigo: string };
+  a: { id: number; codigo: string; nombre: string };
+  b: { id: number; codigo: string; nombre: string };
   clienteA: string;
   clienteB: string;
   cajero: string;
@@ -58,7 +58,12 @@ async function accesible(page: Page) {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   const resultado = await new AxeBuilder({ page }).analyze();
   await page.screenshot({
-    path: 'test-results/qa-' + new URL(page.url()).pathname.replace(/[^a-z0-9]+/gi, '-') + '.png',
+    path:
+      'test-results/qa-' +
+      new URL(page.url()).pathname.replace(/[^a-z0-9]+/gi, '-') +
+      '-' +
+      page.viewportSize()?.width +
+      '.png',
     fullPage: true,
   });
   expect(
@@ -70,17 +75,48 @@ async function accesible(page: Page) {
   ).toEqual([]);
 }
 
-test('selector accesible y catálogos A/B sin fallback de código inválido', async ({ page }) => {
+test('directorio accesible, búsqueda por nombre y catálogos A/B separados', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Entrar a una empresa' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Elige una empresa/ })).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: datos.a.nombre + ' Catálogo y novedades Visitar tienda',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByLabel('Código de empresa')).toHaveCount(0);
   await accesible(page);
-  await page.getByLabel('Código de empresa').fill(datos.a.codigo);
-  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await page
+    .getByRole('searchbox', { name: 'Buscar empresa por nombre' })
+    .fill('no hay una tienda así');
+  await expect(page.getByRole('heading', { name: 'No encontramos esa empresa' })).toBeVisible();
+  await page
+    .getByRole('searchbox', { name: 'Buscar empresa por nombre' })
+    .fill(datos.a.nombre.toUpperCase());
+  await expect(
+    page.getByRole('button', {
+      name: datos.b.nombre + ' Catálogo y novedades Visitar tienda',
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByRole('button', {
+      name: datos.a.nombre + ' Catálogo y novedades Visitar tienda',
+      exact: true,
+    })
+    .click();
   await expect(page).toHaveURL(/\/inicio$/);
+  await expect(page.getByRole('link', { name: 'Ir al inicio de ' + datos.a.nombre })).toBeVisible();
   await page.goto('/catalogo');
   await expect(page.getByText('Prenda Empresa A', { exact: true })).toBeVisible();
   await expect(page.getByText('Prenda Empresa B', { exact: true })).toHaveCount(0);
-  await page.goto(`/e/${datos.b.codigo}`);
+  await page.goto('/empresa');
+  await page
+    .getByRole('button', {
+      name: datos.b.nombre + ' Catálogo y novedades Visitar tienda',
+      exact: true,
+    })
+    .click();
   await expect(page).toHaveURL(/\/inicio$/);
   await page.goto('/catalogo');
   await expect(page.getByText('Prenda Empresa B', { exact: true })).toBeVisible();
@@ -272,7 +308,7 @@ test('AS crea y restaura una copia de A sin cambiar el catálogo de B', async ({
   ).json();
   await page
     .getByRole('combobox', { name: 'Alcance', exact: true })
-    .selectOption({ label: `${datos.a.codigo} (${datos.a.codigo})` });
+    .selectOption({ label: `${datos.a.nombre} (${datos.a.codigo})` });
   await page.getByRole('button', { name: 'Crear copia cifrada' }).click();
   await expect(page.getByText('Respaldo creado.', { exact: true })).toBeVisible();
   await page
@@ -396,8 +432,12 @@ test('una respuesta lenta de A no repuebla el catálogo al entrar a B', async ({
   await page.goto('/catalogo');
   await recibio;
   await page.getByRole('link', { name: 'Cambiar empresa', exact: true }).click();
-  await page.getByLabel('Código de empresa').fill(datos.b.codigo);
-  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await page
+    .getByRole('button', {
+      name: datos.b.nombre + ' Catálogo y novedades Visitar tienda',
+      exact: true,
+    })
+    .click();
   await expect(page).toHaveURL(/\/inicio$/);
   liberar();
   await page.goto('/catalogo');
@@ -468,12 +508,25 @@ test('un cupo consumido por otra alta se informa sin duplicar y Mi plan actualiz
 test('selector y plataforma funcionan con teclado en pantalla estrecha', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/empresa');
-  const codigo = page.getByLabel('Código de empresa');
-  await codigo.focus();
-  await expect(codigo).toBeFocused();
-  await codigo.fill(datos.a.codigo);
+  const busqueda = page.getByRole('searchbox', { name: 'Buscar empresa por nombre' });
+  await expect(
+    page.getByRole('button', {
+      name: datos.a.nombre + ' Catálogo y novedades Visitar tienda',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await busqueda.focus();
+  await expect(busqueda).toBeFocused();
+  await busqueda.fill(datos.a.nombre);
+  await expect(page.getByRole('button')).toHaveCount(1);
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('button', { name: 'Continuar', exact: true })).toBeFocused();
+  await expect(
+    page.getByRole('button', {
+      name: datos.a.nombre + ' Catálogo y novedades Visitar tienda',
+      exact: true,
+    }),
+  ).toBeFocused();
+  await accesible(page);
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/inicio$/);
   await plataforma(page);
@@ -481,4 +534,74 @@ test('selector y plataforma funcionan con teclado en pantalla estrecha', async (
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+});
+
+test('el directorio permite reintentar una carga fallida sin elegir una empresa', async ({
+  page,
+}) => {
+  let intentos = 0;
+  await page.route('**/api/v1/empresas/publicas', async (route) => {
+    if (++intentos === 1)
+      return route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'No se pudo cargar el directorio en este momento.' }),
+      });
+    return route.fallback();
+  });
+  await page.goto('/empresa');
+  await expect(page.getByRole('alert')).toContainText('No se pudo cargar el directorio');
+  expect(await page.evaluate(() => localStorage.getItem('stylear_empresa_codigo_v1'))).toBeNull();
+  await page.getByRole('button', { name: 'Volver a intentar', exact: true }).click();
+  await expect(
+    page.getByRole('button', {
+      name: datos.a.nombre + ' Catálogo y novedades Visitar tienda',
+      exact: true,
+    }),
+  ).toBeVisible();
+});
+
+test('una empresa cancelada después de cargar las tarjetas no abre datos anteriores', async ({
+  page,
+  request,
+}) => {
+  await page.goto(`/e/${datos.a.codigo}`);
+  await expect(page).toHaveURL(/\/inicio$/);
+  await page.goto('/empresa');
+  const tarjeta = page.getByRole('button', {
+    name: datos.a.nombre + ' Catálogo y novedades Visitar tienda',
+    exact: true,
+  });
+  await expect(tarjeta).toBeVisible();
+  const h = { Authorization: `Bearer ${await tokenAS(request)}` };
+  try {
+    expect(
+      (
+        await request.patch(`${API}/saas/empresas/${datos.a.id}/estado`, {
+          headers: h,
+          data: { estado: 'CANCELADA' },
+        })
+      ).ok(),
+    ).toBeTruthy();
+    await tarjeta.click();
+    await expect(page.getByRole('alert')).toContainText('Empresa no encontrada');
+    expect(await page.evaluate(() => localStorage.getItem('stylear_empresa_codigo_v1'))).toBeNull();
+    const listado = await (await request.get(`${API}/empresas/publicas`)).json();
+    expect(listado.some((e: { id: number }) => e.id === datos.a.id)).toBe(false);
+    await page
+      .getByRole('button', {
+        name: datos.b.nombre + ' Catálogo y novedades Visitar tienda',
+        exact: true,
+      })
+      .click();
+    await expect(page).toHaveURL(/\/inicio$/);
+    await page.goto('/catalogo');
+    await expect(page.getByText('Prenda Empresa B', { exact: true })).toBeVisible();
+    await expect(page.getByText('Prenda Empresa A', { exact: true })).toHaveCount(0);
+  } finally {
+    await request.patch(`${API}/saas/empresas/${datos.a.id}/estado`, {
+      headers: h,
+      data: { estado: 'ACTIVA' },
+    });
+  }
 });
