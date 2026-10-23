@@ -4,7 +4,7 @@
   </span>
   <div>
     <p class="eyebrow">Perfil</p>
-    <h2>Configurar perfil</h2>
+    <h1>Configurar perfil</h1>
     <p>Administra tus datos personales, seguridad y direcciones registradas.</p>
   </div>
 </section>
@@ -21,7 +21,7 @@
       </span>
       <div>
         <p class="eyebrow">Cuenta</p>
-        <h3>{{ perfilActual.nombre }} {{ perfilActual.apellido }}</h3>
+        <h2>{{ perfilActual.nombre }} {{ perfilActual.apellido }}</h2>
         <p class="profile-handle">&#64;{{ perfilActual.username }} · {{ perfilActual.correo }}</p>
       </div>
     </div>
@@ -41,16 +41,16 @@
   <section class="panel action-card" aria-labelledby="datos-title">
     <div>
       <p class="eyebrow">Datos personales</p>
-      <h3 id="datos-title">Perfil básico</h3>
-      <p>Actualiza nombre, apellido y teléfono cuando lo necesites.</p>
+      <h2 id="datos-title">Perfil básico</h2>
+      <p>Actualiza tus datos personales, usuario y correo.</p>
     </div>
 
     @if (mensajePerfil()) {
-      <p class="success-message">{{ mensajePerfil() }}</p>
+      <p role="status" class="success-message">{{ mensajePerfil() }}</p>
     }
 
     @if (errorPerfil()) {
-      <p class="error-message">{{ errorPerfil() }}</p>
+      <p role="alert" class="error-message">{{ errorPerfil() }}</p>
     }
 
     <button type="button" (click)="abrirPerfilForm()">
@@ -62,16 +62,16 @@
   <section class="panel action-card" aria-labelledby="password-title">
     <div>
       <p class="eyebrow">Seguridad</p>
-      <h3 id="password-title">Contraseña</h3>
-      <p>Cambia tu contraseña desde un panel seguro y separado.</p>
+      <h2 id="password-title">Contraseña</h2>
+      <p>Al cambiar tu contraseña se cerrarán tus sesiones y deberás ingresar nuevamente.</p>
     </div>
 
     @if (mensajePassword()) {
-      <p class="success-message">{{ mensajePassword() }}</p>
+      <p role="status" class="success-message">{{ mensajePassword() }}</p>
     }
 
     @if (errorPassword()) {
-      <p class="error-message">{{ errorPassword() }}</p>
+      <p role="alert" class="error-message">{{ errorPassword() }}</p>
     }
 
     <button type="button" (click)="abrirPasswordForm()">
@@ -81,60 +81,66 @@
   </section>
 </div>
 
-<section class="panel addresses-panel" aria-labelledby="direcciones-title">
-  <div class="panel-header">
-    <div>
-      <p class="eyebrow">Direcciones</p>
-      <h3 id="direcciones-title">Direcciones del cliente</h3>
+@if (esCliente()) {
+  <section class="panel addresses-panel" aria-labelledby="direcciones-title">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Direcciones</p>
+        <h2 id="direcciones-title">Direcciones del cliente</h2>
+      </div>
+      <button type="button" (click)="abrirNuevaDireccion()">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        Nueva dirección
+      </button>
     </div>
-    <button type="button" (click)="abrirNuevaDireccion()">
-      <i class="pi pi-plus" aria-hidden="true"></i>
-      Nueva dirección
-    </button>
-  </div>
 
-  @if (mensajeDireccion()) {
-    <p class="success-message">{{ mensajeDireccion() }}</p>
-  }
-
-  @if (errorDireccion()) {
-    <p class="error-message">{{ errorDireccion() }}</p>
-  }
-
-  <div class="address-list">
-    @if (direcciones().length === 0) {
-      <p class="empty-message">No tienes direcciones registradas.</p>
-    } @else {
-      @for (direccion of direcciones(); track direccion.id) {
-        <article class="address-card">
-          <div>
-            <h4>{{ direccion.direccion }}</h4>
-            <p>Ciudad: {{ nombreCiudad(direccion.ciudad_id) }}</p>
-
-            @if (direccion.referencia) {
-              <p>Referencia: {{ direccion.referencia }}</p>
-            }
-
-            @if (direccion.es_principal) {
-              <span class="principal-badge">Principal</span>
-            }
-          </div>
-
-          <div class="card-actions">
-            <button type="button" class="secondary-button" (click)="editarDireccion(direccion)">
-              <i class="pi pi-pencil" aria-hidden="true"></i>
-              Editar
-            </button>
-            <button type="button" class="danger-button" (click)="desactivarDireccion(direccion.id)">
-              <i class="pi pi-trash" aria-hidden="true"></i>
-              Desactivar
-            </button>
-          </div>
-        </article>
-      }
+    @if (mensajeDireccion()) {
+      <p role="status" class="success-message">{{ mensajeDireccion() }}</p>
     }
-  </div>
-</section>
+
+    @if (errorDireccion()) {
+      <p role="alert" class="error-message">{{ errorDireccion() }}</p>
+    }
+
+    <div class="address-list">
+      @if (direcciones().length === 0) {
+        <p class="empty-message">No tienes direcciones registradas.</p>
+      } @else {
+        @for (direccion of direcciones(); track direccion.id) {
+          <article class="address-card">
+            <div>
+              <h3>{{ direccion.direccion }}</h3>
+              <p>Ciudad: {{ nombreCiudad(direccion.ciudad_id) }}</p>
+
+              @if (direccion.referencia) {
+                <p>Referencia: {{ direccion.referencia }}</p>
+              }
+
+              @if (direccion.es_principal) {
+                <span class="principal-badge">Principal</span>
+              }
+            </div>
+
+            <div class="card-actions">
+              <button type="button" class="secondary-button" (click)="editarDireccion(direccion)">
+                <i class="pi pi-pencil" aria-hidden="true"></i>
+                Editar
+              </button>
+              <button
+                type="button"
+                class="danger-button"
+                (click)="desactivarDireccion(direccion.id)"
+              >
+                <i class="pi pi-trash" aria-hidden="true"></i>
+                Desactivar
+              </button>
+            </div>
+          </article>
+        }
+      }
+    </div>
+  </section>
+}
 
 <app-drawer
   [open]="perfilFormAbierto()"
@@ -144,21 +150,68 @@
 >
   <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" novalidate>
     <label for="nombre">Nombre</label>
-    <input id="nombre" type="text" formControlName="nombre" />
+    <input
+      id="nombre"
+      type="text"
+      maxlength="100"
+      autocomplete="given-name"
+      formControlName="nombre"
+    />
 
     @if (perfilForm.controls.nombre.invalid && perfilForm.controls.nombre.touched) {
       <p class="field-error">El nombre es obligatorio.</p>
     }
 
     <label for="apellido">Apellido</label>
-    <input id="apellido" type="text" formControlName="apellido" />
+    <input
+      id="apellido"
+      type="text"
+      maxlength="100"
+      autocomplete="family-name"
+      formControlName="apellido"
+    />
 
     @if (perfilForm.controls.apellido.invalid && perfilForm.controls.apellido.touched) {
       <p class="field-error">El apellido es obligatorio.</p>
     }
 
     <label for="telefono">Telefono</label>
-    <input id="telefono" type="text" formControlName="telefono" />
+    <input id="telefono" type="tel" maxlength="30" autocomplete="tel" formControlName="telefono" />
+
+    <label for="perfil-usuario">Nombre de usuario</label>
+    <input
+      id="perfil-usuario"
+      type="text"
+      formControlName="username"
+      autocomplete="username"
+      maxlength="80"
+    />
+    @if (perfilForm.controls.username.invalid && perfilForm.controls.username.touched) {
+      <p class="field-error">Usa de 4 a 80 letras, números, punto o guion para el usuario.</p>
+    }
+    <label for="perfil-correo">Correo electrónico</label>
+    <input
+      id="perfil-correo"
+      type="email"
+      formControlName="correo"
+      autocomplete="email"
+      maxlength="320"
+    />
+    @if (perfilForm.controls.correo.invalid && perfilForm.controls.correo.touched) {
+      <p class="field-error">Ingresa un correo electrónico válido.</p>
+    }
+    <label for="perfil-password">Contraseña actual para cambiar usuario o correo</label>
+    <input
+      id="perfil-password"
+      type="password"
+      formControlName="password_actual"
+      autocomplete="current-password"
+      aria-describedby="cambio-acceso-ayuda"
+    />
+    <p id="cambio-acceso-ayuda">
+      Si cambias tu usuario o correo, confirma tu contraseña actual. Se cerrarán tus sesiones y
+      volverás a ingresar con tus datos actualizados.
+    </p>
 
     <div class="form-actions">
       <button type="submit" [disabled]="perfilForm.invalid || guardandoPerfil()">
@@ -192,11 +245,16 @@
         [attr.aria-label]="passwordActualVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
         [attr.title]="passwordActualVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
       >
-        <i [class]="passwordActualVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+        <i
+          [class]="passwordActualVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'"
+          aria-hidden="true"
+        ></i>
       </button>
     </div>
 
-    @if (passwordForm.controls.passwordActual.invalid && passwordForm.controls.passwordActual.touched) {
+    @if (
+      passwordForm.controls.passwordActual.invalid && passwordForm.controls.passwordActual.touched
+    ) {
       <p class="field-error">La contraseña actual es obligatoria.</p>
     }
 
@@ -216,7 +274,10 @@
         [attr.aria-label]="passwordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
         [attr.title]="passwordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
       >
-        <i [class]="passwordNuevoVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+        <i
+          [class]="passwordNuevoVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'"
+          aria-hidden="true"
+        ></i>
       </button>
     </div>
 
@@ -229,12 +290,20 @@
       }
     </ul>
 
-    @if (passwordForm.controls.passwordNuevo.touched && passwordForm.controls.passwordNuevo.errors?.['required']) {
+    @if (
+      passwordForm.controls.passwordNuevo.touched &&
+      passwordForm.controls.passwordNuevo.errors?.['required']
+    ) {
       <p class="field-error">La nueva contraseña es obligatoria.</p>
     }
 
-    @if (passwordForm.controls.passwordNuevo.touched && passwordForm.controls.passwordNuevo.errors?.['passwordInseguro']) {
-      <p class="field-error">Debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.</p>
+    @if (
+      passwordForm.controls.passwordNuevo.touched &&
+      passwordForm.controls.passwordNuevo.errors?.['passwordInseguro']
+    ) {
+      <p class="field-error">
+        Debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.
+      </p>
     }
 
     <label for="confirmarPasswordNuevo">Confirmar nueva contraseña</label>
@@ -249,14 +318,22 @@
         class="password-toggle"
         type="button"
         (click)="alternarConfirmarPasswordNuevoVisible()"
-        [attr.aria-label]="confirmarPasswordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        [attr.aria-label]="
+          confirmarPasswordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'
+        "
         [attr.title]="confirmarPasswordNuevoVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
       >
-        <i [class]="confirmarPasswordNuevoVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
+        <i
+          [class]="confirmarPasswordNuevoVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'"
+          aria-hidden="true"
+        ></i>
       </button>
     </div>
 
-    @if (passwordForm.controls.confirmarPasswordNuevo.invalid && passwordForm.controls.confirmarPasswordNuevo.touched) {
+    @if (
+      passwordForm.controls.confirmarPasswordNuevo.invalid &&
+      passwordForm.controls.confirmarPasswordNuevo.touched
+    ) {
       <p class="field-error">Debes confirmar la nueva contraseña.</p>
     }
 
@@ -269,7 +346,9 @@
         <i class="pi pi-lock" aria-hidden="true"></i>
         Cambiar contraseña
       </button>
-      <button type="button" class="secondary-button" (click)="cerrarPasswordForm()">Cancelar</button>
+      <button type="button" class="secondary-button" (click)="cerrarPasswordForm()">
+        Cancelar
+      </button>
     </div>
   </form>
 </app-drawer>
@@ -300,12 +379,12 @@
 
       <div class="field">
         <label for="referencia">Referencia</label>
-        <input id="referencia" type="text" formControlName="referencia" />
+        <input id="referencia" type="text" maxlength="255" formControlName="referencia" />
       </div>
     </div>
 
     <label for="direccion">Dirección</label>
-    <input id="direccion" type="text" formControlName="direccion" />
+    <input id="direccion" type="text" maxlength="255" formControlName="direccion" />
 
     @if (direccionForm.controls.direccion.invalid && direccionForm.controls.direccion.touched) {
       <p class="field-error">La dirección es obligatoria.</p>
@@ -321,7 +400,43 @@
         <i class="pi pi-check" aria-hidden="true"></i>
         {{ direccionEditandoId() === null ? 'Crear dirección' : 'Guardar dirección' }}
       </button>
-      <button type="button" class="secondary-button" (click)="cerrarDireccionForm()">Cancelar</button>
+      <button type="button" class="secondary-button" (click)="cerrarDireccionForm()">
+        Cancelar
+      </button>
     </div>
   </form>
 </app-drawer>
+
+@if (esCliente()) {
+  <section class="panel cuenta-desactivar" aria-labelledby="desactivar-title">
+    <h2 id="desactivar-title">Desactivar mi cuenta</h2>
+    <p>
+      Se cerrarán todas tus sesiones y no podrás ingresar. Tus compras, reservas, pagos y
+      direcciones se conservarán; no se eliminará tu historial.
+    </p>
+    <p>Para volver a habilitar la cuenta, contacta a la administración de tu empresa.</p>
+    <form [formGroup]="desactivarForm" (ngSubmit)="desactivarCuenta()">
+      <label for="desactivar-password">Contraseña actual para desactivar</label>
+      <input
+        id="desactivar-password"
+        type="password"
+        formControlName="password"
+        autocomplete="current-password"
+      />
+      <label class="confirmar-cuenta" for="desactivar-confirmar"
+        ><input id="desactivar-confirmar" type="checkbox" formControlName="confirmar" />Entiendo que
+        perderé el acceso y quiero desactivar mi cuenta.</label
+      >
+      @if (errorCuenta()) {
+        <p role="alert" class="error-message">{{ errorCuenta() }}</p>
+      }
+      <button
+        class="danger-button"
+        type="submit"
+        [disabled]="desactivarForm.invalid || desactivando()"
+      >
+        {{ desactivando() ? 'Desactivando…' : 'Confirmar desactivación de mi cuenta' }}
+      </button>
+    </form>
+  </section>
+}

@@ -6,12 +6,18 @@ export interface PerfilResponse {
   correo: string;
   telefono: string | null;
   roles: string[];
+  empresa_id: number | null;
+  empresa_codigo: string | null;
+  sesion_revocada: boolean;
 }
 
 export interface ActualizarPerfilRequest {
   nombre: string;
   apellido: string;
   telefono: string | null;
+  username?: string;
+  correo?: string;
+  password_actual?: string;
 }
 
 export interface CambiarPasswordRequest {

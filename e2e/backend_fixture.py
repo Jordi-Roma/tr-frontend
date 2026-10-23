@@ -10,6 +10,8 @@ from pathlib import Path
 import sys
 import tempfile
 from uuid import uuid4
+import re
+from threading import Lock
 
 import psycopg2
 from psycopg2.extensions import parse_dsn
@@ -52,6 +54,21 @@ Path(__file__).with_name('.fixture.json').write_text(json.dumps(datos),encoding=
 
 from cryptography.fernet import Fernet
 import uvicorn
+from app.modules.autenticacion.services import password_reset_service
+
+# Captura de correo exclusiva de esta fixture: jamás usa SMTP ni agrega rutas
+# de prueba a la aplicación. Los códigos sintéticos quedan fuera de Git.
+captura = Path(__file__).with_name('.correos.json')
+captura.write_text('{}', encoding='utf-8')
+correo_lock = Lock()
+def capturar_correo(destino, asunto, cuerpo):
+    assert destino.endswith('@example.invalid')
+    with correo_lock:
+        mensajes = json.loads(captura.read_text(encoding='utf-8'))
+        mensajes[destino] = re.search(r'Codigo: (\d{6})', cuerpo)[1]
+        captura.write_text(json.dumps(mensajes), encoding='utf-8')
+password_reset_service.enviar_correo = capturar_correo
+
 with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
     os.environ['STYLEAR_BACKUP_DIR'] = str(Path(privado)/'copias')
     os.environ['STYLEAR_BACKUP_KEY'] = Fernet.generate_key().decode()

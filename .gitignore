@@ -50,3 +50,4 @@ src.zip
 /playwright-report/
 /test-results/
 /e2e/.fixture.json
+/e2e/.correos.json

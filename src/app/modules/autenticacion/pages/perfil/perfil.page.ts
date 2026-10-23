@@ -1,4 +1,7 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
@@ -26,9 +29,7 @@ interface PasswordRequirement {
   cumplido: boolean;
 }
 
-const passwordSeguro: ValidatorFn = (
-  control: AbstractControl
-): ValidationErrors | null => {
+const passwordSeguro: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const valor = String(control.value ?? '');
 
   if (valor.length === 0) {
@@ -48,9 +49,7 @@ const passwordSeguro: ValidatorFn = (
   return { passwordInseguro: true };
 };
 
-const passwordsCoinciden: ValidatorFn = (
-  control: AbstractControl
-): ValidationErrors | null => {
+const passwordsCoinciden: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const nuevo = control.get('passwordNuevo')?.value;
   const confirmar = control.get('confirmarPasswordNuevo')?.value;
 
@@ -68,6 +67,17 @@ const passwordsCoinciden: ValidatorFn = (
   templateUrl: './perfil.page.html',
 })
 export class PerfilPage {
+  protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  protected readonly esCliente = computed(
+    () => this.auth.usuarioActual()?.roles.length === 1 && this.auth.tieneRol('CLIENTE'),
+  );
+  protected readonly desactivando = signal(false);
+  protected readonly errorCuenta = signal('');
+  protected readonly desactivarForm = new FormGroup({
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    confirmar: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] }),
+  });
   private readonly perfilService = inject(PerfilService);
   private readonly ciudadSucursalService = inject(CiudadSucursalService);
 
@@ -123,13 +133,22 @@ export class PerfilPage {
   protected readonly perfilForm = new FormGroup({
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.maxLength(100)],
     }),
     apellido: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required],
     }),
-    telefono: new FormControl<string | null>(null),
+    telefono: new FormControl<string | null>(null, Validators.maxLength(30)),
+    username: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^[a-zA-Z0-9_.-]{4,80}$/)],
+    }),
+    correo: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.email],
+    }),
+    password_actual: new FormControl('', { nonNullable: true }),
   });
 
   protected readonly passwordForm = new FormGroup(
@@ -147,7 +166,7 @@ export class PerfilPage {
         validators: [Validators.required],
       }),
     },
-    { validators: passwordsCoinciden }
+    { validators: passwordsCoinciden },
   );
 
   protected readonly direccionForm = new FormGroup({
@@ -166,8 +185,10 @@ export class PerfilPage {
 
   constructor() {
     this.cargarPerfil();
-    this.cargarDirecciones();
-    this.cargarCiudades();
+    if (this.esCliente()) {
+      this.cargarDirecciones();
+      this.cargarCiudades();
+    }
   }
 
   protected nombreCiudad(ciudadId: number): string {
@@ -222,17 +243,26 @@ export class PerfilPage {
     }
 
     this.guardandoPerfil.set(true);
-    const { nombre, apellido, telefono } = this.perfilForm.getRawValue();
+    const { nombre, apellido, telefono, username, correo, password_actual } =
+      this.perfilForm.getRawValue();
 
     this.perfilService
       .actualizarPerfil({
         nombre: nombre.trim(),
         apellido: apellido.trim(),
         telefono: this.limpiarTextoOpcional(telefono),
+        username,
+        correo,
+        password_actual,
       })
       .pipe(finalize(() => this.guardandoPerfil.set(false)))
       .subscribe({
         next: (perfil) => {
+          if (perfil.sesion_revocada) {
+            this.volverAlLogin('acceso_actualizado');
+            return;
+          }
+          this.auth.actualizarPerfilLocal(perfil);
           this.perfil.set(perfil);
           this.cargarFormularioPerfil(perfil);
           this.mensajePerfil.set('Perfil actualizado correctamente.');
@@ -270,6 +300,7 @@ export class PerfilPage {
           this.passwordNuevoValor.set('');
           this.mensajePassword.set(response.mensaje);
           this.passwordFormAbierto.set(false);
+          this.volverAlLogin('clave_actualizada');
         },
         error: (error: HttpErrorResponse) => {
           this.errorPassword.set(this.obtenerMensajeError(error));
@@ -286,8 +317,7 @@ export class PerfilPage {
       return;
     }
 
-    const { ciudadId, direccion, referencia, esPrincipal } =
-      this.direccionForm.getRawValue();
+    const { ciudadId, direccion, referencia, esPrincipal } = this.direccionForm.getRawValue();
 
     if (ciudadId === null) {
       this.errorDireccion.set('La ciudad es obligatoria.');
@@ -324,6 +354,28 @@ export class PerfilPage {
         this.errorDireccion.set(this.obtenerMensajeError(error));
       },
     });
+  }
+
+  protected desactivarCuenta(): void {
+    if (this.desactivarForm.invalid || this.desactivando()) {
+      this.desactivarForm.markAllAsTouched();
+      return;
+    }
+    this.desactivando.set(true);
+    this.errorCuenta.set('');
+    this.perfilService
+      .desactivarCuenta(this.desactivarForm.controls.password.value)
+      .pipe(finalize(() => this.desactivando.set(false)))
+      .subscribe({
+        next: () => this.volverAlLogin('cuenta_desactivada'),
+        error: (error: HttpErrorResponse) => this.errorCuenta.set(this.obtenerMensajeError(error)),
+      });
+  }
+
+  private volverAlLogin(motivo: string): void {
+    const plataforma = this.auth.tieneRol('ADMIN_SAAS');
+    this.auth.limpiarSesion();
+    void this.router.navigate([plataforma ? '/saas/login' : '/login'], { queryParams: { motivo } });
   }
 
   protected editarDireccion(direccion: DireccionResponse): void {
@@ -430,6 +482,9 @@ export class PerfilPage {
       nombre: perfil.nombre,
       apellido: perfil.apellido,
       telefono: perfil.telefono,
+      username: perfil.username,
+      correo: perfil.correo,
+      password_actual: '',
     });
   }
 
@@ -448,25 +503,6 @@ export class PerfilPage {
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-
-    if (detail !== '') {
-      return detail;
-    }
-
-    return 'No se pudo completar la operación. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-
-    return '';
+    return mensajeApi(error, 'No se pudo completar la operación. Intenta nuevamente.');
   }
 }

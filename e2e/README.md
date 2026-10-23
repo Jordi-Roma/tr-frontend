@@ -30,7 +30,9 @@ En otra terminal, desde `tr-frontend`:
 npm run test:e2e
 ```
 
-La configuración inicia y cierra Angular automáticamente. Se ejecutan 17 casos en Edge, con controles AXE completos en el directorio de empresas, login, pantallas SaaS y Mi plan, y una comprobación de teclado y pantalla estrecha. También se verifican búsqueda por nombre, reintento de carga y una empresa cancelada después de cargar sus tarjetas. Las capturas y trazas de fallos quedan en `test-results/`, excluido de Git.
+La configuración inicia y cierra Angular automáticamente. Se ejecutan 23 casos en Edge: los 17 recorridos multitenant y seis de cuenta/perfil. Hay controles AXE en directorio, login, pantallas SaaS, Mi plan, perfil y sus formularios, recuperación y desactivación. También se comprueban teclado/foco, pantalla estrecha, direcciones, cambios de identidad y contraseña, cierre de sesión y recuperación con código. Las capturas y trazas de fallos quedan en `test-results/`, excluido de Git.
+
+La fixture captura el correo exclusivamente en `e2e/.correos.json`, ignorado por Git, para cuentas sintéticas `@example.invalid`; no usa SMTP ni crea endpoints adicionales. Al cerrar las pruebas se debe borrar ese archivo junto a `.fixture.json`. No ejecutar simultáneamente la suite backend y el navegador contra la misma base: las pruebas de restauración detectan correctamente cualquier cambio de referencias globales. Usar otra base desechable para el backend.
 
 ## Cierre
 
@@ -39,6 +41,7 @@ Detener la API con Ctrl+C en la primera terminal. Los respaldos cifrados, clave 
 ```powershell
 & "$pgBin\pg_ctl.exe" -D $testData -m fast -w stop
 Remove-Item -LiteralPath '.\tr-frontend\e2e\.fixture.json' -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath '.\tr-frontend\e2e\.correos.json' -ErrorAction SilentlyContinue
 Remove-Item Env:DATABASE_URL, Env:STYLEAR_TEST_DATABASE_URL -ErrorAction SilentlyContinue
 ```
 

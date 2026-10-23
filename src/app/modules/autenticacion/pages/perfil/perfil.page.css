@@ -1,5 +1,9 @@
 :host {
   display: block;
+  --color-accent: #4f6038;
+  --color-muted: #525252;
+  --color-success: #24683a;
+  --color-danger: #a62d2d;
 }
 
 .page-heading {
@@ -22,7 +26,7 @@ p {
   margin: 0;
 }
 
-h2 {
+.page-heading h1 {
   color: var(--color-text);
   font-size: clamp(2rem, 4vw, 3.4rem);
   line-height: 0.95;
@@ -69,7 +73,7 @@ h2 {
   font-weight: 900;
 }
 
-.avatar-card h3 {
+.avatar-card h2 {
   color: var(--color-text);
   font-size: 1.45rem;
 }
@@ -133,7 +137,7 @@ h2 {
   margin-bottom: 20px;
 }
 
-.panel h3 {
+.panel h2 {
   color: var(--color-text);
   font-size: 1.35rem;
 }
@@ -327,7 +331,7 @@ button:disabled {
   background: var(--color-bg);
 }
 
-.address-card h4 {
+.address-card h3 {
   color: var(--color-text);
   font-size: 1rem;
 }
@@ -386,7 +390,7 @@ button:disabled {
 }
 
 @media (max-width: 680px) {
-  h2 {
+  .page-heading h1 {
     font-size: 1.9rem;
   }
 
@@ -418,4 +422,27 @@ button:disabled {
   .form-actions button {
     flex: 1 1 150px;
   }
+}
+
+.cuenta-desactivar {
+  margin-top: 28px;
+  border: 1px solid #aa5050;
+}
+.cuenta-desactivar h2 {
+  font-size: 1.2rem;
+}
+.cuenta-desactivar form {
+  display: grid;
+  gap: 14px;
+  max-width: 620px;
+}
+.confirmar-cuenta {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+.confirmar-cuenta input {
+  width: auto;
+  margin-top: 4px;
 }

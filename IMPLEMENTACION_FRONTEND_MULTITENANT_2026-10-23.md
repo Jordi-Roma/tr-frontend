@@ -79,3 +79,12 @@ El visitante ya no introduce códigos. Se conservan internamente para aislar pet
 Validación de esta actualización: build de producción correcto, **14 pruebas unitarias web, 17 de navegador y 50 del backend aprobadas**. PostgreSQL 16, empresas y pagos fueron ficticios y temporales. Los casos de navegador incluyen entrada por tarjeta, catálogo separado, cabecera de la empresa, búsqueda, cancelación posterior al listado, reintento de carga, foco/teclado, pantalla estrecha y AXE sin infracciones en los recorridos analizados. Las pruebas de backend verifican que las empresas canceladas no se publiquen y que no salgan campos SaaS privados. Se revisaron capturas de escritorio y móvil.
 
 Esta actualización queda local, sin commit, push ni despliegue. Deben publicarse backend y frontend compatibles para que el directorio pueda cargar el endpoint nuevo.
+
+
+## CU02/CU03: cuenta y acceso, 23/10/2026
+
+El perfil permite editar datos personales, usuario/correo con contraseña actual, cambiar contraseña y gestionar direcciones. La autodesactivación conserva el historial y la empresa. Los cambios de credenciales cierran sesiones y regresan al login con un mensaje; los cambios personales actualizan la sesión local. Recuperación SaaS separada en `/saas/recuperar-password`, y recuperación comercial en la empresa elegida.
+
+Se corrigieron contraste, jerarquía de títulos, etiquetas, mensajes y foco/teclado de los diálogos. Aprobaron 14 pruebas unitarias, 23 recorridos de navegador y el build de producción. Los seis recorridos nuevos prueban perfil/direcciones, identidad, contraseña, recuperación con captura local de correo, desactivación y recuperación SaaS. El backend necesita la nueva migración de intentos de recuperación antes de iniciar la versión actualizada.
+
+Cambios locales, sin publicación ni datos reales de prueba insertados. Detalles en [el informe CU02/CU03](../tr-backend/IMPLEMENTACION_CU02_CU03_2026-10-23.md).

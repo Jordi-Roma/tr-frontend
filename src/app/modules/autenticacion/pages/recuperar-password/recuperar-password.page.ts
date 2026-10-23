@@ -11,7 +11,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 
@@ -25,9 +25,7 @@ interface PasswordRequirement {
   cumplido: boolean;
 }
 
-const passwordSeguro: ValidatorFn = (
-  control: AbstractControl
-): ValidationErrors | null => {
+const passwordSeguro: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const valor = String(control.value ?? '');
 
   if (valor.length === 0) {
@@ -54,6 +52,7 @@ const passwordSeguro: ValidatorFn = (
   templateUrl: './recuperar-password.page.html',
 })
 export class RecuperarPasswordPage {
+  protected readonly plataforma = inject(ActivatedRoute).snapshot.data['plataforma'] === true;
   protected readonly empresa = inject(EmpresaContextoService).empresa;
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -129,7 +128,7 @@ export class RecuperarPasswordPage {
     const { identificador } = this.solicitudForm.getRawValue();
 
     this.authService
-      .solicitarPasswordReset({ identificador })
+      .solicitarPasswordReset({ identificador }, this.plataforma)
       .pipe(finalize(() => this.cargandoSolicitud.set(false)))
       .subscribe({
         next: (response) => {
@@ -160,17 +159,23 @@ export class RecuperarPasswordPage {
 
     this.cargandoConfirmacion.set(true);
     this.authService
-      .confirmarPasswordReset({
-        identificador,
-        codigo,
-        password_nuevo: passwordNuevo,
-        confirmar_password_nuevo: confirmarPasswordNuevo,
-      })
+      .confirmarPasswordReset(
+        {
+          identificador,
+          codigo,
+          password_nuevo: passwordNuevo,
+          confirmar_password_nuevo: confirmarPasswordNuevo,
+        },
+        this.plataforma,
+      )
       .pipe(finalize(() => this.cargandoConfirmacion.set(false)))
       .subscribe({
         next: (response) => {
           this.mensaje.set(response.mensaje);
-          setTimeout(() => void this.router.navigateByUrl('/login'), 900);
+          this.authService.limpiarSesion();
+          void this.router.navigate([this.plataforma ? '/saas/login' : '/login'], {
+            queryParams: { motivo: 'clave_actualizada' },
+          });
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
       });
@@ -189,11 +194,6 @@ export class RecuperarPasswordPage {
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    if (typeof error.error === 'object' && error.error !== null && 'detail' in error.error) {
-      const detail = error.error.detail;
-      if (typeof detail === 'string') return detail;
-    }
-
-    return 'No se pudo procesar la solicitud.';
+    return mensajeApi(error, 'No se pudo procesar la solicitud.');
   }
 }

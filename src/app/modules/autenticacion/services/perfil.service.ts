@@ -24,9 +24,7 @@ export class PerfilService {
     return this.http.get<PerfilResponse>(this.perfilUrl);
   }
 
-  actualizarPerfil(
-    request: ActualizarPerfilRequest
-  ): Observable<PerfilResponse> {
+  actualizarPerfil(request: ActualizarPerfilRequest): Observable<PerfilResponse> {
     return this.http.put<PerfilResponse>(this.perfilUrl, request);
   }
 
@@ -34,30 +32,32 @@ export class PerfilService {
     return this.http.put<MensajeResponse>(`${this.perfilUrl}/password`, request);
   }
 
+  desactivarCuenta(password_actual: string): Observable<MensajeResponse> {
+    return this.http.post<MensajeResponse>(`${this.perfilUrl}/desactivar`, {
+      password_actual,
+      confirmacion: 'DESACTIVAR MI CUENTA',
+    });
+  }
+
   listarDirecciones(): Observable<ListaDireccionesResponse> {
     return this.http.get<ListaDireccionesResponse>(`${this.perfilUrl}/direcciones`);
   }
 
   crearDireccion(request: CrearDireccionRequest): Observable<DireccionResponse> {
-    return this.http.post<DireccionResponse>(
-      `${this.perfilUrl}/direcciones`,
-      request
-    );
+    return this.http.post<DireccionResponse>(`${this.perfilUrl}/direcciones`, request);
   }
 
   actualizarDireccion(
     direccionId: number,
-    request: ActualizarDireccionRequest
+    request: ActualizarDireccionRequest,
   ): Observable<DireccionResponse> {
     return this.http.put<DireccionResponse>(
       `${this.perfilUrl}/direcciones/${direccionId}`,
-      request
+      request,
     );
   }
 
   desactivarDireccion(direccionId: number): Observable<MensajeResponse> {
-    return this.http.delete<MensajeResponse>(
-      `${this.perfilUrl}/direcciones/${direccionId}`
-    );
+    return this.http.delete<MensajeResponse>(`${this.perfilUrl}/direcciones/${direccionId}`);
   }
 }

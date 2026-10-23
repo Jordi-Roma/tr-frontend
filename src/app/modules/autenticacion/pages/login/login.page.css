@@ -1,3 +1,8 @@
+:host {
+  --color-success: #24683a;
+  --color-muted: #525252;
+}
+
 .auth-page {
   min-height: 100dvh;
   display: flex;
@@ -5,9 +10,7 @@
   justify-content: center;
   padding: 32px;
   color: var(--color-text);
-  background:
-    linear-gradient(135deg, rgb(221 229 207 / 55%), transparent 38%),
-    var(--color-bg);
+  background: linear-gradient(135deg, rgb(221 229 207 / 55%), transparent 38%), var(--color-bg);
 }
 
 .auth-card {
@@ -29,8 +32,7 @@
   padding: 36px;
   color: var(--color-surface);
   background:
-    linear-gradient(150deg, rgb(124 143 90 / 92%), rgb(17 17 17 / 96%)),
-    var(--color-primary);
+    linear-gradient(150deg, rgb(124 143 90 / 92%), rgb(17 17 17 / 96%)), var(--color-primary);
 }
 
 .brand-logo {
@@ -238,7 +240,7 @@ button:disabled {
 }
 
 .loading-message {
-  color: var(--color-accent);
+  color: #4f6038;
   font-size: 0.9rem;
   font-weight: 800;
   margin: 0;

@@ -120,7 +120,12 @@
 } @else {
   <div class="shop-shell">
     <header class="shop-navbar">
-      <a class="shop-brand" routerLink="/inicio" [attr.aria-label]="'Ir al inicio de ' + (empresa()?.nombre || 'la tienda')">{{ empresa()?.nombre || 'StyleAR' }}</a>
+      <a
+        class="shop-brand"
+        routerLink="/inicio"
+        [attr.aria-label]="'Ir al inicio de ' + (empresa()?.nombre || 'la tienda')"
+        >{{ empresa()?.nombre || 'StyleAR' }}</a
+      >
 
       <nav class="shop-nav" aria-label="Navegacion de tienda">
         @for (item of tiendaMenu; track item.path) {
@@ -153,9 +158,13 @@
           <i class="pi pi-heart" aria-hidden="true"></i>
         </a>
 
-        <a class="icon-link cart-link" routerLink="/carrito" aria-label="Carrito">
+        <a
+          class="icon-link cart-link"
+          routerLink="/carrito"
+          [attr.aria-label]="'Carrito, ' + totalCarrito() + ' prendas'"
+        >
           <i class="pi pi-shopping-cart" aria-hidden="true"></i>
-          <span>{{ totalCarrito() }}</span>
+          <span aria-hidden="true">{{ totalCarrito() }}</span>
         </a>
 
         @if (autenticado()) {
@@ -163,13 +172,9 @@
             <i class="pi pi-user" aria-hidden="true"></i>
           </a>
 
-          <button type="button" class="logout-button" (click)="cerrarSesion()">
-            Salir
-          </button>
+          <button type="button" class="logout-button" (click)="cerrarSesion()">Salir</button>
         } @else {
-          <a class="login-button" routerLink="/login">
-            Ingresar
-          </a>
+          <a class="login-button" routerLink="/login"> Ingresar </a>
         }
       </div>
     </header>

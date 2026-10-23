@@ -3,6 +3,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, Observable, of, tap, throwError } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
+import { PerfilResponse } from '../models/perfil.models';
 import { EmpresaContextoService } from '../../../core/services/empresa-contexto.service';
 import { CambioContextoService } from '../../../core/services/cambio-contexto.service';
 import {
@@ -113,18 +114,20 @@ export class AuthService {
   }
   solicitarPasswordReset(
     request: SolicitarPasswordResetRequest,
+    plataforma = false,
   ): Observable<PasswordResetMensajeResponse> {
     return this.http.post<PasswordResetMensajeResponse>(
       `${API_BASE_URL}/api/v1/autenticacion/password-reset/solicitar`,
-      { ...request, empresa_codigo: this.contexto.empresa()?.codigo },
+      { ...request, empresa_codigo: plataforma ? null : this.contexto.empresa()?.codigo },
     );
   }
   confirmarPasswordReset(
     request: ConfirmarPasswordResetRequest,
+    plataforma = false,
   ): Observable<PasswordResetMensajeResponse> {
     return this.http.post<PasswordResetMensajeResponse>(
       `${API_BASE_URL}/api/v1/autenticacion/password-reset/confirmar`,
-      { ...request, empresa_codigo: this.contexto.empresa()?.codigo },
+      { ...request, empresa_codigo: plataforma ? null : this.contexto.empresa()?.codigo },
     );
   }
   logout(): Observable<unknown> {
@@ -160,6 +163,20 @@ export class AuthService {
     this.tokenSignal.set(response.access_token);
     this.usuarioSignal.set(usuario);
     localStorage.setItem(TOKEN_STORAGE_KEY, response.access_token);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuario));
+  }
+  actualizarPerfilLocal(perfil: PerfilResponse): void {
+    const actual = this.usuarioSignal();
+    if (!actual || actual.id !== perfil.id || actual.empresa_id !== perfil.empresa_id) return;
+    const usuario = {
+      ...actual,
+      nombre: perfil.nombre,
+      apellido: perfil.apellido,
+      username: perfil.username,
+      correo: perfil.correo,
+      roles: perfil.roles,
+    };
+    this.usuarioSignal.set(usuario);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuario));
   }
   limpiarSesion(): void {

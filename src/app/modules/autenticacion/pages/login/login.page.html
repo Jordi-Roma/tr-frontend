@@ -16,9 +16,15 @@
     <div class="auth-box">
       <p class="eyebrow">Bienvenido</p>
       <h1 id="login-title">{{ plataforma ? 'Administración de plataforma' : 'Iniciar sesión' }}</h1>
-      @if (!plataforma) { <p><strong>{{ empresa()?.nombre }}</strong> · <a routerLink="/empresa">Cambiar empresa</a></p> }
-      @else { <p>Acceso exclusivo de Administración SaaS. <a routerLink="/empresa">Entrar a una tienda</a></p> }
-
+      @if (!plataforma) {
+        <p>
+          <strong>{{ empresa()?.nombre }}</strong> · <a routerLink="/empresa">Cambiar empresa</a>
+        </p>
+      } @else {
+        <p>
+          Acceso exclusivo de Administración SaaS. <a routerLink="/empresa">Entrar a una tienda</a>
+        </p>
+      }
 
       <form [formGroup]="loginForm" (ngSubmit)="iniciarSesion()" novalidate>
         <label for="identificador">Usuario o correo</label>
@@ -30,10 +36,7 @@
           placeholder="Ej: cliente01"
         />
 
-        @if (
-          loginForm.controls.identificador.invalid &&
-          loginForm.controls.identificador.touched
-        ) {
+        @if (loginForm.controls.identificador.invalid && loginForm.controls.identificador.touched) {
           <p class="field-error">El usuario o correo es obligatorio.</p>
         }
 
@@ -61,9 +64,16 @@
           <p class="field-error">La contrasena es obligatoria.</p>
         }
 
-        @if (!plataforma) { <p class="register-text">
-          <a class="register-link" routerLink="/recuperar-password">¿Olvidaste tu contraseña?</a>
-        </p> }
+        <p class="register-text">
+          <a
+            class="register-link"
+            [routerLink]="plataforma ? '/saas/recuperar-password' : '/recuperar-password'"
+            >¿Olvidaste tu contraseña?</a
+          >
+        </p>
+        @if (aviso) {
+          <p role="status">{{ aviso }}</p>
+        }
 
         @if (mensajeError()) {
           <p class="error-message" role="alert">{{ mensajeError() }}</p>
@@ -73,14 +83,14 @@
           <p class="loading-message">Iniciando sesion...</p>
         }
 
-        <button type="submit" [disabled]="loginForm.invalid || cargando()">
-          Ingresar
-        </button>
+        <button type="submit" [disabled]="loginForm.invalid || cargando()">Ingresar</button>
 
-        @if (!plataforma) { <p class="register-text">
-          No tienes cuenta?
-          <a class="register-link" routerLink="/registro">Crear cuenta</a>
-        </p> }
+        @if (!plataforma) {
+          <p class="register-text">
+            No tienes cuenta?
+            <a class="register-link" routerLink="/registro">Crear cuenta</a>
+          </p>
+        }
       </form>
     </div>
   </section>

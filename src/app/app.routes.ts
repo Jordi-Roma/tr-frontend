@@ -5,9 +5,30 @@ import { ForbiddenPage } from './shared/pages/forbidden/forbidden.page';
 import { NotFoundPage } from './shared/pages/not-found/not-found.page';
 
 export const routes: Routes = [
-  { path: 'empresa', loadComponent: () => import('./modules/autenticacion/pages/empresa/empresa.page').then(m => m.EmpresaPage) },
-  { path: 'e/:codigo', loadComponent: () => import('./modules/autenticacion/pages/empresa/empresa.page').then(m => m.EmpresaPage) },
-  { path: 'saas/login', loadComponent: () => import('./modules/autenticacion/pages/login/login.page').then(m => m.LoginPage), data: { plataforma: true } },
+  {
+    path: 'empresa',
+    loadComponent: () =>
+      import('./modules/autenticacion/pages/empresa/empresa.page').then((m) => m.EmpresaPage),
+  },
+  {
+    path: 'e/:codigo',
+    loadComponent: () =>
+      import('./modules/autenticacion/pages/empresa/empresa.page').then((m) => m.EmpresaPage),
+  },
+  {
+    path: 'saas/login',
+    loadComponent: () =>
+      import('./modules/autenticacion/pages/login/login.page').then((m) => m.LoginPage),
+    data: { plataforma: true },
+  },
+  {
+    path: 'saas/recuperar-password',
+    loadComponent: () =>
+      import('./modules/autenticacion/pages/recuperar-password/recuperar-password.page').then(
+        (m) => m.RecuperarPasswordPage,
+      ),
+    data: { plataforma: true },
+  },
   { path: '403', component: ForbiddenPage },
   {
     path: '',
@@ -18,7 +39,7 @@ export const routes: Routes = [
     path: '',
     loadChildren: () =>
       import('./modules/autenticacion/autenticacion.routes').then(
-        (m) => m.AUTENTICACION_PUBLIC_ROUTES
+        (m) => m.AUTENTICACION_PUBLIC_ROUTES,
       ),
   },
   {
@@ -36,7 +57,7 @@ export const routes: Routes = [
         path: '',
         loadChildren: () =>
           import('./modules/autenticacion/autenticacion.routes').then(
-            (m) => m.AUTENTICACION_ROUTES
+            (m) => m.AUTENTICACION_ROUTES,
           ),
       },
       {
@@ -57,12 +78,16 @@ export const routes: Routes = [
       {
         path: '',
         loadChildren: () =>
-          import('./modules/ventas_inventario/ventas-inventario.routes').then((m) => m.VENTAS_INVENTARIO_ROUTES),
+          import('./modules/ventas_inventario/ventas-inventario.routes').then(
+            (m) => m.VENTAS_INVENTARIO_ROUTES,
+          ),
       },
       {
         path: '',
         loadChildren: () =>
-          import('./modules/administracion/administracion.routes').then((m) => m.ADMINISTRACION_ROUTES),
+          import('./modules/administracion/administracion.routes').then(
+            (m) => m.ADMINISTRACION_ROUTES,
+          ),
       },
     ],
   },

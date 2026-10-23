@@ -24,6 +24,14 @@ export class LoginPage {
 
   protected readonly cargando = signal(false);
   protected readonly mensajeError = signal('');
+  protected readonly aviso =
+    (
+      {
+        clave_actualizada: 'Contraseña actualizada. Inicia sesión nuevamente.',
+        acceso_actualizado: 'Datos de acceso actualizados. Inicia sesión nuevamente.',
+        cuenta_desactivada: 'Cuenta desactivada. Tu historial se conserva.',
+      } as Record<string, string>
+    )[this.route.snapshot.queryParamMap.get('motivo') ?? ''] ?? '';
   protected readonly passwordVisible = signal(false);
 
   protected readonly loginForm = new FormGroup({
@@ -59,7 +67,9 @@ export class LoginPage {
           void this.router.navigateByUrl(this.obtenerRutaDestino());
         },
         error: (error: unknown) => {
-          this.mensajeError.set(mensajeApi(error, 'Credenciales incorrectas o usuario no disponible.'));
+          this.mensajeError.set(
+            mensajeApi(error, 'Credenciales incorrectas o usuario no disponible.'),
+          );
         },
       });
   }
@@ -109,11 +119,8 @@ export class LoginPage {
       return returnUrl === '/panel-proveedor' || returnUrl.startsWith('/panel-proveedor/');
     }
 
-    return ![
-      '/favoritos',
-      '/carrito',
-      '/reservas',
-      '/para-ti',
-    ].some((rutaCliente) => returnUrl === rutaCliente || returnUrl.startsWith(`${rutaCliente}/`));
+    return !['/favoritos', '/carrito', '/reservas', '/para-ti'].some(
+      (rutaCliente) => returnUrl === rutaCliente || returnUrl.startsWith(`${rutaCliente}/`),
+    );
   }
 }
