@@ -1,60 +1,45 @@
-import { CommonModule } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, inject, OnDestroy, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { finalize, Subscription } from 'rxjs';
+import { AppDrawerComponent } from '../../../../shared/components/app-drawer/app-drawer.component';
+import { mensajeApi } from '../../../../core/services/error-api';
 import {
   BitacoraDetalle,
   BitacoraFiltros,
   BitacoraItem,
+  BitacoraListResponse,
 } from '../../models/bitacora.models';
 import { BitacoraService } from '../../services/bitacora.service';
 
 @Component({
-  imports: [CommonModule, ReactiveFormsModule],
   selector: 'app-bitacora-page',
-  styleUrl: './bitacora.page.css',
+  imports: [ReactiveFormsModule, DatePipe, RouterLink, AppDrawerComponent],
   templateUrl: './bitacora.page.html',
+  styleUrl: '../acceso-admin.css',
 })
-export class BitacoraPage implements OnInit {
-  private readonly bitacoraService = inject(BitacoraService);
-
-  protected readonly registros = signal<BitacoraItem[]>([]);
-  protected readonly totalRegistros = signal(0);
-  protected readonly paginaActual = signal(1);
-  protected readonly porPagina = signal(25);
-  protected readonly totalPaginas = signal(1);
+export class BitacoraPage implements OnDestroy {
+  private readonly api = inject(BitacoraService);
+  protected readonly plataforma = inject(ActivatedRoute).snapshot.data['plataforma'] === true;
+  protected readonly datos = signal<BitacoraListResponse>({
+    registros: [],
+    total: 0,
+    pagina: 1,
+    por_pagina: 25,
+    total_paginas: 1,
+  });
+  protected readonly opciones = signal<{
+    modulos: string[];
+    actores: { id: number; nombre: string }[];
+  }>({ modulos: [], actores: [] });
   protected readonly cargando = signal(false);
   protected readonly error = signal('');
-
-  protected readonly registroSeleccionado = signal<BitacoraDetalle | null>(null);
+  protected readonly detalle = signal<BitacoraDetalle | null>(null);
+  protected readonly detalleAbierto = signal(false);
   protected readonly cargandoDetalle = signal(false);
-  protected readonly modalDetalleAbierto = signal(false);
-
-  protected readonly modulosDisponibles = [
-    { valor: '', etiqueta: 'Todos los módulos' },
-    { valor: 'AUTENTICACION', etiqueta: 'Autenticación' },
-    { valor: 'USUARIOS', etiqueta: 'Usuarios' },
-    { valor: 'ROLES_PERMISOS', etiqueta: 'Roles y Permisos' },
-    { valor: 'PERFIL', etiqueta: 'Perfil' },
-    { valor: 'CIUDADES_SUCURSALES', etiqueta: 'Ciudades y Sucursales' },
-    { valor: 'EMPLEADOS', etiqueta: 'Empleados' },
-    { valor: 'PROVEEDORES', etiqueta: 'Proveedores' },
-    { valor: 'CATALOGO', etiqueta: 'Catálogo (Cat/Tallas/Colores/Marcas)' },
-    { valor: 'TEMPORADAS', etiqueta: 'Temporadas' },
-    { valor: 'COLECCIONES', etiqueta: 'Colecciones' },
-    { valor: 'PRODUCTOS', etiqueta: 'Productos' },
-    { valor: 'VARIANTES', etiqueta: 'Variantes y Precios' },
-  ];
-
-  protected readonly resultadosDisponibles = [
-    { valor: '', etiqueta: 'Todos los resultados' },
-    { valor: 'EXITOSO', etiqueta: 'Exitoso' },
-    { valor: 'FALLIDO', etiqueta: 'Fallido' },
-    { valor: 'BLOQUEADO', etiqueta: 'Bloqueado' },
-  ];
-
-  protected readonly filtrosForm = new FormGroup({
+  protected readonly errorDetalle = signal('');
+  protected readonly filtros = new FormGroup({
     accion: new FormControl('', { nonNullable: true }),
     modulo: new FormControl('', { nonNullable: true }),
     resultado: new FormControl('', { nonNullable: true }),
@@ -62,122 +47,68 @@ export class BitacoraPage implements OnInit {
     fechaDesde: new FormControl('', { nonNullable: true }),
     fechaHasta: new FormControl('', { nonNullable: true }),
   });
-
-  ngOnInit(): void {
-    this.cargarBitacora(1);
-  }
-
-  protected cargarBitacora(pagina: number = 1): void {
-    this.cargando.set(true);
-    this.error.set('');
-
-    const val = this.filtrosForm.getRawValue();
-    const filtros: BitacoraFiltros = {
-      pagina,
-      por_pagina: this.porPagina(),
-      accion: val.accion.trim() || undefined,
-      modulo: val.modulo || undefined,
-      resultado: val.resultado || undefined,
-      usuario_id: val.usuarioId ?? undefined,
-      fecha_desde: val.fechaDesde || undefined,
-      fecha_hasta: val.fechaHasta || undefined,
-    };
-
-    this.bitacoraService
-      .listarBitacora(filtros)
-      .pipe(finalize(() => this.cargando.set(false)))
+  protected readonly tamano = new FormControl(25, { nonNullable: true });
+  private carga?: Subscription;
+  private cargaDetalle?: Subscription;
+  constructor() {
+    this.api
+      .opciones(this.plataforma)
       .subscribe({
-        next: (res) => {
-          this.registros.set(res.registros);
-          this.totalRegistros.set(res.total);
-          this.paginaActual.set(res.pagina);
-          this.porPagina.set(res.por_pagina);
-          this.totalPaginas.set(res.total_paginas);
-        },
-        error: (err: HttpErrorResponse) => {
-          this.error.set(
-            err.error?.detail || 'No se pudo obtener la bitácora del sistema.'
-          );
-        },
+        next: (r) => this.opciones.set(r),
+        error: (e) => this.error.set(mensajeApi(e)),
       });
+    this.cargar();
   }
-
-  protected aplicarFiltros(): void {
-    this.cargarBitacora(1);
+  ngOnDestroy() {
+    this.carga?.unsubscribe();
+    this.cargaDetalle?.unsubscribe();
   }
-
-  protected limpiarFiltros(): void {
-    this.filtrosForm.reset({
-      accion: '',
-      modulo: '',
-      resultado: '',
-      usuarioId: null,
-      fechaDesde: '',
-      fechaHasta: '',
-    });
-    this.cargarBitacora(1);
-  }
-
-  protected cambiarPorPagina(nuevoPorPagina: number): void {
-    this.porPagina.set(nuevoPorPagina);
-    this.cargarBitacora(1);
-  }
-
-  protected irAPagina(pagina: number): void {
-    if (pagina >= 1 && pagina <= this.totalPaginas() && pagina !== this.paginaActual()) {
-      this.cargarBitacora(pagina);
+  protected cargar(n = 1) {
+    const v = this.filtros.getRawValue();
+    this.error.set('');
+    if (v.fechaDesde && v.fechaHasta && v.fechaDesde > v.fechaHasta) {
+      this.error.set('La fecha inicial no puede superar la final.');
+      return;
     }
+    this.carga?.unsubscribe();
+    this.cargando.set(true);
+    const f: BitacoraFiltros = {
+      accion: v.accion,
+      modulo: v.modulo,
+      resultado: v.resultado,
+      usuario_id: v.usuarioId,
+      fecha_desde: v.fechaDesde,
+      fecha_hasta: v.fechaHasta,
+      pagina: n,
+      por_pagina: this.tamano.value,
+    };
+    this.carga = this.api
+      .listarBitacora(f, this.plataforma)
+      .pipe(finalize(() => this.cargando.set(false)))
+      .subscribe({ next: (r) => this.datos.set(r), error: (e) => this.error.set(mensajeApi(e)) });
   }
-
-  protected verDetalle(item: BitacoraItem): void {
-    this.modalDetalleAbierto.set(true);
+  protected limpiar() {
+    this.filtros.reset();
+    this.cargar();
+  }
+  protected abrir(item: BitacoraItem) {
+    this.cargaDetalle?.unsubscribe();
+    this.detalle.set(null);
+    this.errorDetalle.set('');
+    this.detalleAbierto.set(true);
     this.cargandoDetalle.set(true);
-    this.registroSeleccionado.set(null);
-
-    this.bitacoraService
-      .obtenerRegistro(item.id)
+    this.cargaDetalle = this.api
+      .obtenerRegistro(item.id, this.plataforma)
       .pipe(finalize(() => this.cargandoDetalle.set(false)))
       .subscribe({
-        next: (detalle) => {
-          this.registroSeleccionado.set(detalle);
-        },
-        error: () => {
-          // Fallback a la info básica del item si falla el endpoint específico
-          this.registroSeleccionado.set({
-            ...item,
-            usuario_correo: null,
-          });
-        },
+        next: (r) => this.detalle.set(r),
+        error: (e) => this.errorDetalle.set(mensajeApi(e)),
       });
   }
-
-  protected cerrarModal(): void {
-    this.modalDetalleAbierto.set(false);
-    this.registroSeleccionado.set(null);
-  }
-
-  protected obtenerBadgeClase(resultado: string): string {
-    const res = resultado.toUpperCase();
-    if (res === 'EXITOSO') return 'badge-exitoso';
-    if (res === 'FALLIDO') return 'badge-fallido';
-    if (res === 'BLOQUEADO') return 'badge-bloqueado';
-    return 'badge-info';
-  }
-
-  protected formatearFecha(isoDate: string | null): string {
-    if (!isoDate) return '-';
-    try {
-      const fecha = new Date(isoDate);
-      return fecha.toLocaleString('es-ES', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    } catch {
-      return isoDate;
-    }
+  protected cerrar() {
+    this.cargaDetalle?.unsubscribe();
+    this.detalleAbierto.set(false);
+    this.detalle.set(null);
+    this.errorDetalle.set('');
   }
 }

@@ -48,6 +48,7 @@ describe('Contexto y sesión multitenant', () => {
           provide: Router,
           useValue: {
             url: '/catalogo',
+            currentNavigation: () => null,
             navigateByUrl: vi.fn().mockResolvedValue(true),
             navigate: vi.fn().mockResolvedValue(true),
           },
@@ -143,6 +144,35 @@ describe('Contexto y sesión multitenant', () => {
     );
     expect(reset.request.body.empresa_codigo).toBe('empresa-a');
     reset.flush({ mensaje: 'OK' });
+  });
+  it('conserva la ruta solicitada cuando el servidor revoca las capacidades', () => {
+    auth.guardarSesion(sesion());
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'currentNavigation').mockReturnValue({
+      extractedUrl: { toString: () => '/usuarios' },
+    } as unknown as ReturnType<Router['currentNavigation']>);
+    http.get(`${API_BASE_URL}/api/v1/autenticacion/capacidades`).subscribe({ error: () => {} });
+    backend
+      .expectOne(`${API_BASE_URL}/api/v1/autenticacion/capacidades`)
+      .flush({ detail: 'Acceso revocado' }, { status: 401, statusText: 'Unauthorized' });
+    expect(auth.estaAutenticado()).toBe(false);
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { returnUrl: '/usuarios' },
+    });
+  });
+  it('un 401 retrasado de la sesión anterior no cierra un nuevo ingreso', () => {
+    auth.guardarSesion(sesion());
+    http.get(`${API_BASE_URL}/api/v1/perfil`).subscribe({ error: () => {} });
+    const pendiente = backend.expectOne(`${API_BASE_URL}/api/v1/perfil`);
+    const nueva = sesion();
+    nueva.access_token += 'firma-nueva';
+    auth.guardarSesion(nueva);
+    pendiente.flush(
+      { detail: 'Sesión anterior revocada' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
+    expect(auth.obtenerToken()).toBe(nueva.access_token);
+    expect(TestBed.inject(Router).navigate).not.toHaveBeenCalled();
   });
   it('lista empresas sin exponer credenciales ni cambiar la sesión seleccionada', () => {
     auth.guardarSesion(sesion());

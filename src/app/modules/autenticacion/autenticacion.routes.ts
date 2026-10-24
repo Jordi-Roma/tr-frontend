@@ -30,6 +30,19 @@ export const AUTENTICACION_PUBLIC_ROUTES: Routes = [
 
 export const AUTENTICACION_ROUTES: Routes = [
   {
+    path: 'saas/usuarios',
+    component: UsuariosPage,
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN_SAAS'], plataforma: true },
+  },
+  {
+    path: 'saas/bitacora',
+    component: BitacoraPage,
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN_SAAS'], plataforma: true },
+  },
+
+  {
     path: 'perfil',
     component: PerfilPage,
     canActivate: [authGuard],
@@ -40,6 +53,7 @@ export const AUTENTICACION_ROUTES: Routes = [
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
+      permiso: 'usuarios:ver',
     },
   },
   {
@@ -48,6 +62,7 @@ export const AUTENTICACION_ROUTES: Routes = [
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR', 'ADMIN_SAAS'],
+      permiso: 'roles:ver',
     },
   },
   {
@@ -56,6 +71,7 @@ export const AUTENTICACION_ROUTES: Routes = [
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
+      permiso: 'bitacora:ver',
     },
   },
 ];

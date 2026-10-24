@@ -1,345 +1,259 @@
-import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
-import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { finalize, Subscription } from 'rxjs';
+import { AppDrawerComponent } from '../../../../shared/components/app-drawer/app-drawer.component';
+import { mensajeApi } from '../../../../core/services/error-api';
+import { AuthService } from '../../services/auth.service';
 import {
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { finalize } from 'rxjs';
-import { RolResponse } from '../../models/rol-permiso.models';
-import { RolPermisoService } from '../../services/rol-permiso.service';
-import { UsuarioAdminResponse } from '../../models/usuario-admin.models';
-import { UsuarioAdminService } from '../../services/usuario-admin.service';
-
-const USERNAME_PATTERN = /^[a-zA-Z0-9_.]+$/;
+  AccesoAdminService,
+  CuentaAcceso,
+  DatosCuenta,
+  PaginaAccesos,
+  RolAcceso,
+} from '../../services/acceso-admin.service';
+import { SaasService } from '../../../administracion/services/saas.service';
+import { Empresa } from '../../../administracion/models/saas.models';
+import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 
 @Component({
-  imports: [OperacionNuevaDirective, ReactiveFormsModule],
   selector: 'app-usuarios-page',
-  styleUrl: './usuarios.page.css',
+  imports: [ReactiveFormsModule, AppDrawerComponent, RouterLink],
   templateUrl: './usuarios.page.html',
+  styleUrl: '../acceso-admin.css',
 })
 export class UsuariosPage {
-  protected readonly planEstado = inject(EstadoPlanService);
-  private readonly usuarioAdminService = inject(UsuarioAdminService);
-  private readonly rolPermisoService = inject(RolPermisoService);
-
-  protected readonly usuarios = signal<UsuarioAdminResponse[]>([]);
+  protected readonly auth = inject(AuthService);
+  private readonly api = inject(AccesoAdminService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly plan = inject(EstadoPlanService);
+  private readonly saas = inject(SaasService);
+  protected readonly plataforma = inject(ActivatedRoute).snapshot.data['plataforma'] === true;
+  protected readonly puedeOtorgar = computed(
+    () => this.plataforma || this.plan.operacionesPermitidas(),
+  );
+  private carga?: Subscription;
+  protected readonly ambito = signal<number | null>(null);
+  protected readonly empresa = new FormControl<number | null>(null);
+  protected readonly empresas = signal<Empresa[]>([]);
+  protected readonly roles = signal<RolAcceso[]>([]);
+  protected readonly pagina = signal<PaginaAccesos>({
+    registros: [],
+    total: 0,
+    pagina: 1,
+    por_pagina: 25,
+    total_paginas: 1,
+  });
   protected readonly cargando = signal(false);
   protected readonly procesando = signal(false);
-  protected readonly usuarioEditandoId = signal<number | null>(null);
-  protected readonly mostrarCreacion = signal(false);
-  protected readonly roles = signal<RolResponse[]>([]);
-  protected readonly mensaje = signal('');
   protected readonly error = signal('');
-  protected readonly passwordVisible = signal(false);
-
-  protected readonly busquedaControl = new FormControl('', {
-    nonNullable: true,
+  protected readonly mensaje = signal('');
+  protected readonly tipo = signal<'nuevo' | 'editar' | 'roles' | 'estado' | null>(null);
+  protected readonly seleccion = signal<CuentaAcceso | null>(null);
+  protected readonly catalogoDisponible = signal(false);
+  protected readonly rolElegido = new FormControl<number | null>(null, Validators.required);
+  protected readonly filtros = new FormGroup({
+    busqueda: new FormControl('', { nonNullable: true }),
+    estado: new FormControl('ACTIVOS', { nonNullable: true }),
   });
-
-  protected readonly usuariosFiltrados = computed(() => {
-    const busqueda = this.busquedaControl.value.trim().toLowerCase();
-
-    if (busqueda === '') {
-      return this.usuarios();
-    }
-
-    return this.usuarios().filter((usuario) => {
-      const texto = [
-        usuario.nombre,
-        usuario.apellido,
-        usuario.username,
-        usuario.correo,
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return texto.includes(busqueda);
-    });
-  });
-
-  protected readonly editarUsuarioForm = new FormGroup({
+  protected readonly form = new FormGroup({
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.maxLength(100)],
     }),
     apellido: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.maxLength(100)],
     }),
     username: new FormControl('', {
       nonNullable: true,
-      validators: [
-        Validators.required,
-        Validators.minLength(4),
-        Validators.pattern(USERNAME_PATTERN),
-      ],
+      validators: [Validators.required, Validators.pattern(/^[a-zA-Z0-9_.-]{4,80}$/)],
     }),
     correo: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.email],
     }),
+    password: new FormControl('', { nonNullable: true }),
+    rol: new FormControl<number | null>(null),
   });
-
-  protected readonly crearUsuarioForm = new FormGroup({
-    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    apellido: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    username: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.minLength(4), Validators.pattern(USERNAME_PATTERN)],
-    }),
-    correo: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.email],
-    }),
-    telefono: new FormControl<string | null>(null),
-    password: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.minLength(8)],
-    }),
-    rolId: new FormControl<number | null>(null, { validators: [Validators.required] }),
+  protected readonly rolesAsignables = computed(() => {
+    const scope = this.plataforma ? this.ambito() : 1;
+    return this.roles().filter(
+      (r) =>
+        r.activo &&
+        (scope === null
+          ? r.nombre === 'ADMIN_SAAS'
+          : this.plataforma
+            ? r.nombre === 'ADMINISTRADOR'
+            : r.nombre !== 'ADMIN_SAAS' && r.protegido),
+    );
   });
-
-  protected readonly rolForm = new FormGroup({
-    usuarioId: new FormControl<number | null>(null, {
-      validators: [Validators.required, Validators.min(1)],
-    }),
-    rolId: new FormControl<number | null>(null, {
-      validators: [Validators.required, Validators.min(1)],
-    }),
-  });
-
   constructor() {
-    this.cargarUsuarios();
-    this.cargarRoles();
-  }
-
-  protected abrirCreacion(): void {
-    this.mostrarCreacion.set(true);
-    this.usuarioEditandoId.set(null);
-    this.limpiarMensajes();
-  }
-
-  protected cancelarCreacion(): void {
-    this.mostrarCreacion.set(false);
-    this.crearUsuarioForm.reset();
-    this.passwordVisible.set(false);
-  }
-
-  protected crearUsuario(): void {
-    this.limpiarMensajes();
-    if (this.crearUsuarioForm.invalid) {
-      this.crearUsuarioForm.markAllAsTouched();
-      return;
-    }
-
-    const datos = this.crearUsuarioForm.getRawValue();
-    if (datos.rolId === null) return;
-
-    this.procesando.set(true);
-    this.usuarioAdminService.crearUsuario({
-      nombre: datos.nombre.trim(),
-      apellido: datos.apellido.trim(),
-      username: datos.username.trim().toLowerCase(),
-      correo: datos.correo.trim().toLowerCase(),
-      telefono: this.limpiarTextoOpcional(datos.telefono),
-      password: datos.password,
-      rol_id: datos.rolId,
-    }).pipe(finalize(() => this.procesando.set(false))).subscribe({
-      next: () => {
-        this.mensaje.set('Usuario creado correctamente.');
-        this.cancelarCreacion();
-        this.cargarUsuarios();
-      },
-      error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+    this.auth
+      .cargarCapacidades()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: () => this.catalogos(), error: (e) => this.error.set(mensajeApi(e)) });
+    if (this.plataforma)
+      this.saas
+        .empresas()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (r) => this.empresas.set(r),
+          error: (e) => this.error.set(mensajeApi(e)),
+        });
+    this.empresa.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+      this.ambito.set(value);
+      this.tipo.set(null);
+      this.seleccion.set(null);
+      this.mensaje.set('');
+      this.pagina.update((p) => ({ ...p, registros: [], total: 0, pagina: 1, total_paginas: 1 }));
+      this.catalogos();
+      this.cargar(1);
     });
+    this.cargar();
   }
-
-  protected alternarPasswordVisible(): void {
-    this.passwordVisible.update((visible) => !visible);
+  protected puede(p: string) {
+    return this.auth.puede(p);
   }
-
-  private limpiarTextoOpcional(valor: string | null): string | null {
-    if (valor === null) {
-      return null;
-    }
-
-    const limpio = valor.trim();
-    return limpio === '' ? null : limpio;
-  }
-
-  private cargarRoles(): void {
-    this.rolPermisoService.listarRoles().subscribe({
-      next: (roles) => this.roles.set(roles.filter((rol) => rol.activo)),
-      error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
-    });
-  }
-
-  protected cargarUsuarios(): void {
+  protected cargar(n = 1) {
+    const v = this.filtros.getRawValue();
+    this.carga?.unsubscribe();
     this.cargando.set(true);
     this.error.set('');
-
-    this.usuarioAdminService
-      .listarUsuarios()
-      .pipe(finalize(() => this.cargando.set(false)))
+    this.carga = this.api
+      .cuentas(this.plataforma, this.empresa.value, v.estado, v.busqueda, n)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.cargando.set(false)),
+      )
+      .subscribe({ next: (r) => this.pagina.set(r), error: (e) => this.error.set(mensajeApi(e)) });
+  }
+  private catalogos() {
+    this.api
+      .catalogos()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (usuarios) => {
-          this.usuarios.set(usuarios);
+        next: (c) => {
+          this.roles.set(c.roles);
+          this.catalogoDisponible.set(true);
         },
-        error: (error: HttpErrorResponse) => {
-          this.error.set(this.obtenerMensajeError(error));
+        error: (e) => {
+          this.catalogoDisponible.set(false);
+          this.error.set(mensajeApi(e));
         },
       });
   }
-
-  protected seleccionarUsuario(usuario: UsuarioAdminResponse): void {
-    this.usuarioEditandoId.set(usuario.id);
-    this.editarUsuarioForm.setValue({
-      nombre: usuario.nombre,
-      apellido: usuario.apellido,
-      username: usuario.username,
-      correo: usuario.correo,
+  protected abrir(tipo: 'nuevo' | 'editar' | 'roles' | 'estado', u: CuentaAcceso | null = null) {
+    this.error.set('');
+    this.mensaje.set('');
+    this.seleccion.set(u);
+    this.rolElegido.reset();
+    this.form.reset({
+      nombre: u?.nombre ?? '',
+      apellido: u?.apellido ?? '',
+      username: u?.username ?? '',
+      correo: u?.correo ?? '',
+      password: '',
+      rol: null,
     });
-    this.rolForm.controls.usuarioId.setValue(usuario.id);
-    this.limpiarMensajes();
+    this.tipo.set(tipo);
   }
-
-  protected cancelarEdicion(): void {
-    this.usuarioEditandoId.set(null);
-    this.editarUsuarioForm.reset();
+  protected cerrar() {
+    if (!this.procesando()) {
+      this.tipo.set(null);
+      this.form.controls.password.reset();
+      this.error.set('');
+    }
   }
-
-  protected guardarUsuario(): void {
-    this.limpiarMensajes();
-
-    if (this.editarUsuarioForm.invalid || this.usuarioEditandoId() === null) {
-      this.editarUsuarioForm.markAllAsTouched();
+  protected guardar() {
+    if (this.procesando()) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
       return;
     }
-
-    const usuarioId = this.usuarioEditandoId();
-
-    if (usuarioId === null) {
-      return;
+    const f = this.form.getRawValue(),
+      nuevo = this.tipo() === 'nuevo';
+    const datos: DatosCuenta = {
+      nombre: f.nombre,
+      apellido: f.apellido,
+      username: f.username,
+      correo: f.correo,
+    };
+    if (nuevo) {
+      if (
+        !f.rol ||
+        f.password.length < 8 ||
+        !/[A-Z]/.test(f.password) ||
+        !/[a-z]/.test(f.password) ||
+        !/\d/.test(f.password) ||
+        !/[^A-Za-z0-9]/.test(f.password)
+      ) {
+        this.error.set(
+          'Selecciona un rol e ingresa una contraseña de al menos 8 caracteres con mayúscula, minúscula, número y símbolo.',
+        );
+        return;
+      }
+      datos.password = f.password;
+      datos.rol_id = f.rol;
     }
-
     this.procesando.set(true);
-    const { nombre, apellido, username, correo } =
-      this.editarUsuarioForm.getRawValue();
-
-    this.usuarioAdminService
-      .actualizarUsuario(usuarioId, {
-        nombre: nombre.trim(),
-        apellido: apellido.trim(),
-        username: username.trim().toLowerCase(),
-        correo: correo.trim().toLowerCase(),
-      })
-      .pipe(finalize(() => this.procesando.set(false)))
+    this.error.set('');
+    this.api
+      .guardar(this.plataforma, this.empresa.value, nuevo ? null : this.seleccion()!.id, datos)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.procesando.set(false)),
+      )
       .subscribe({
         next: () => {
-          this.mensaje.set('Usuario actualizado correctamente.');
-          this.cancelarEdicion();
-          this.cargarUsuarios();
+          this.tipo.set(null);
+          this.form.controls.password.reset();
+          this.mensaje.set('Cuenta guardada correctamente.');
+          this.cargar(this.pagina().pagina);
         },
-        error: (error: HttpErrorResponse) => {
-          this.error.set(this.obtenerMensajeError(error));
-        },
+        error: (e) => this.error.set(mensajeApi(e)),
       });
   }
-
-  protected cambiarEstadoUsuario(usuario: UsuarioAdminResponse): void {
-    this.limpiarMensajes();
+  protected cambiarEstado() {
+    const u = this.seleccion();
+    if (!u || this.procesando()) return;
     this.procesando.set(true);
-    const operacion = usuario.activo
-      ? this.usuarioAdminService.desactivarUsuario(usuario.id)
-      : this.usuarioAdminService.activarUsuario(usuario.id);
-
-    operacion.pipe(finalize(() => this.procesando.set(false))).subscribe({
-      next: (response) => {
-        this.mensaje.set(response.mensaje);
-        this.cargarUsuarios();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.error.set(this.obtenerMensajeError(error));
-      },
-    });
-  }
-
-  protected asignarRol(): void {
-    this.ejecutarAccionRol('asignar');
-  }
-
-  protected desactivarRol(): void {
-    this.ejecutarAccionRol('desactivar');
-  }
-
-  protected activarRol(): void {
-    this.ejecutarAccionRol('activar');
-  }
-
-  private ejecutarAccionRol(accion: 'asignar' | 'desactivar' | 'activar'): void {
-    this.limpiarMensajes();
-
-    if (this.rolForm.invalid) {
-      this.rolForm.markAllAsTouched();
-      return;
-    }
-
-    const { usuarioId, rolId } = this.rolForm.getRawValue();
-
-    if (usuarioId === null || rolId === null) {
-      this.error.set('Debes indicar usuario y rol.');
-      return;
-    }
-
-    this.procesando.set(true);
-    const operacion =
-      accion === 'asignar'
-        ? this.usuarioAdminService.asignarRol(usuarioId, rolId)
-        : accion === 'desactivar'
-          ? this.usuarioAdminService.desactivarRol(usuarioId, rolId)
-          : this.usuarioAdminService.activarRol(usuarioId, rolId);
-
-    operacion.pipe(finalize(() => this.procesando.set(false))).subscribe({
-      next: (response) => {
-        this.mensaje.set(response.mensaje);
-        this.cargarUsuarios();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.error.set(this.obtenerMensajeError(error));
-      },
-    });
-  }
-
-  private limpiarMensajes(): void {
-    this.mensaje.set('');
     this.error.set('');
+    this.api
+      .estado(this.plataforma, this.empresa.value, u.id, !u.activo)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.procesando.set(false)),
+      )
+      .subscribe({
+        next: (r) => {
+          this.tipo.set(null);
+          this.mensaje.set(r.mensaje);
+          this.cargar(this.pagina().pagina);
+        },
+        error: (e) => this.error.set(mensajeApi(e)),
+      });
   }
-
-  private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-
-    if (detail !== '') {
-      return detail;
-    }
-
-    return 'No se pudo completar la operación. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-
-    return '';
+  protected cambiarRol(activo: boolean) {
+    const u = this.seleccion(),
+      rol = this.rolElegido.value;
+    if (!u || !rol || this.procesando()) return;
+    this.procesando.set(true);
+    this.error.set('');
+    this.api
+      .rol(this.plataforma, this.empresa.value, u.id, rol, activo)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.procesando.set(false)),
+      )
+      .subscribe({
+        next: (r) => {
+          this.tipo.set(null);
+          this.mensaje.set(r.mensaje);
+          this.cargar(this.pagina().pagina);
+        },
+        error: (e) => this.error.set(mensajeApi(e)),
+      });
   }
 }

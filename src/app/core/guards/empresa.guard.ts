@@ -4,11 +4,13 @@ import { catchError, map, of } from 'rxjs';
 import { AuthService } from '../../modules/autenticacion/services/auth.service';
 import { EmpresaContextoService } from '../services/empresa-contexto.service';
 
-export const empresaGuard: CanActivateFn = () => {
+export const empresaGuard: CanActivateFn = (_route, state) => {
   const contexto = inject(EmpresaContextoService);
   const auth = inject(AuthService);
   const router = inject(Router);
   if (auth.tieneRol('ADMIN_SAAS')) return true;
+  if (!auth.estaAutenticado() && state.url.startsWith('/saas/'))
+    return router.createUrlTree(['/saas/login'], { queryParams: { returnUrl: state.url } });
   const seleccion = contexto.empresa();
   if (seleccion && (!auth.estaAutenticado() || seleccion.id === auth.usuarioActual()?.empresa_id))
     return true;

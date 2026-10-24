@@ -1,0 +1,187 @@
+:host {
+  display: block;
+  color: #151515;
+  --color-accent: #4f6038;
+  --color-muted: #525252;
+}
+h1 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  margin: 0 0 12px;
+}
+h2 {
+  font-size: 1.2rem;
+}
+p {
+  line-height: 1.6;
+}
+.ceja {
+  color: #4f6038;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.cabecera,
+.acciones,
+.paginacion {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.panel {
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  background: #fff;
+  padding: 24px;
+  margin: 20px 0;
+}
+.filtros,
+.campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+.field,
+form {
+  display: grid;
+  gap: 10px;
+}
+.field {
+  align-content: start;
+}
+label,
+legend {
+  font-weight: 700;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #777;
+  border-radius: 8px;
+  font: inherit;
+  color: #151515;
+  background: #fff;
+}
+input[type='checkbox'] {
+  width: auto;
+}
+button {
+  font: inherit;
+  font-weight: 700;
+  border: 1px solid #111;
+  border-radius: 8px;
+  background: #111;
+  color: white;
+  padding: 11px 16px;
+  cursor: pointer;
+  min-height: 42px;
+}
+button.secundario {
+  color: #151515;
+  background: #fff;
+}
+button.peligro {
+  background: #a62d2d;
+  border-color: #a62d2d;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #435e99;
+  outline-offset: 3px;
+}
+.error {
+  color: #962424;
+  white-space: pre-line;
+}
+.exito {
+  color: #24683a;
+}
+.ayuda {
+  color: #525252;
+  font-size: 0.95rem;
+}
+.tabla {
+  overflow: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  text-align: left;
+  padding: 14px 10px;
+  border-bottom: 1px solid #ddd;
+  vertical-align: top;
+}
+caption {
+  text-align: left;
+  font-weight: 700;
+  padding-bottom: 12px;
+}
+td small {
+  display: block;
+}
+td button {
+  margin: 2px;
+}
+.etiqueta {
+  display: inline-block;
+  border: 1px solid #888;
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  margin-left: 6px;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+.check input {
+  margin-top: 5px;
+}
+fieldset {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin: 16px 0;
+  min-width: 0;
+}
+.detalle {
+  display: grid;
+  gap: 10px;
+}
+.detalle dt {
+  font-weight: 700;
+}
+.detalle dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .panel {
+    padding: 16px;
+  }
+  .campos,
+  .filtros {
+    grid-template-columns: 1fr;
+  }
+  td {
+    min-width: 110px;
+  }
+}

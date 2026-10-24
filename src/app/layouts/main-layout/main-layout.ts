@@ -2,13 +2,7 @@ import { EstadoEmpresaComponent } from '../../shared/components/estado-empresa/e
 import { EmpresaContextoService } from '../../core/services/empresa-contexto.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, computed, inject, signal } from '@angular/core';
-import {
-  NavigationEnd,
-  Router,
-  RouterLink,
-  RouterLinkActive,
-  RouterOutlet,
-} from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { TiendaStateService } from '../../core/services/tienda-state.service';
 import { AuthService } from '../../modules/autenticacion/services/auth.service';
@@ -35,7 +29,13 @@ const ADMIN_ENCARGADO_CAJERO = ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL', 'CAJERO']
 const PROVEEDOR = ['PROVEEDOR'];
 
 @Component({
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AsistenteChatComponent, EstadoEmpresaComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    AsistenteChatComponent,
+    EstadoEmpresaComponent,
+  ],
   selector: 'app-main-layout',
   styleUrl: './main-layout.css',
   templateUrl: './main-layout.html',
@@ -60,10 +60,10 @@ export class MainLayout {
       this.authService.tieneRol('ADMINISTRADOR') ||
       this.authService.tieneRol('ENCARGADO_SUCURSAL') ||
       this.authService.tieneRol('CAJERO') ||
-      this.authService.tieneRol('PROVEEDOR')
+      this.authService.tieneRol('PROVEEDOR'),
   );
   protected readonly totalCarrito = computed(() =>
-    this.tiendaState.carrito().reduce((total, item) => total + item.cantidad, 0)
+    this.tiendaState.carrito().reduce((total, item) => total + item.cantidad, 0),
   );
 
   protected readonly tiendaMenu: MenuItem[] = [
@@ -72,17 +72,58 @@ export class MainLayout {
     { label: 'Para ti', path: '/para-ti', icon: 'pi pi-sparkles' },
     { label: 'Reservas', path: '/reservas', icon: 'pi pi-calendar-check' },
     { label: 'Mis pagos', path: '/mis-pagos', icon: 'pi pi-credit-card', roles: ['CLIENTE'] },
-    { label: 'Mis devoluciones', path: '/mis-devoluciones', icon: 'pi pi-refresh', roles: ['CLIENTE'] },
-    { label: 'Mis deliveries', path: '/mis-deliveries', icon: 'pi pi-map-marker', roles: ['CLIENTE'] },
+    {
+      label: 'Mis devoluciones',
+      path: '/mis-devoluciones',
+      icon: 'pi pi-refresh',
+      roles: ['CLIENTE'],
+    },
+    {
+      label: 'Mis deliveries',
+      path: '/mis-deliveries',
+      icon: 'pi pi-map-marker',
+      roles: ['CLIENTE'],
+    },
   ];
 
   private readonly todosLosMenus: MenuGroup[] = [
-    { title: 'PLATAFORMA', icon: 'pi pi-building', items: [
-      { label: 'Empresas', path: '/saas/empresas', icon: 'pi pi-building', roles: ['ADMIN_SAAS'] },
-      { label: 'Planes', path: '/saas/planes', icon: 'pi pi-list', roles: ['ADMIN_SAAS'] },
-      { label: 'Respaldos', path: '/saas/respaldos', icon: 'pi pi-database', roles: ['ADMIN_SAAS'] },
-      { label: 'Eventos de plataforma', path: '/saas/eventos', icon: 'pi pi-history', roles: ['ADMIN_SAAS'] },
-    ] },
+    {
+      title: 'PLATAFORMA',
+      icon: 'pi pi-building',
+      items: [
+        {
+          label: 'Cuentas de acceso',
+          path: '/saas/usuarios',
+          icon: 'pi pi-users',
+          roles: ['ADMIN_SAAS'],
+        },
+        {
+          label: 'Bitácora de plataforma',
+          path: '/saas/bitacora',
+          icon: 'pi pi-history',
+          roles: ['ADMIN_SAAS'],
+        },
+        {
+          label: 'Empresas',
+          path: '/saas/empresas',
+          icon: 'pi pi-building',
+          roles: ['ADMIN_SAAS'],
+        },
+        { label: 'Planes', path: '/saas/planes', icon: 'pi pi-list', roles: ['ADMIN_SAAS'] },
+        {
+          label: 'Respaldos',
+          path: '/saas/respaldos',
+          icon: 'pi pi-database',
+          roles: ['ADMIN_SAAS'],
+        },
+        {
+          label: 'Eventos de plataforma',
+          path: '/saas/eventos',
+          icon: 'pi pi-history',
+          roles: ['ADMIN_SAAS'],
+        },
+      ],
+    },
     {
       title: 'PANEL',
       icon: 'pi pi-th-large',
@@ -90,7 +131,12 @@ export class MainLayout {
         { label: 'Mi plan', path: '/mi-plan', icon: 'pi pi-list', roles: ADMIN },
         { label: 'Dashboard', path: '/dashboard', icon: 'pi pi-chart-line', roles: ADMIN },
         { label: 'Perfil', path: '/perfil', icon: 'pi pi-user' },
-        { label: 'Panel proveedor', path: '/panel-proveedor', icon: 'pi pi-truck', roles: PROVEEDOR },
+        {
+          label: 'Panel proveedor',
+          path: '/panel-proveedor',
+          icon: 'pi pi-truck',
+          roles: PROVEEDOR,
+        },
       ],
     },
     {
@@ -98,7 +144,12 @@ export class MainLayout {
       icon: 'pi pi-shield',
       items: [
         { label: 'Usuarios', path: '/usuarios', icon: 'pi pi-users', roles: ADMIN },
-        { label: 'Roles y permisos', path: '/roles', icon: 'pi pi-shield', roles: ['ADMINISTRADOR', 'ADMIN_SAAS'] },
+        {
+          label: 'Roles y permisos',
+          path: '/roles',
+          icon: 'pi pi-shield',
+          roles: ['ADMINISTRADOR', 'ADMIN_SAAS'],
+        },
         { label: 'Bitacora', path: '/bitacora', icon: 'pi pi-history', roles: ADMIN },
       ],
     },
@@ -119,40 +170,69 @@ export class MainLayout {
         { label: 'Empleados', path: '/empleados', icon: 'pi pi-id-card', roles: ADMIN },
         { label: 'Variantes', path: '/variantes', icon: 'pi pi-sitemap', roles: ADMIN },
         { label: 'Promociones', path: '/promociones', icon: 'pi pi-percentage', roles: ADMIN },
-        { label: 'Reservas', path: '/reservas-admin', icon: 'pi pi-calendar-check', roles: ADMIN_O_ENCARGADO },
+        {
+          label: 'Reservas',
+          path: '/reservas-admin',
+          icon: 'pi pi-calendar-check',
+          roles: ADMIN_O_ENCARGADO,
+        },
       ],
     },
     {
       title: 'VENTAS E INVENTARIO',
       icon: 'pi pi-warehouse',
       items: [
-        { label: 'Inventario', path: '/inventario', icon: 'pi pi-box', roles: ADMIN_ENCARGADO_CAJERO },
-        { label: 'Movimientos', path: '/movimientos-inventario', icon: 'pi pi-arrow-right-arrow-left', roles: ADMIN_O_ENCARGADO },
-        { label: 'Transferencias', path: '/transferencias-stock', icon: 'pi pi-truck', roles: ADMIN_O_ENCARGADO },
-        { label: 'Venta presencial', path: '/venta-presencial', icon: 'pi pi-receipt', roles: ADMIN_ENCARGADO_CAJERO },
+        {
+          label: 'Inventario',
+          path: '/inventario',
+          icon: 'pi pi-box',
+          roles: ADMIN_ENCARGADO_CAJERO,
+        },
+        {
+          label: 'Movimientos',
+          path: '/movimientos-inventario',
+          icon: 'pi pi-arrow-right-arrow-left',
+          roles: ADMIN_O_ENCARGADO,
+        },
+        {
+          label: 'Transferencias',
+          path: '/transferencias-stock',
+          icon: 'pi pi-truck',
+          roles: ADMIN_O_ENCARGADO,
+        },
+        {
+          label: 'Venta presencial',
+          path: '/venta-presencial',
+          icon: 'pi pi-receipt',
+          roles: ADMIN_ENCARGADO_CAJERO,
+        },
         { label: 'Pagos', path: '/pagos', icon: 'pi pi-credit-card', roles: ADMIN_O_ENCARGADO },
-        { label: 'Devoluciones', path: '/devoluciones', icon: 'pi pi-replay', roles: ADMIN_ENCARGADO_CAJERO },
-        { label: 'Delivery', path: '/delivery', icon: 'pi pi-map-marker', roles: ADMIN_ENCARGADO_CAJERO },
+        {
+          label: 'Devoluciones',
+          path: '/devoluciones',
+          icon: 'pi pi-replay',
+          roles: ADMIN_ENCARGADO_CAJERO,
+        },
+        {
+          label: 'Delivery',
+          path: '/delivery',
+          icon: 'pi pi-map-marker',
+          roles: ADMIN_ENCARGADO_CAJERO,
+        },
       ],
     },
     {
       title: 'REPORTES',
       icon: 'pi pi-chart-bar',
-      items: [
-        { label: 'Reportes', path: '/reportes', icon: 'pi pi-file-chart', roles: ADMIN },
-      ],
+      items: [{ label: 'Reportes', path: '/reportes', icon: 'pi pi-file-chart', roles: ADMIN }],
     },
   ];
 
   protected readonly menuGroups = computed(() => {
-    const roles = this.usuario()?.roles ?? [];
-
     return this.todosLosMenus
       .map((group) => ({
         ...group,
-        items: group.items.filter(
-          (item) => item.roles === undefined || item.roles.some((role) => roles.includes(role))
-        ),
+        items: group.items.filter((item) => this.puedeVerItemTienda(item)),
       }))
       .filter((group) => group.items.length > 0);
   });
@@ -160,6 +240,11 @@ export class MainLayout {
   protected readonly gruposAbiertos = signal<Set<string>>(new Set(['PANEL', 'PLATAFORMA']));
 
   constructor() {
+    if (
+      this.authService.estaAutenticado() &&
+      (this.authService.tieneRol('ADMINISTRADOR') || this.authService.tieneRol('ADMIN_SAAS'))
+    )
+      this.authService.cargarCapacidades().subscribe({ error: () => {} });
     if (this.authService.tieneRol('CLIENTE')) {
       this.carritoService.obtenerCarrito().subscribe({
         next: (carrito) => this.tiendaState.reemplazarCarritoDesdeBackend(carrito.items),
@@ -174,7 +259,7 @@ export class MainLayout {
               nombre: item.nombre,
               categoria: item.categoria,
               precio: Number(item.precio_final ?? item.precio_vigente ?? 0),
-            }))
+            })),
           ),
         error: () => this.tiendaState.reemplazarFavoritos([]),
       });
@@ -185,7 +270,9 @@ export class MainLayout {
 
     queueMicrotask(() => {
       const grupoActivo = this.menuGroups().find((group) =>
-        group.items.some((item) => this.router.url === item.path || this.router.url.startsWith(`${item.path}/`))
+        group.items.some(
+          (item) => this.router.url === item.path || this.router.url.startsWith(`${item.path}/`),
+        ),
       );
 
       if (grupoActivo) {
@@ -196,7 +283,10 @@ export class MainLayout {
     });
 
     this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), takeUntilDestroyed())
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
       .subscribe(() => this.sincronizarBusquedaNavbar());
   }
 
@@ -243,6 +333,13 @@ export class MainLayout {
   }
 
   protected puedeVerItemTienda(item: MenuItem): boolean {
+    const permiso = (
+      { '/usuarios': 'usuarios:ver', '/roles': 'roles:ver', '/bitacora': 'bitacora:ver' } as Record<
+        string,
+        string
+      >
+    )[item.path];
+    if (permiso && !this.authService.puede(permiso)) return false;
     const rolesItem = item.roles;
     if (rolesItem === undefined) return true;
     const rolesUsuario = this.usuario()?.roles ?? [];

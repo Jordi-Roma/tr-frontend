@@ -11,6 +11,9 @@ export interface BitacoraItem {
   direccion_ip: string | null;
   user_agent: string | null;
   fecha: string;
+  empresa_id?: number | null;
+  objetivo_usuario_id?: number | null;
+  empresa_afectada_id?: number | null;
 }
 
 export interface BitacoraDetalle extends BitacoraItem {

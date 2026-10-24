@@ -39,6 +39,7 @@ export function esErrorVigencia(error: unknown): boolean {
 export function esOperacionNueva(metodo: string, ruta: string): boolean {
   if (['GET', 'HEAD', 'OPTIONS'].includes(metodo.toUpperCase())) return false;
   ruta = ruta.replace(/\/$/, '');
+  if (ruta === '/api/v1/usuarios' || ruta.startsWith('/api/v1/usuarios/')) return false;
   if (
     ['/api/v1/saas/', '/api/v1/perfil', '/api/v1/autenticacion/', '/api/v1/devoluciones'].some(
       (prefijo) => ruta.startsWith(prefijo),

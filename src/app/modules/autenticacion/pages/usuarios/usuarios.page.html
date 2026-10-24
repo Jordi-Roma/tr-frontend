@@ -1,294 +1,321 @@
-<section class="page-heading">
-  <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-users"></i>
-  </span>
+<header class="cabecera">
   <div>
-    <p class="eyebrow">Usuarios</p>
-    <h2>Gestion de usuarios</h2>
-    <p>Administra usuarios del sistema, estado de acceso y roles asignados.</p>
+    <p class="ceja">{{ plataforma ? 'Plataforma' : 'Administración' }}</p>
+    <h1>{{ plataforma ? 'Cuentas de acceso' : 'Usuarios' }}</h1>
+    <p>
+      {{
+        plataforma
+          ? 'Gestiona cuentas AS o administradores de una empresa.'
+          : 'Gestiona las cuentas de tu empresa y sus roles comerciales.'
+      }}
+    </p>
   </div>
-</section>
-
-<section class="panel tools-panel" aria-label="Herramientas de usuarios">
-  <div class="search-box">
-    <label for="busqueda">Buscar usuario</label>
-    <input
-      id="busqueda"
-      type="search"
-      [formControl]="busquedaControl"
-      placeholder="Nombre, username o correo"
-    />
-  </div>
-
-  <div class="new-user-action">
-    <button [appOperacionNueva]="false" type="button" (click)="abrirCreacion()">Nuevo usuario</button>
-  </div>
-
-  <details class="form-details user-inline-details">
-    <summary>Gestionar rol por usuario</summary>
-  <form class="role-form" [formGroup]="rolForm" aria-label="Gestion de rol por ID">
+  @if (puede('usuarios:crear')) {
+    <button
+      type="button"
+      (click)="abrir('nuevo')"
+      [disabled]="!catalogoDisponible() || !puedeOtorgar()"
+    >
+      Crear usuario
+    </button>
+  }
+</header>
+@if (!puedeOtorgar()) {
+  <p class="ayuda">
+    El plan restringe las altas, reactivaciones y asignaciones nuevas. Puedes consultar y revocar
+    accesos.
+  </p>
+}
+@if (plataforma) {
+  <section class="panel">
+    <label for="empresa-acceso">Ámbito de las cuentas</label>
+    <select id="empresa-acceso" [formControl]="empresa">
+      <option [ngValue]="null">Plataforma: administradores SaaS</option>
+      @for (e of empresas(); track e.id) {
+        <option [ngValue]="e.id">Administradores de {{ e.nombre }}</option>
+      }
+    </select>
+    <p class="ayuda">
+      Esta vista administra accesos. La sesión AS conserva su alcance de plataforma.
+    </p>
+  </section>
+}
+<section class="panel">
+  <form class="filtros" [formGroup]="filtros" (ngSubmit)="cargar(1)">
     <div class="field">
-      <label for="usuarioId">Usuario ID</label>
-      <input id="usuarioId" type="number" min="1" formControlName="usuarioId" />
+      <label for="buscar-cuenta">Buscar usuario</label
+      ><input
+        id="buscar-cuenta"
+        formControlName="busqueda"
+        maxlength="160"
+        type="search"
+        placeholder="Nombre, usuario o correo"
+      />
     </div>
-
     <div class="field">
-      <label for="rolId">Rol</label>
-      <select id="rolId" formControlName="rolId">
-        <option [ngValue]="null">Selecciona un rol</option>
-        @for (rol of roles(); track rol.id) {
-          <option [ngValue]="rol.id">{{ rol.nombre }}</option>
-        }
+      <label for="estado-cuenta">Estado</label
+      ><select id="estado-cuenta" formControlName="estado">
+        <option value="ACTIVOS">Activos</option>
+        <option value="INACTIVOS">Inactivos</option>
+        <option value="TODOS">Todos</option>
       </select>
     </div>
-
-    <div class="role-actions">
-      <button type="button" (click)="asignarRol()" [appOperacionNueva]="rolForm.invalid || procesando()">
-        Asignar rol
-      </button>
-      <button
+    <div class="acciones">
+      <button type="submit" [disabled]="cargando()">Buscar</button
+      ><button
         type="button"
-        class="secondary-button"
-        (click)="activarRol()"
-        [appOperacionNueva]="rolForm.invalid || procesando()"
+        class="secundario"
+        (click)="cargar(pagina().pagina)"
+        [disabled]="cargando()"
       >
-        Activar rol
-      </button>
-      <button
-        type="button"
-        class="danger-button"
-        (click)="desactivarRol()"
-        [disabled]="rolForm.invalid || procesando()"
-      >
-        Desactivar rol
+        Actualizar
       </button>
     </div>
   </form>
-  </details>
 </section>
-
-@if (mostrarCreacion()) {
-  <section class="panel create-panel" aria-labelledby="crear-usuario-title">
-    <div class="panel-header">
-      <div>
-        <p class="eyebrow">Nuevo registro</p>
-        <h3 id="crear-usuario-title">Crear usuario</h3>
-      </div>
-    </div>
-    <form [formGroup]="crearUsuarioForm" (ngSubmit)="crearUsuario()" novalidate>
-      <div class="form-grid">
-        <div class="field"><label for="crearNombre">Nombre</label><input id="crearNombre" formControlName="nombre" /></div>
-        <div class="field"><label for="crearApellido">Apellido</label><input id="crearApellido" formControlName="apellido" /></div>
-        <div class="field"><label for="crearUsername">Username</label><input id="crearUsername" formControlName="username" /></div>
-        <div class="field"><label for="crearCorreo">Correo</label><input id="crearCorreo" type="email" formControlName="correo" /></div>
-        <div class="field"><label for="crearTelefono">Teléfono (opcional)</label><input id="crearTelefono" type="tel" formControlName="telefono" placeholder="Ej: 70012345" /></div>
-        <div class="field">
-          <label for="crearPassword">Contrasena</label>
-          <div class="password-field">
-            <input
-              id="crearPassword"
-              [type]="passwordVisible() ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="new-password"
-            />
-            <button
-              class="password-toggle"
-              type="button"
-              (click)="alternarPasswordVisible()"
-              [attr.aria-label]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-              [attr.title]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-            >
-              <i [class]="passwordVisible() ? 'pi pi-eye-slash' : 'pi pi-eye'" aria-hidden="true"></i>
-            </button>
-          </div>
-          <small>Mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo.</small>
-        </div>
-        <div class="field">
-          <label for="crearRol">Rol</label>
-          <select id="crearRol" formControlName="rolId">
-            <option [ngValue]="null">Selecciona un rol</option>
-            @for (rol of roles(); track rol.id) { <option [ngValue]="rol.id">{{ rol.nombre }}</option> }
-          </select>
-        </div>
-      </div>
-      @if (crearUsuarioForm.invalid && crearUsuarioForm.touched) {
-        <p class="field-error">Completa correctamente todos los campos.</p>
-      }
-      <div class="form-actions">
-        <button type="submit" [appOperacionNueva]="crearUsuarioForm.invalid || procesando()">Crear usuario</button>
-        <button type="button" class="secondary-button" (click)="cancelarCreacion()">Cancelar</button>
-      </div>
-    </form>
-  </section>
-}
-
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p role="status" class="exito">{{ mensaje() }}</p>
 }
-
-@if (error()) {
-  <p class="error-message">{{ error() }}</p>
+@if (error() && !tipo()) {
+  <p role="alert" class="error">{{ error() }}</p>
 }
-
 @if (cargando()) {
-  <p class="status-message">Cargando usuarios...</p>
+  <p role="status">Consultando cuentas…</p>
 }
-
-<div class="content-grid">
-  <section class="panel" aria-labelledby="lista-title">
-    <div class="panel-header">
-      <div>
-        <p class="eyebrow">Listado</p>
-        <h3 id="lista-title">Usuarios registrados</h3>
-      </div>
-      <span class="count-badge">{{ usuariosFiltrados().length }} usuarios</span>
-    </div>
-
-    <div class="table-shell">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Usuario</th>
-            <th>Correo</th>
-            <th>Estado</th>
-            <th>Roles</th>
-            <th>Tipo</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (usuario of usuariosFiltrados(); track usuario.id) {
-            <tr>
-              <td>{{ usuario.id }}</td>
-              <td>
-                <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong>
-                <span>@{{ usuario.username }}</span>
-              </td>
-              <td>{{ usuario.correo }}</td>
-              <td>
-                <span class="status-badge" [class.inactive]="!usuario.activo">
-                  {{ usuario.activo ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td>{{ usuario.roles.join(', ') || 'Sin roles' }}</td>
-              <td>
-                <div class="type-tags">
-                  @if (usuario.es_cliente) {
-                    <span>Cliente</span>
-                  }
-                  @if (usuario.es_empleado) {
-                    <span>Empleado</span>
-                  }
-                  @if (!usuario.es_cliente && !usuario.es_empleado) {
-                    <span>Sistema</span>
-                  }
-                </div>
-              </td>
-              <td>
-                <div class="table-actions">
-                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarUsuario(usuario)">
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    [class.danger-button]="usuario.activo"
-                    [class.secondary-button]="!usuario.activo"
-                    (click)="cambiarEstadoUsuario(usuario)"
-                    [disabled]="procesando() || (!usuario.activo && !planEstado.operacionesPermitidas())"
-                  >
-                    {{ usuario.activo ? 'Desactivar' : 'Activar' }}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="7">No se encontraron usuarios.</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <details class="panel edit-panel form-details" [open]="usuarioEditandoId() !== null">
-    <summary>Datos del usuario</summary>
-
-    @if (usuarioEditandoId() === null) {
-      <p class="empty-message">
-        Selecciona un usuario de la tabla para editar sus datos básicos.
-      </p>
-    } @else {
-      <form [formGroup]="editarUsuarioForm" (ngSubmit)="guardarUsuario()" novalidate>
-        <label for="nombre">Nombre</label>
-        <input id="nombre" type="text" formControlName="nombre" />
-
-        @if (
-          editarUsuarioForm.controls.nombre.invalid &&
-          editarUsuarioForm.controls.nombre.touched
-        ) {
-          <p class="field-error">El nombre es obligatorio.</p>
-        }
-
-        <label for="apellido">Apellido</label>
-        <input id="apellido" type="text" formControlName="apellido" />
-
-        @if (
-          editarUsuarioForm.controls.apellido.invalid &&
-          editarUsuarioForm.controls.apellido.touched
-        ) {
-          <p class="field-error">El apellido es obligatorio.</p>
-        }
-
-        <label for="username">Username</label>
-        <input id="username" type="text" formControlName="username" />
-
-        @if (
-          editarUsuarioForm.controls.username.touched &&
-          editarUsuarioForm.controls.username.errors?.['required']
-        ) {
-          <p class="field-error">El username es obligatorio.</p>
-        }
-
-        @if (
-          editarUsuarioForm.controls.username.touched &&
-          editarUsuarioForm.controls.username.errors?.['minlength']
-        ) {
-          <p class="field-error">El username debe tener minimo 4 caracteres.</p>
-        }
-
-        @if (
-          editarUsuarioForm.controls.username.touched &&
-          editarUsuarioForm.controls.username.errors?.['pattern']
-        ) {
-          <p class="field-error">
-            El username solo puede tener letras, números, guion bajo y punto.
-          </p>
-        }
-
-        <label for="correo">Correo</label>
-        <input id="correo" type="email" formControlName="correo" />
-
-        @if (
-          editarUsuarioForm.controls.correo.invalid &&
-          editarUsuarioForm.controls.correo.touched
-        ) {
-          <p class="field-error">Ingresa un correo válido.</p>
-        }
-
-        <div class="form-actions">
-          <button
-            type="submit"
-            [appOperacionNueva]="editarUsuarioForm.invalid || procesando()"
-          >
-            Guardar usuario
-          </button>
-          <button type="button" class="secondary-button" (click)="cancelarEdicion()">
-            Cancelar
-          </button>
-        </div>
-      </form>
-    }
-  </details>
+<div class="panel tabla">
+  <table>
+    <caption>
+      {{
+        pagina().total
+      }}
+      cuentas en este ámbito
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Usuario</th>
+        <th scope="col">Nombre y correo</th>
+        <th scope="col">Roles y estado</th>
+        <th scope="col">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (u of pagina().registros; track u.id) {
+        <tr>
+          <td>{{ u.username }}</td>
+          <td>
+            {{ u.nombre }} {{ u.apellido }}<small>{{ u.correo }}</small>
+          </td>
+          <td>
+            {{ u.roles.join(', ') || 'Sin roles activos'
+            }}<small>{{ u.activo ? 'Activo' : 'Inactivo' }}</small>
+          </td>
+          <td>
+            @if (puede('usuarios:editar')) {
+              <button
+                class="secundario"
+                type="button"
+                (click)="abrir('editar', u)"
+                [attr.aria-label]="'Editar ' + u.username"
+              >
+                Editar
+              </button>
+            }
+            @if (puede('roles:asignar') || puede('roles:retirar')) {
+              <button
+                class="secundario"
+                type="button"
+                (click)="abrir('roles', u)"
+                [disabled]="!catalogoDisponible()"
+                [attr.aria-label]="'Roles de ' + u.username"
+              >
+                Roles
+              </button>
+            }
+            @if (
+              u.id !== auth.usuarioActual()?.id &&
+              puede(u.activo ? 'usuarios:desactivar' : 'usuarios:activar')
+            ) {
+              <button
+                type="button"
+                [class.peligro]="u.activo"
+                [class.secundario]="!u.activo"
+                [disabled]="!u.activo && !puedeOtorgar()"
+                (click)="abrir('estado', u)"
+                [attr.aria-label]="(u.activo ? 'Desactivar ' : 'Reactivar ') + u.username"
+              >
+                {{ u.activo ? 'Desactivar' : 'Reactivar' }}
+              </button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="4">No hay cuentas que coincidan con los filtros.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
 </div>
+<nav class="paginacion" aria-label="Paginación de usuarios">
+  <button
+    type="button"
+    class="secundario"
+    (click)="cargar(pagina().pagina - 1)"
+    [disabled]="cargando() || pagina().pagina <= 1"
+  >
+    Anterior
+  </button>
+  <span>Página {{ pagina().pagina }} de {{ pagina().total_paginas }}</span>
+  <button
+    type="button"
+    class="secundario"
+    (click)="cargar(pagina().pagina + 1)"
+    [disabled]="cargando() || pagina().pagina >= pagina().total_paginas"
+  >
+    Siguiente
+  </button>
+</nav>
+
+<app-drawer
+  [open]="tipo() === 'nuevo' || tipo() === 'editar'"
+  [title]="tipo() === 'nuevo' ? 'Crear usuario' : 'Editar usuario'"
+  (close)="cerrar()"
+>
+  <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <label for="cuenta-nombre">Nombre</label
+    ><input id="cuenta-nombre" formControlName="nombre" maxlength="100" autocomplete="given-name" />
+    <label for="cuenta-apellido">Apellido</label
+    ><input
+      id="cuenta-apellido"
+      formControlName="apellido"
+      maxlength="100"
+      autocomplete="family-name"
+    />
+    <label for="cuenta-username">Nombre de usuario</label
+    ><input
+      id="cuenta-username"
+      formControlName="username"
+      maxlength="80"
+      autocomplete="username"
+    />
+    <p class="ayuda">De 4 a 80 letras, números, punto o guion.</p>
+    <label for="cuenta-correo">Correo electrónico</label
+    ><input
+      id="cuenta-correo"
+      formControlName="correo"
+      type="email"
+      maxlength="320"
+      autocomplete="email"
+    />
+    @if (tipo() === 'nuevo') {
+      <label for="cuenta-password">Contraseña inicial</label
+      ><input
+        id="cuenta-password"
+        formControlName="password"
+        type="password"
+        autocomplete="new-password"
+      />
+      <p class="ayuda">Usa al menos 8 caracteres, mayúscula, minúscula, número y símbolo.</p>
+      <label for="cuenta-rol">Rol inicial</label
+      ><select id="cuenta-rol" formControlName="rol">
+        <option [ngValue]="null">Selecciona un rol</option>
+        @for (r of rolesAsignables(); track r.id) {
+          @if (
+            r.nombre === 'ADMIN_SAAS' || r.nombre === 'ADMINISTRADOR' || r.nombre === 'CLIENTE'
+          ) {
+            <option [ngValue]="r.id">{{ r.nombre }}</option>
+          }
+        }
+      </select>
+      @if (!plataforma) {
+        <p class="ayuda">
+          Para crear personal con sucursal usa <a routerLink="/empleados">Empleados</a>. Las cuentas
+          de proveedor se vinculan en <a routerLink="/proveedores">Proveedores</a>.
+        </p>
+      }
+    } @else {
+      <p class="ayuda">
+        Cambiar usuario o correo cierra las sesiones de esta cuenta. Para tus propios datos de
+        acceso utiliza Perfil.
+      </p>
+    }
+    @if (error()) {
+      <p role="alert" class="error">{{ error() }}</p>
+    }
+    <button
+      type="submit"
+      [disabled]="form.invalid || procesando() || (tipo() === 'nuevo' && !puedeOtorgar())"
+    >
+      {{ procesando() ? 'Guardando…' : 'Guardar cuenta' }}
+    </button>
+  </form>
+</app-drawer>
+
+<app-drawer [open]="tipo() === 'roles'" title="Roles de la cuenta" (close)="cerrar()">
+  <p>
+    <strong>{{ seleccion()?.username }}</strong>
+  </p>
+  <p>Roles actuales: {{ seleccion()?.roles?.join(', ') }}</p>
+  <label for="rol-asignar">Rol comercial o de plataforma</label
+  ><select id="rol-asignar" [formControl]="rolElegido">
+    <option [ngValue]="null">Selecciona un rol</option>
+    @for (r of rolesAsignables(); track r.id) {
+      <option [ngValue]="r.id">{{ r.nombre }}</option>
+    }
+  </select>
+  <p class="ayuda">
+    Asignar o retirar roles cierra las sesiones de esta cuenta. Personal y proveedores requieren sus
+    vínculos existentes. El acceso del último administrador está protegido.
+  </p>
+  @if (error()) {
+    <p role="alert" class="error">{{ error() }}</p>
+  }
+  <div class="acciones">
+    @if (puede('roles:asignar')) {
+      <button
+        type="button"
+        (click)="cambiarRol(true)"
+        [disabled]="!rolElegido.value || procesando() || !puedeOtorgar()"
+      >
+        Asignar o reactivar rol
+      </button>
+    }
+    @if (puede('roles:retirar')) {
+      <button
+        type="button"
+        class="peligro"
+        (click)="cambiarRol(false)"
+        [disabled]="!rolElegido.value || procesando()"
+      >
+        Retirar rol
+      </button>
+    }
+  </div>
+</app-drawer>
+<app-drawer
+  [open]="tipo() === 'estado'"
+  [title]="seleccion()?.activo ? 'Desactivar cuenta' : 'Reactivar cuenta'"
+  (close)="cerrar()"
+>
+  <p>
+    Cuenta: <strong>{{ seleccion()?.username }}</strong>
+  </p>
+  <p>
+    {{
+      seleccion()?.activo
+        ? 'Se cerrarán sus sesiones y se conservará su historial.'
+        : 'Se comprobarán el plan, cupo y vínculos de esta cuenta. Las sesiones anteriores seguirán cerradas.'
+    }}
+  </p>
+  @if (error()) {
+    <p role="alert" class="error">{{ error() }}</p>
+  }
+  <button
+    type="button"
+    [class.peligro]="seleccion()?.activo"
+    (click)="cambiarEstado()"
+    [disabled]="procesando()"
+  >
+    {{ seleccion()?.activo ? 'Confirmar desactivación' : 'Confirmar reactivación' }}
+  </button>
+</app-drawer>

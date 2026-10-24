@@ -212,7 +212,7 @@ test('suspensión conserva consultas, plan y pagos pendientes y bloquea nuevas a
     ).toBeVisible();
     await accesible(page);
     await page.goto('/usuarios');
-    await expect(page.getByRole('button', { name: 'Nuevo usuario', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Crear usuario', exact: true })).toBeDisabled();
     await page.goto('/pagos');
     await expect(page).toHaveURL(/\/pagos$/);
     expect(await page.evaluate(() => localStorage.getItem('backend_tr_token'))).not.toBeNull();
@@ -368,7 +368,7 @@ test('vencimiento conserva la sesión y muestra el límite en Mi plan', async ({
       page.getByText('Las operaciones nuevas están restringidas.', { exact: false }),
     ).toBeVisible();
     await page.goto('/usuarios');
-    await expect(page.getByRole('button', { name: 'Nuevo usuario', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Crear usuario', exact: true })).toBeDisabled();
     expect(await page.evaluate(() => localStorage.getItem('backend_tr_token'))).not.toBeNull();
   } finally {
     await request.post(`${API}/saas/empresas/${datos.a.id}/suscripcion`, {
@@ -466,15 +466,15 @@ test('un cupo consumido por otra alta se informa sin duplicar y Mi plan actualiz
   ).toBeTruthy();
   try {
     await page.goto('/usuarios');
-    await page.getByRole('button', { name: 'Nuevo usuario', exact: true }).click();
+    await page.getByRole('button', { name: 'Crear usuario', exact: true }).click();
     const nombre = 'ui_' + Date.now();
-    await page.locator('#crearNombre').fill('Cupo');
-    await page.locator('#crearApellido').fill('Prueba');
-    await page.locator('#crearUsername').fill(nombre);
-    await page.locator('#crearCorreo').fill(nombre + '@example.invalid');
-    await page.locator('#crearPassword').fill('Nueva-e2e-123!');
-    await page.locator('#crearRol').selectOption({ label: 'CLIENTE' });
-    const rol = await page.locator('#crearRol').inputValue();
+    await page.locator('#cuenta-nombre').fill('Cupo');
+    await page.locator('#cuenta-apellido').fill('Prueba');
+    await page.locator('#cuenta-username').fill(nombre);
+    await page.locator('#cuenta-correo').fill(nombre + '@example.invalid');
+    await page.locator('#cuenta-password').fill('Nueva-e2e-123!');
+    await page.locator('#cuenta-rol').selectOption({ label: 'CLIENTE' });
+    const rol = await page.locator('#cuenta-rol').inputValue();
     // Another operator consumes the final slot while this form remains open.
     const otro = await request.post(`${API}/usuarios`, {
       headers: h,
@@ -488,7 +488,7 @@ test('un cupo consumido por otra alta se informa sin duplicar y Mi plan actualiz
       },
     });
     expect(otro.status()).toBe(201);
-    await page.getByRole('button', { name: 'Crear usuario', exact: true }).click();
+    await page.getByRole('button', { name: 'Guardar cuenta', exact: true }).click();
     await expect(
       page.getByText('Se alcanzó el límite de cuentas activas del plan.', { exact: true }).last(),
     ).toBeVisible();

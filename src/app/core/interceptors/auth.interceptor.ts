@@ -56,7 +56,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     );
   }
   const headers: Record<string, string> = {};
-  if (auth.obtenerToken()) headers['Authorization'] = `Bearer ${auth.obtenerToken()}`;
+  const tokenEnviado = auth.obtenerToken();
+  if (tokenEnviado) headers['Authorization'] = `Bearer ${tokenEnviado}`;
   if (empresa && !plataforma) headers['X-Empresa-Codigo'] = empresa.codigo;
   return next(request.clone({ setHeaders: headers })).pipe(
     takeUntil(cambios.cambio$),
@@ -66,10 +67,16 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       if (esErrorVigencia(error)) estado.restringir();
       if (error.status === 403 || error.status === 409 || error.status === 503)
         estado.notificar(mensaje);
-      if (error.status === 401 && auth.estaAutenticado() && !ruta.includes('/autenticacion/')) {
+      if (
+        error.status === 401 &&
+        tokenEnviado &&
+        auth.obtenerToken() === tokenEnviado &&
+        (!ruta.includes('/autenticacion/') || ruta.endsWith('/autenticacion/capacidades'))
+      ) {
+        const destino = router.currentNavigation()?.extractedUrl.toString() ?? router.url;
         auth.limpiarSesion();
         void router.navigate([plataforma ? '/saas/login' : '/login'], {
-          queryParams: { returnUrl: router.url },
+          queryParams: { returnUrl: destino },
         });
       }
       // Existing pages also expect detail to be a string. Preserve status and the original payload.

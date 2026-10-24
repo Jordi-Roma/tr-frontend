@@ -69,6 +69,19 @@ export class AuthService {
   private readonly inicial = this.leerSesion();
   private readonly tokenSignal = signal<string | null>(this.inicial?.token ?? null);
   private readonly usuarioSignal = signal<UsuarioAutenticado | null>(this.inicial?.usuario ?? null);
+  readonly permisos = signal<string[] | null>(null);
+  puede(permiso: string): boolean {
+    return (
+      this.tieneRol('ADMIN_SAAS') ||
+      (this.tieneRol('ADMINISTRADOR') && (this.permisos()?.includes(permiso) ?? false))
+    );
+  }
+  cargarCapacidades(): Observable<{ permisos: string[] }> {
+    if (this.permisos() !== null) return of({ permisos: this.permisos()! });
+    return this.http
+      .get<{ permisos: string[] }>(API_BASE_URL + '/api/v1/autenticacion/capacidades')
+      .pipe(tap((r) => this.permisos.set(r.permisos)));
+  }
   readonly tokenActual = this.tokenSignal.asReadonly();
   readonly usuarioActual = this.usuarioSignal.asReadonly();
 
@@ -180,6 +193,7 @@ export class AuthService {
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuario));
   }
   limpiarSesion(): void {
+    this.permisos.set(null);
     this.tokenSignal.set(null);
     this.usuarioSignal.set(null);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
