@@ -49,6 +49,19 @@ La carpeta exacta indicada por `$testRoot` puede eliminarse después de comproba
 
 ## Otras verificaciones
 
+CU06 agrega dos recorridos en `cu06.spec.ts` para ciudades y sucursales por
+empresa, edición, desactivación/reactivación y accesibilidad de listas/formularios.
+El recorrido de ciudades verifica también Escape, retorno de foco y tabulación
+dentro del modal. Para ejecutarlos de forma aislada con la fixture anterior activa:
+
+```powershell
+npm run test:e2e -- e2e/cu06.spec.ts
+```
+
+La fixture crea ciudades propias para cada empresa. Si se usa el entorno local
+preparado en esta conversación, el ejecutable Python está en
+`tr-backend\.venv\Scripts\python.exe`.
+
 ```powershell
 npm test -- --watch=false
 npm run build

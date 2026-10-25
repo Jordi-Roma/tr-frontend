@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -64,12 +65,12 @@ export class TallasPage {
   protected readonly tallaForm = new FormGroup({
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(30)],
     }),
-    descripcion: new FormControl<string | null>(null),
+    descripcion: new FormControl<string | null>(null, Validators.maxLength(120)),
     tipo_prenda: new FormControl<string>('SUPERIOR', { nonNullable: true }),
-    ancho_cm: new FormControl<number | null>(null),
-    largo_cm: new FormControl<number | null>(null),
+    ancho_cm: new FormControl<number | null>(null, [Validators.min(0.01), Validators.max(9999.99)]),
+    largo_cm: new FormControl<number | null>(null, [Validators.min(0.01), Validators.max(9999.99)]),
   });
 
   constructor() {
@@ -121,6 +122,7 @@ export class TallasPage {
   }
 
   protected guardarTalla(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
     if (this.tallaForm.invalid) {
@@ -163,6 +165,7 @@ export class TallasPage {
   }
 
   protected cambiarEstadoTalla(talla: TallaResponse): void {
+    if (this.procesando() || !window.confirm(`${talla.activo ? 'Desactivar' : 'Activar'} ${talla.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const esActivo = talla.activo;
@@ -203,25 +206,17 @@ export class TallasPage {
       });
   }
 
+  protected reintentar(): void {
+    this.error.set('');
+    this.cargarTallas();
+  }
+
   private limpiarMensajes(): void {
     this.mensaje.set('');
     this.error.set('');
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-    return detail !== '' ? detail : 'No se pudo completar la operación. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-    return '';
+    return mensajeApi(error);
   }
 }

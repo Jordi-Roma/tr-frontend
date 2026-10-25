@@ -1,20 +1,21 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-tags"></i>
+    <i class="pi pi-tags" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Categorias</p>
-    <h2>Gestion de categorias</h2>
+    <h1>Gestion de categorias</h1>
     <p>Administra las categorias utilizadas para clasificar las prendas de StyleAR.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
-@if (error()) {
-  <p class="error-message">{{ error() }}</p>
+@if (error() && !formularioAbierto()) {
+  <p class="error-message" role="alert">{{ error() }}</p>
+  <button type="button" class="secondary-button" (click)="reintentar()" [disabled]="cargando()">Reintentar consulta</button>
 }
 
 @if (cargando()) {
@@ -26,7 +27,7 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="categorias-title">Categorias registradas</h3>
+        <h2 id="categorias-title">Categorias registradas</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ categoriasFiltradasTree().length }} categorias</span>
@@ -63,7 +64,7 @@
       </div>
     </div>
 
-    <div class="table-shell">
+    <div class="table-shell" tabindex="0" role="region" aria-label="Listado de categorias">
       <table>
         <thead>
           <tr>
@@ -135,6 +136,7 @@
     (close)="cerrarFormulario()"
   >
     <form [formGroup]="categoriaForm" (ngSubmit)="guardarCategoria()" novalidate>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
       <label for="categoria_padre_id">Categoria Padre</label>
       <select id="categoria_padre_id" formControlName="categoria_padre_id">
         <option [ngValue]="null">Ninguna (Categoria raiz)</option>
@@ -144,17 +146,17 @@
       </select>
 
       <label for="nombre">Nombre</label>
-      <input id="nombre" type="text" formControlName="nombre" />
+      <input id="nombre" type="text" formControlName="nombre" maxlength="120" />
 
       @if (
         categoriaForm.controls.nombre.invalid &&
         categoriaForm.controls.nombre.touched
       ) {
-        <p class="field-error">El nombre de la categoria es obligatorio.</p>
+        <p class="field-error">El nombre de la categoria es obligatorio (máximo 120 caracteres).</p>
       }
 
       <label for="descripcion">Descripcion</label>
-      <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
+      <input id="descripcion" type="text" formControlName="descripcion" maxlength="255" placeholder="Opcional" />
 
       <div class="form-actions">
         <button type="submit" [appOperacionNueva]="categoriaForm.invalid || procesando()">

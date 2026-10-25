@@ -1,20 +1,21 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-bookmark"></i>
+    <i class="pi pi-bookmark" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Marcas</p>
-    <h2>Gestion de marcas</h2>
+    <h1>Gestion de marcas</h1>
     <p>Administra las marcas disponibles para las prendas de StyleAR.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
-@if (error()) {
-  <p class="error-message">{{ error() }}</p>
+@if (error() && !formularioAbierto()) {
+  <p class="error-message" role="alert">{{ error() }}</p>
+  <button type="button" class="secondary-button" (click)="reintentar()" [disabled]="cargando()">Reintentar consulta</button>
 }
 
 @if (cargando()) {
@@ -26,12 +27,12 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="Marcas-title">Marcas registradas</h3>
+        <h2 id="Marcas-title">Marcas registradas</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ marcasFiltradas().length }} Marcas</span>
         <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaMarca()">
-          <i class="pi pi-plus"></i>
+          <i class="pi pi-plus" aria-hidden="true"></i>
           Nueva marca
         </button>
       </div>
@@ -63,7 +64,7 @@
       </div>
     </div>
 
-    <div class="table-shell">
+    <div class="table-shell" tabindex="0" role="region" aria-label="Listado de marcas">
       <table>
         <thead>
           <tr>
@@ -120,18 +121,19 @@
     (close)="cerrarFormulario()"
   >
 <form [formGroup]="marcaForm" (ngSubmit)="guardarMarca()" novalidate>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
       <label for="nombre">Nombre</label>
-      <input id="nombre" type="text" formControlName="nombre" placeholder="Ej: Nike, Adidas, Zara" />
+      <input id="nombre" type="text" formControlName="nombre" maxlength="120" placeholder="Ej: Nike, Adidas, Zara" />
 
       @if (
         marcaForm.controls.nombre.invalid &&
         marcaForm.controls.nombre.touched
       ) {
-        <p class="field-error">El nombre de la Marca es obligatorio.</p>
+        <p class="field-error">El nombre de la Marca es obligatorio (máximo 120 caracteres).</p>
       }
 
       <label for="descripcion">Descripcion</label>
-      <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
+      <input id="descripcion" type="text" formControlName="descripcion" maxlength="255" placeholder="Opcional" />
 
       <div class="form-actions">
         <button type="submit" [appOperacionNueva]="marcaForm.invalid || procesando()">

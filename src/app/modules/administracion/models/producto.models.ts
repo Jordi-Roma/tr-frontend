@@ -35,6 +35,7 @@ export interface ProductoResponse {
 }
 
 export interface CrearProductoRequest {
+  variantes?: { sku: string; talla_id: number | null; color_id: number | null; precio?: { monto: number } }[];
   categoria_id: number;
   marca_id: number | null;
   nombre: string;

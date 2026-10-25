@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
@@ -56,7 +57,7 @@ export class PanelProveedorPage implements OnInit {
           this.stock.set(stock);
           this.entregas.set(entregas);
         },
-        error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+        error: (error: HttpErrorResponse) => { this.perfil.set(null); this.productos.set([]); this.stock.set([]); this.entregas.set([]); this.error.set(this.obtenerMensajeError(error)); },
       });
   }
 
@@ -71,8 +72,6 @@ export class PanelProveedorPage implements OnInit {
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    return typeof error.error?.detail === 'string'
-      ? error.error.detail
-      : 'No se pudo cargar el panel proveedor.';
+    return mensajeApi(error);
   }
 }

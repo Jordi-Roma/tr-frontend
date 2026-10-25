@@ -29,7 +29,7 @@ export class MovimientosInventarioPage implements OnInit {
   protected readonly movimientos = signal<MovimientoInventarioResponse[]>([]);
   protected readonly sucursales = signal<CatalogoSucursal[]>([]);
   protected readonly variantes = signal<VarianteResponse[]>([]);
-  protected readonly proveedores = signal<ProveedorResponse[]>([]);
+  protected readonly proveedores = signal<Pick<ProveedorResponse, 'id' | 'nombre' | 'activo'>[]>([]);
   protected readonly filtroSucursalId = signal<number | null>(null);
   protected readonly tipoFiltro = signal('');
   protected readonly form = signal({
@@ -118,7 +118,7 @@ export class MovimientosInventarioPage implements OnInit {
     forkJoin({
       sucursales: this.catalogoService.listarSucursales(),
       variantes: this.varianteService.listarVariantes(),
-      proveedores: this.proveedorService.listarProveedores(),
+      proveedores: this.proveedorService.opcionesInventario(),
       movimientos: this.inventarioService.listarMovimientos(),
     })
       .pipe(finalize(() => this.cargando.set(false)))

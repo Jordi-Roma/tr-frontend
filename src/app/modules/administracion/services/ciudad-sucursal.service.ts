@@ -20,8 +20,8 @@ export class CiudadSucursalService {
   private readonly ciudadesUrl = `${API_BASE_URL}/api/v1/ciudades`;
   private readonly sucursalesUrl = `${API_BASE_URL}/api/v1/sucursales`;
 
-  listarCiudades(): Observable<CiudadResponse[]> {
-    return this.http.get<CiudadResponse[]>(this.ciudadesUrl);
+  listarCiudades(incluirInactivos = false): Observable<CiudadResponse[]> {
+    return this.http.get<CiudadResponse[]>(this.ciudadesUrl, { params: { incluir_inactivos: incluirInactivos } });
   }
 
   obtenerCiudad(ciudadId: number): Observable<CiudadResponse> {
@@ -56,8 +56,8 @@ export class CiudadSucursalService {
     );
   }
 
-  listarSucursales(): Observable<SucursalResponse[]> {
-    return this.http.get<SucursalResponse[]>(this.sucursalesUrl);
+  listarSucursales(incluirInactivos = false): Observable<SucursalResponse[]> {
+    return this.http.get<SucursalResponse[]>(this.sucursalesUrl, { params: { incluir_inactivos: incluirInactivos } });
   }
 
   obtenerSucursal(sucursalId: number): Observable<SucursalResponse> {

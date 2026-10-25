@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import {
   ActualizarProveedorRequest,
+  CuentaProveedor, CrearCuentaProveedor, ProductoVinculable,
   CrearProveedorRequest,
   MensajeResponse,
   ProveedorEntregaPanel,
@@ -20,6 +21,10 @@ export class ProveedorService {
   private readonly http = inject(HttpClient);
   private readonly proveedoresUrl = `${API_BASE_URL}/api/v1/proveedores`;
   private readonly proveedorPanelUrl = `${API_BASE_URL}/api/v1/proveedor-panel`;
+
+  opcionesInventario(): Observable<Pick<ProveedorResponse, 'id' | 'nombre' | 'activo'>[]> {
+    return this.http.get<Pick<ProveedorResponse, 'id' | 'nombre' | 'activo'>[]>(`${API_BASE_URL}/api/v1/inventario/proveedores-opciones`);
+  }
 
   listarProveedores(): Observable<ProveedorResponse[]> {
     return this.http.get<ProveedorResponse[]>(this.proveedoresUrl);
@@ -65,6 +70,25 @@ export class ProveedorService {
 
   desvincularUsuario(proveedorId: number, usuarioId: number): Observable<ProveedorResponse> {
     return this.http.delete<ProveedorResponse>(`${this.proveedoresUrl}/${proveedorId}/usuarios/${usuarioId}`);
+  }
+
+  cuentasDisponibles(): Observable<CuentaProveedor[]> {
+    return this.http.get<CuentaProveedor[]>(`${this.proveedoresUrl}/cuentas-disponibles`);
+  }
+  crearCuenta(proveedorId: number, datos: CrearCuentaProveedor): Observable<ProveedorResponse> {
+    return this.http.post<ProveedorResponse>(`${this.proveedoresUrl}/${proveedorId}/crear-usuario`, datos);
+  }
+  productosDisponibles(): Observable<ProductoVinculable[]> {
+    return this.http.get<ProductoVinculable[]>(`${this.proveedoresUrl}/productos-disponibles`);
+  }
+  productosVinculados(proveedorId: number): Observable<ProveedorProductoPanel[]> {
+    return this.http.get<ProveedorProductoPanel[]>(`${this.proveedoresUrl}/${proveedorId}/productos`);
+  }
+  vincularProducto(proveedorId: number, productoId: number): Observable<ProveedorProductoPanel[]> {
+    return this.http.post<ProveedorProductoPanel[]>(`${this.proveedoresUrl}/${proveedorId}/productos`, { producto_id: productoId });
+  }
+  desvincularProducto(proveedorId: number, productoId: number): Observable<ProveedorProductoPanel[]> {
+    return this.http.delete<ProveedorProductoPanel[]>(`${this.proveedoresUrl}/${proveedorId}/productos/${productoId}`);
   }
 
   obtenerPerfilPanel(): Observable<ProveedorPerfil> {

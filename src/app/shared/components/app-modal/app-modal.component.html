@@ -1,18 +1,21 @@
-@if (open) {
+@if (open()) {
   <div class="modal-backdrop" role="presentation" (click)="cerrar()">
     <section
+      #panel
+      tabindex="-1"
       class="modal-card"
       role="dialog"
       aria-modal="true"
-      [attr.aria-label]="title"
+      [attr.aria-label]="title()"
+      (keydown)="teclado($event)"
       (click)="$event.stopPropagation()"
     >
       <header class="modal-header">
         <div>
-          @if (eyebrow) {
-            <p class="modal-eyebrow">{{ eyebrow }}</p>
+          @if (eyebrow()) {
+            <p class="modal-eyebrow">{{ eyebrow() }}</p>
           }
-          <h2>{{ title }}</h2>
+          <h2>{{ title() }}</h2>
         </div>
 
         <button type="button" class="icon-button" aria-label="Cerrar" (click)="cerrar()">

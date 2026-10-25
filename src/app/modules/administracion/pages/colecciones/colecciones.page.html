@@ -1,20 +1,21 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-th-large"></i>
+    <i class="pi pi-th-large" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Colecciones</p>
-    <h2>Gestion de colecciones</h2>
+    <h1>Gestion de colecciones</h1>
     <p>Administra colecciones y vinculos con temporadas de StyleAR.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
-@if (error()) {
-  <p class="error-message">{{ error() }}</p>
+@if (error() && !formularioAbierto()) {
+  <p class="error-message" role="alert">{{ error() }}</p>
+  <button type="button" class="secondary-button" (click)="reintentar()" [disabled]="cargando()">Reintentar consulta</button>
 }
 
 @if (cargando()) {
@@ -26,12 +27,12 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="colecciones-title">Colecciones registradas</h3>
+        <h2 id="colecciones-title">Colecciones registradas</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ coleccionesFiltradas().length }} colecciones</span>
         <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaColeccion()">
-          <i class="pi pi-plus"></i>
+          <i class="pi pi-plus" aria-hidden="true"></i>
           Nueva coleccion
         </button>
       </div>
@@ -63,7 +64,7 @@
       </div>
     </div>
 
-    <div class="table-shell">
+    <div class="table-shell" tabindex="0" role="region" aria-label="Listado de colecciones">
       <table>
         <thead>
           <tr>
@@ -121,6 +122,7 @@
     (close)="cerrarFormulario()"
   >
     <form [formGroup]="coleccionForm" (ngSubmit)="guardarColeccion()" novalidate>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
       <label for="temporada_id">Temporada</label>
       <select id="temporada_id" formControlName="temporada_id">
         <option [ngValue]="null">Selecciona una temporada...</option>
@@ -136,17 +138,17 @@
       }
 
       <label for="nombre">Nombre</label>
-      <input id="nombre" type="text" formControlName="nombre" />
+      <input id="nombre" type="text" formControlName="nombre" maxlength="150" />
 
       @if (
         coleccionForm.controls.nombre.invalid &&
         coleccionForm.controls.nombre.touched
       ) {
-        <p class="field-error">El nombre de la colección es obligatorio.</p>
+        <p class="field-error">El nombre de la colección es obligatorio (máximo 150 caracteres).</p>
       }
 
       <label for="descripcion">Descripcion</label>
-      <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
+      <input id="descripcion" type="text" formControlName="descripcion" maxlength="255" placeholder="Opcional" />
 
       <div class="form-actions">
         <button type="submit" [appOperacionNueva]="coleccionForm.invalid || procesando()">

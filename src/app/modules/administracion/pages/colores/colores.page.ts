@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -57,7 +58,7 @@ export class ColoresPage {
   protected readonly colorForm = new FormGroup({
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(80)],
     }),
     codigo_hex: new FormControl<string | null>(null, {
       validators: [Validators.pattern(/^#[0-9A-Fa-f]{6}$/)],
@@ -105,6 +106,7 @@ export class ColoresPage {
   }
 
   protected guardarColor(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
     if (this.colorForm.invalid) {
@@ -146,6 +148,7 @@ export class ColoresPage {
   }
 
   protected cambiarEstadoColor(color: ColorResponse): void {
+    if (this.procesando() || !window.confirm(`${color.activo ? 'Desactivar' : 'Activar'} ${color.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const esActivo = color.activo;
@@ -186,25 +189,17 @@ export class ColoresPage {
       });
   }
 
+  protected reintentar(): void {
+    this.error.set('');
+    this.cargarColores();
+  }
+
   private limpiarMensajes(): void {
     this.mensaje.set('');
     this.error.set('');
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-    return detail !== '' ? detail : 'No se pudo completar la operación. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-    return '';
+    return mensajeApi(error);
   }
 }

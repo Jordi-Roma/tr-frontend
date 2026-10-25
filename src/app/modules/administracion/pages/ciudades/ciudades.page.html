@@ -1,20 +1,20 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-map-marker"></i>
+    <i class="pi pi-map-marker" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Ciudades</p>
-    <h2>Gestion de ciudades</h2>
-    <p>Administra ciudades activas e inactivas del sistema comercial.</p>
+    <h1>Gestión de ciudades</h1>
+    <p>Administra ciudades activas e inactivas de tu empresa.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
 @if (error()) {
-  <p class="error-message">{{ error() }}</p>
+  <p class="error-message" role="alert">{{ error() }}</p>
 }
 
 @if (cargando()) {
@@ -26,12 +26,12 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="ciudades-title">Ciudades registradas</h3>
+        <h2 id="ciudades-title">Ciudades registradas</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ ciudadesFiltradas().length }} ciudades</span>
-        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaCiudad()">
-          <i class="pi pi-plus"></i>
+        <button [appOperacionNueva]="procesando() || !auth.puede('ciudades:crear')" type="button" (click)="abrirNuevaCiudad()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
           Nueva ciudad
         </button>
       </div>
@@ -71,7 +71,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarCiudad(ciudad)">
+                  <button [appOperacionNueva]="procesando() || !ciudad.activo || !auth.puede('ciudades:editar')" type="button" class="secondary-button" (click)="seleccionarCiudad(ciudad)">
                     <i class="pi pi-pencil" aria-hidden="true"></i>
                     Editar
                   </button>
@@ -80,7 +80,7 @@
                     [class.danger-button]="ciudad.activo"
                     [class.secondary-button]="!ciudad.activo"
                     (click)="cambiarEstadoCiudad(ciudad)"
-                    [disabled]="procesando() || (!ciudad.activo && !planEstado.operacionesPermitidas())"
+                    [disabled]="procesando() || !auth.puede(ciudad.activo ? 'ciudades:desactivar' : 'ciudades:editar') || (!ciudad.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ ciudad.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -104,8 +104,9 @@
     (close)="cerrarFormulario()"
   >
 <form [formGroup]="ciudadForm" (ngSubmit)="guardarCiudad()" novalidate>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
       <label for="nombre">Nombre</label>
-      <input id="nombre" type="text" formControlName="nombre" />
+      <input id="nombre" type="text" formControlName="nombre" maxlength="120" />
 
       @if (ciudadForm.controls.nombre.touched && ciudadForm.controls.nombre.errors?.['required']) {
         <p class="field-error">El nombre de la ciudad es obligatorio.</p>
@@ -116,10 +117,10 @@
       }
 
       <label for="departamento">Departamento</label>
-      <input id="departamento" type="text" formControlName="departamento" />
+      <input id="departamento" type="text" formControlName="departamento" maxlength="120" />
 
       <div class="form-actions">
-        <button type="submit" [appOperacionNueva]="ciudadForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="ciudadForm.invalid || procesando() || !auth.puede(ciudadEditandoId() === null ? 'ciudades:crear' : 'ciudades:editar')">
           <i class="pi pi-check" aria-hidden="true"></i>
           {{ ciudadEditandoId() === null ? 'Crear ciudad' : 'Guardar ciudad' }}
         </button>

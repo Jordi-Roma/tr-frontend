@@ -5,12 +5,13 @@
 </section>
 
 @if (error()) {
-  <p class="feedback error">{{ error() }}</p>
+  <p class="feedback error" role="alert">{{ error() }}</p>
+  <button type="button" (click)="cargar()" [disabled]="cargando()">Reintentar</button>
 }
 
 @if (cargando()) {
   <p class="feedback">Cargando panel proveedor...</p>
-} @else {
+} @else if (!error()) {
   <section class="summary-grid">
     <article>
       <span>Productos activos</span>

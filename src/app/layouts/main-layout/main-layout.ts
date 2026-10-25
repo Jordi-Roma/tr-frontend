@@ -165,9 +165,9 @@ export class MainLayout {
         { label: 'Temporadas', path: '/temporadas', icon: 'pi pi-calendar', roles: ADMIN },
         { label: 'Colecciones', path: '/colecciones', icon: 'pi pi-th-large', roles: ADMIN },
         { label: 'Proveedores', path: '/proveedores', icon: 'pi pi-truck', roles: ADMIN },
-        { label: 'Ciudades', path: '/ciudades', icon: 'pi pi-map-marker', roles: ['ADMIN_SAAS'] },
+        { label: 'Ciudades', path: '/ciudades', icon: 'pi pi-map-marker', roles: ADMIN },
         { label: 'Sucursales', path: '/sucursales', icon: 'pi pi-building', roles: ADMIN },
-        { label: 'Empleados', path: '/empleados', icon: 'pi pi-id-card', roles: ADMIN },
+        { label: 'Empleados', path: '/empleados', icon: 'pi pi-id-card', roles: ADMIN_O_ENCARGADO },
         { label: 'Variantes', path: '/variantes', icon: 'pi pi-sitemap', roles: ADMIN },
         { label: 'Promociones', path: '/promociones', icon: 'pi pi-percentage', roles: ADMIN },
         {

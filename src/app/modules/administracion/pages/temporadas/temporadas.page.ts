@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -57,7 +58,7 @@ export class TemporadasPage {
   protected readonly temporadaForm = new FormGroup({
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(120)],
     }),
     anio: new FormControl(new Date().getFullYear(), {
       nonNullable: true,
@@ -106,6 +107,7 @@ export class TemporadasPage {
   }
 
   protected guardarTemporada(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
     if (this.temporadaForm.invalid) {
@@ -117,7 +119,7 @@ export class TemporadasPage {
     this.procesando.set(true);
     const temporadaId = this.temporadaEditandoId();
 
-    const operacion: Observable<any> =
+    const operacion: Observable<unknown> =
       temporadaId === null
         ? this.temporadaService.crearTemporada({ nombre, anio })
         : this.temporadaService.actualizarTemporada(temporadaId, { nombre, anio });
@@ -135,18 +137,18 @@ export class TemporadasPage {
       },
       error: (err: HttpErrorResponse) => {
         this.error.set(
-          err.error?.detail ||
-            'Ocurrió un error al guardar la temporada. Por favor, intenta de nuevo.'
+          mensajeApi(err, 'Ocurrió un error al guardar la temporada. Por favor, intenta de nuevo.')
         );
       },
     });
   }
 
   protected cambiarEstadoTemporada(temporada: TemporadaResponse): void {
+    if (this.procesando() || !window.confirm(`${temporada.activo ? 'Desactivar' : 'Activar'} ${temporada.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
 
-    const operacion: Observable<any> = temporada.activo
+    const operacion: Observable<unknown> = temporada.activo
       ? this.temporadaService.desactivarTemporada(temporada.id)
       : this.temporadaService.activarTemporada(temporada.id);
 
@@ -164,8 +166,7 @@ export class TemporadasPage {
       },
       error: (err: HttpErrorResponse) => {
         this.error.set(
-          err.error?.detail ||
-            'Ocurrió un error al cambiar el estado. Por favor, intenta de nuevo.'
+          mensajeApi(err, 'Ocurrió un error al cambiar el estado. Por favor, intenta de nuevo.')
         );
       },
     });
@@ -187,6 +188,11 @@ export class TemporadasPage {
           );
         },
       });
+  }
+
+  protected reintentar(): void {
+    this.error.set('');
+    this.cargarTemporadas();
   }
 
   private limpiarMensajes(): void {

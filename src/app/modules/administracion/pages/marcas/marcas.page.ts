@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -57,9 +58,9 @@ export class MarcasPage {
   protected readonly marcaForm = new FormGroup({
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(120)],
     }),
-    descripcion: new FormControl<string | null>(null),
+    descripcion: new FormControl<string | null>(null, Validators.maxLength(255)),
   });
 
   constructor() {
@@ -104,6 +105,7 @@ export class MarcasPage {
   }
 
   protected guardarMarca(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
     if (this.marcaForm.invalid) {
@@ -133,7 +135,7 @@ export class MarcasPage {
             ? 'Marca creada correctamente.'
             : 'Marca actualizada correctamente.'
         );
-        this.cancelarEdicion();
+        this.cerrarFormulario();
         this.cargarMarcas();
       },
       error: (error: HttpErrorResponse) => {
@@ -143,6 +145,7 @@ export class MarcasPage {
   }
 
   protected cambiarEstadoMarca(marca: MarcaResponse): void {
+    if (this.procesando() || !window.confirm(`${marca.activo ? 'Desactivar' : 'Activar'} ${marca.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const esActivo = marca.activo;
@@ -183,25 +186,17 @@ export class MarcasPage {
       });
   }
 
+  protected reintentar(): void {
+    this.error.set('');
+    this.cargarMarcas();
+  }
+
   private limpiarMensajes(): void {
     this.mensaje.set('');
     this.error.set('');
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-    return detail !== '' ? detail : 'No se pudo completar la operación. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-    return '';
+    return mensajeApi(error);
   }
 }

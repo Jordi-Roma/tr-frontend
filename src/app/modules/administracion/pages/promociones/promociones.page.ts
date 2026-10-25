@@ -1,3 +1,7 @@
+import { ActivatedRoute } from '@angular/router';
+import { CiudadSucursalService } from '../../services/ciudad-sucursal.service';
+import { SucursalResponse } from '../../models/ciudad-sucursal.models';
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -18,6 +22,10 @@ import { PromocionService } from '../../services/promocion.service';
 export class PromocionesPage {
   protected readonly planEstado = inject(EstadoPlanService);
   private readonly promocionService = inject(PromocionService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly sucursalService = inject(CiudadSucursalService);
+  protected readonly sucursales = signal<SucursalResponse[]>([]);
+  protected readonly sucursalIdsSeleccionados = signal<Set<number>>(new Set());
   private readonly productoService = inject(ProductoService);
 
   protected readonly promociones = signal<PromocionResponse[]>([]);
@@ -54,7 +62,7 @@ export class PromocionesPage {
   protected readonly promocionForm = new FormGroup({
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(180)],
     }),
     descripcion: new FormControl<string | null>(null),
     tipoDescuento: new FormControl<TipoDescuento>('PORCENTAJE', {
@@ -77,6 +85,10 @@ export class PromocionesPage {
   constructor() {
     this.cargarPromociones();
     this.cargarProductos();
+    this.sucursalService.listarSucursales().subscribe({
+      next: datos => this.sucursales.set(datos.filter(s => s.activo)),
+      error: (error: HttpErrorResponse) => this.error.set(mensajeApi(error)),
+    });
   }
 
   protected actualizarBusqueda(event: Event): void {
@@ -87,6 +99,9 @@ export class PromocionesPage {
   protected abrirNuevaPromocion(): void {
     this.promocionEditandoId.set(null);
     this.productoIdsSeleccionados.set(new Set());
+    this.sucursalIdsSeleccionados.set(new Set());
+    const productoInicial = Number(this.route.snapshot.queryParamMap.get('producto_id'));
+    if (productoInicial && this.productosActivos().some(p => p.id === productoInicial)) this.productoIdsSeleccionados.set(new Set([productoInicial]));
     this.promocionForm.reset({
       nombre: '',
       descripcion: null,
@@ -102,6 +117,7 @@ export class PromocionesPage {
   protected editarPromocion(promocion: PromocionResponse): void {
     this.promocionEditandoId.set(promocion.id);
     this.productoIdsSeleccionados.set(new Set(promocion.productos.map((producto) => producto.id)));
+    this.sucursalIdsSeleccionados.set(new Set(promocion.sucursales.map(s => s.id)));
     this.promocionForm.setValue({
       nombre: promocion.nombre,
       descripcion: promocion.descripcion,
@@ -118,6 +134,7 @@ export class PromocionesPage {
     this.formularioAbierto.set(false);
     this.promocionEditandoId.set(null);
     this.productoIdsSeleccionados.set(new Set());
+    this.sucursalIdsSeleccionados.set(new Set());
     this.promocionForm.reset({
       nombre: '',
       descripcion: null,
@@ -129,6 +146,7 @@ export class PromocionesPage {
   }
 
   protected guardarPromocion(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
     if (this.promocionForm.invalid || this.productoIdsSeleccionados().size === 0) {
@@ -140,6 +158,10 @@ export class PromocionesPage {
     }
 
     const request = this.construirRequest();
+    if (request.fecha_fin < request.fecha_inicio || (request.tipo_descuento === 'PORCENTAJE' && request.valor > 100)) {
+      this.error.set('Revisa la vigencia y el porcentaje (máximo 100).');
+      return;
+    }
     const promocionId = this.promocionEditandoId();
     const operacion =
       promocionId === null
@@ -162,6 +184,7 @@ export class PromocionesPage {
   }
 
   protected cambiarEstado(promocion: PromocionResponse): void {
+    if (this.procesando() || !window.confirm(`${promocion.activo ? 'Desactivar' : 'Activar'} este registro?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const operacion = promocion.activo
@@ -235,7 +258,7 @@ export class PromocionesPage {
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
       producto_ids: Array.from(this.productoIdsSeleccionados()),
-      sucursal_ids: [],
+      sucursal_ids: Array.from(this.sucursalIdsSeleccionados()),
     };
   }
 
@@ -245,25 +268,21 @@ export class PromocionesPage {
     return limpio === '' ? null : limpio;
   }
 
+  protected alternarSucursal(id: number, event: Event): void {
+    const marcado = (event.target as HTMLInputElement).checked;
+    this.sucursalIdsSeleccionados.update(actual => {
+      const copia = new Set(actual);
+      if (marcado) copia.add(id); else copia.delete(id);
+      return copia;
+    });
+  }
+
   private limpiarMensajes(): void {
     this.mensaje.set('');
     this.error.set('');
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-    return detail || 'No se pudo completar la operacion. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-    return '';
+    return mensajeApi(error);
   }
 }

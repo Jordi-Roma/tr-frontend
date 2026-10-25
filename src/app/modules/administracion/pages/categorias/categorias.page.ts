@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -43,7 +44,19 @@ export class CategoriasPage {
 
   protected readonly categoriasPadreDisponibles = computed(() => {
     const editandoId = this.categoriaEditandoId();
-    return this.categorias().filter(c => c.activo && c.id !== editandoId);
+    const excluidas = new Set<number>();
+    if (editandoId !== null) excluidas.add(editandoId);
+    let cambio = true;
+    while (cambio) {
+      cambio = false;
+      for (const c of this.categorias()) {
+        if (c.categoria_padre_id !== null && excluidas.has(c.categoria_padre_id) && !excluidas.has(c.id)) {
+          excluidas.add(c.id);
+          cambio = true;
+        }
+      }
+    }
+    return this.categorias().filter(c => c.activo && !excluidas.has(c.id));
   });
 
   protected readonly categoriasFiltradasTree = computed(() => {
@@ -103,9 +116,9 @@ export class CategoriasPage {
     categoria_padre_id: new FormControl<number | null>(null),
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(120)],
     }),
-    descripcion: new FormControl<string | null>(null),
+    descripcion: new FormControl<string | null>(null, Validators.maxLength(255)),
   });
 
   constructor() {
@@ -162,6 +175,7 @@ export class CategoriasPage {
   }
 
   protected guardarCategoria(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
     if (this.categoriaForm.invalid) {
@@ -204,6 +218,7 @@ export class CategoriasPage {
   }
 
   protected cambiarEstadoCategoria(categoria: CategoriaResponse): void {
+    if (this.procesando() || !window.confirm(`${categoria.activo ? 'Desactivar' : 'Activar'} ${categoria.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const esActivo = categoria.activo;
@@ -244,25 +259,17 @@ export class CategoriasPage {
       });
   }
 
+  protected reintentar(): void {
+    this.error.set('');
+    this.cargarCategorias();
+  }
+
   private limpiarMensajes(): void {
     this.mensaje.set('');
     this.error.set('');
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-    return detail !== '' ? detail : 'No se pudo completar la operación. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-    return '';
+    return mensajeApi(error);
   }
 }

@@ -12,6 +12,7 @@ export interface EmpleadoResponse {
   fecha_ingreso: string;
   activo: boolean;
   roles: string[];
+  rol_laboral: string | null;
 }
 
 export interface AsignarUsuarioEmpleadoRequest {
@@ -35,4 +36,9 @@ export interface ActivarEmpleadoRequest {
 
 export interface MensajeResponse {
   mensaje: string;
+}
+
+export interface CuentaEmpleadoDisponible { id: number; nombre: string; apellido: string; username: string; }
+export interface CrearUsuarioEmpleadoRequest extends Omit<AsignarUsuarioEmpleadoRequest, 'usuario_id'> {
+  nombre: string; apellido: string; username: string; correo: string; password: string;
 }

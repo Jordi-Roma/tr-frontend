@@ -1,20 +1,20 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-percentage"></i>
+    <i class="pi pi-percentage" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Promociones</p>
-    <h2>Gestión de promociones</h2>
+    <h1>Gestión de promociones</h1>
     <p>Crea descuentos por producto para que el catálogo pueda mostrar ofertas activas.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
 @if (error()) {
-  <p class="error-message">{{ error() }}</p>
+  <p class="error-message" role="alert">{{ error() }}</p>
 }
 
 <section class="panel tools-panel" aria-label="Herramientas de promociones">
@@ -42,9 +42,9 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Formulario</p>
-        <h3 id="promocion-form-title">
+        <h2 id="promocion-form-title">
           {{ promocionEditandoId() === null ? 'Nueva promoción' : 'Editar promoción' }}
-        </h3>
+        </h2>
       </div>
     </div>
 
@@ -88,10 +88,17 @@
       <label for="descripcion">Descripción</label>
       <input id="descripcion" type="text" formControlName="descripcion" placeholder="Opcional" />
 
+      <fieldset>
+        <legend>Alcance por sucursal</legend>
+        <p>Sin selección, la promoción aplica a todas las sucursales.</p>
+        @for (sucursal of sucursales(); track sucursal.id) {
+          <label><input type="checkbox" [checked]="sucursalIdsSeleccionados().has(sucursal.id)" (change)="alternarSucursal(sucursal.id, $event)" /> {{ sucursal.nombre }}</label>
+        }
+      </fieldset>
       <div class="products-picker">
         <div class="picker-header">
           <div>
-            <label>Productos incluidos</label>
+            <p>Productos incluidos</p>
             <p class="field-hint">Selecciona uno o varios productos para aplicar el descuento.</p>
           </div>
           <span class="count-badge">{{ productoIdsSeleccionados().size }} seleccionados</span>
@@ -131,7 +138,7 @@
   <div class="panel-header">
     <div>
       <p class="eyebrow">Listado</p>
-      <h3 id="promociones-title">Promociones registradas</h3>
+      <h2 id="promociones-title">Promociones registradas</h2>
     </div>
     <span class="count-badge">{{ promocionesFiltradas().length }} promociones</span>
   </div>

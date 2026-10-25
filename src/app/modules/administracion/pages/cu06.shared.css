@@ -1,0 +1,16 @@
+/* Contraste AA del bloque CU06, conservando la paleta comercial. */
+:host {
+  --color-accent: #435832;
+  --color-muted: #50594d;
+  --color-success: #28542b;
+  --color-danger: #a12620;
+}
+.page-heading h1 {
+  margin: 0;
+  color: var(--color-primary);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+}
+
+.panel h2 { font-size: 1.2rem; line-height: 1.3; }

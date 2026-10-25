@@ -85,3 +85,7 @@ export interface ActualizarProveedorRequest {
 export interface MensajeResponse {
   mensaje: string;
 }
+
+export interface CuentaProveedor { id: number; nombre: string; apellido: string; username: string; activo: boolean; proveedor_id: number | null; }
+export interface ProductoVinculable { id: number; nombre: string; }
+export interface CrearCuentaProveedor { nombre: string; apellido: string; username: string; correo: string; password: string; }

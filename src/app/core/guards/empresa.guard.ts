@@ -30,7 +30,7 @@ export const alcanceGuard: CanActivateChildFn = (_route, state) => {
   const router = inject(Router);
   if (
     auth.tieneRol('ADMIN_SAAS') &&
-    !/^\/(saas(?:\/|$)|roles(?:\?|$)|ciudades(?:\?|$)|perfil(?:\?|$))/.test(state.url)
+    !/^\/(saas(?:\/|$)|roles(?:\?|$)|perfil(?:\?|$))/.test(state.url)
   )
     return router.createUrlTree(['/saas/empresas']);
   return true;

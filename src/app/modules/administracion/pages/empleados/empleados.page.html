@@ -4,17 +4,17 @@
   </span>
   <div>
     <p class="eyebrow">Empleados</p>
-    <h2>Gestion de empleados</h2>
-    <p>Asigna usuarios existentes como empleados de sucursal y administra su estado.</p>
+    <h1>Gestión de empleados</h1>
+    <p>{{ soloConsulta() ? 'Consulta los empleados de tu sucursal asignada.' : 'Registra empleados, asigna sucursales y gestiona sus roles laborales.' }}</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
 @if (error()) {
-  <p class="error-message">{{ error() }}</p>
+  <p class="error-message" role="alert">{{ error() }}</p>
 }
 
 @if (cargando()) {
@@ -26,14 +26,16 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="empleados-title">Empleados registrados</h3>
+        <h2 id="empleados-title">Empleados registrados</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ empleadosFiltrados().length }} empleados</span>
-        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevoEmpleado()">
-          <i class="pi pi-plus"></i>
+        @if (!soloConsulta()) {
+        <button [appOperacionNueva]="procesando()" type="button" (click)="abrirNuevoEmpleado()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
           Nuevo empleado
         </button>
+        }
       </div>
     </div>
 
@@ -46,7 +48,7 @@
       placeholder="Nombre, cargo, usuario o sucursal"
     />
 
-    <div class="table-shell">
+    <div class="table-shell" tabindex="0" role="region" aria-label="Listado de empleados">
       <table>
         <thead>
           <tr>
@@ -81,8 +83,9 @@
                 </span>
               </td>
               <td>
+                @if (!soloConsulta()) {
                 <div class="table-actions">
-                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarEmpleado(empleado)">
+                  <button [appOperacionNueva]="!empleado.activo || procesando()" type="button" class="secondary-button" (click)="seleccionarEmpleado(empleado)">
                     Editar
                   </button>
                   <button
@@ -95,6 +98,7 @@
                     {{ empleado.activo ? 'Desactivar' : 'Activar' }}
                   </button>
                 </div>
+                } @else { <span>Solo consulta</span> }
               </td>
             </tr>
           } @empty {
@@ -114,16 +118,28 @@
     (close)="cerrarFormulario()"
   >
 <form [formGroup]="empleadoForm" (ngSubmit)="guardarEmpleado()" novalidate>
-      <label for="usuarioId">Usuario ID</label>
-      <input id="usuarioId" type="number" min="1" formControlName="usuarioId" />
-
-      @if (
-        empleadoForm.controls.usuarioId.invalid &&
-        empleadoForm.controls.usuarioId.touched
-      ) {
-        <p class="field-error">El usuario es obligatorio.</p>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
+      @if (empleadoEditandoId() === null) {
+        <label for="modoEmpleado">Registro</label>
+        <select id="modoEmpleado" [value]="modoNuevo() ? 'nuevo' : 'existente'" (change)="cambiarModo($event)">
+          <option value="nuevo">Crear cuenta y empleado</option>
+          <option value="existente">Asignar cuenta existente</option>
+        </select>
+        @if (modoNuevo()) {
+          <label for="empleadoNombre">Nombre</label><input id="empleadoNombre" formControlName="nombre" maxlength="100" />
+          <label for="empleadoApellido">Apellido</label><input id="empleadoApellido" formControlName="apellido" maxlength="100" />
+          <label for="empleadoUsername">Usuario</label><input id="empleadoUsername" formControlName="username" maxlength="80" autocomplete="off" />
+          <label for="empleadoCorreo">Correo</label><input id="empleadoCorreo" type="email" formControlName="correo" maxlength="320" />
+          <label for="empleadoPassword">Contraseña inicial</label><input id="empleadoPassword" type="password" formControlName="password" autocomplete="new-password" />
+          <p class="field-hint">La contraseña debe tener al menos 8 caracteres.</p>
+        } @else {
+          <label for="usuarioId">Cuenta de usuario</label>
+          <select id="usuarioId" formControlName="usuarioId">
+            <option [ngValue]="null">Selecciona una cuenta</option>
+            @for (usuario of cuentas(); track usuario.id) { <option [ngValue]="usuario.id">{{ usuario.nombre }} {{ usuario.apellido }} (@{{ usuario.username }})</option> }
+          </select>
+        }
       }
-
       <label for="sucursalId">Sucursal</label>
       <select id="sucursalId" formControlName="sucursalId">
         <option [ngValue]="null">Selecciona una sucursal</option>
@@ -182,13 +198,6 @@
         <p class="field-error">El rol es obligatorio.</p>
       }
 
-      <div class="helper-box">
-        <p>
-          Esta pantalla asigna usuarios existentes como empleados. No crea usuarios
-          nuevos.
-        </p>
-      </div>
-
       <div class="form-actions">
         <button type="submit" [appOperacionNueva]="empleadoForm.invalid || procesando()">
           {{ empleadoEditandoId() === null ? 'Crear empleado' : 'Guardar empleado' }}
@@ -203,3 +212,14 @@
     </form>
   </app-modal>
 </div>
+
+<app-modal [open]="empleadoActivando() !== null" title="Reactivar empleado" (close)="empleadoActivando.set(null)">
+  @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
+  <p>Confirma el rol laboral que recuperará esta cuenta.</p>
+  <label for="rolReactivacion">Rol laboral</label>
+  <select id="rolReactivacion" [formControl]="rolReactivacion">
+    <option value="">Selecciona un rol</option>
+    @for (rol of rolesDisponibles; track rol.valor) { <option [value]="rol.valor">{{ rol.etiqueta }}</option> }
+  </select>
+  <button type="button" [appOperacionNueva]="procesando() || rolReactivacion.invalid" (click)="reactivarEmpleado()">Confirmar reactivación</button>
+</app-modal>

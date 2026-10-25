@@ -1,3 +1,4 @@
+import { AuthService } from '../../../autenticacion/services/auth.service';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -20,6 +21,7 @@ import { AppModalComponent } from '../../../../shared/components/app-modal/app-m
   templateUrl: './ciudades.page.html',
 })
 export class CiudadesPage {
+  protected readonly auth = inject(AuthService);
   protected readonly planEstado = inject(EstadoPlanService);
   private readonly ciudadSucursalService = inject(CiudadSucursalService);
 
@@ -118,7 +120,7 @@ export class CiudadesPage {
             ? 'Ciudad creada correctamente.'
             : 'Ciudad actualizada correctamente.'
         );
-        this.cancelarEdicion();
+        this.cerrarFormulario();
         this.cargarCiudades();
       },
       error: (error: HttpErrorResponse) => {
@@ -128,6 +130,7 @@ export class CiudadesPage {
   }
 
   protected cambiarEstadoCiudad(ciudad: CiudadResponse): void {
+    if (this.procesando() || !window.confirm(`${ciudad.activo ? 'Desactivar' : 'Activar'} ${ciudad.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const operacion = ciudad.activo
@@ -150,7 +153,7 @@ export class CiudadesPage {
     this.error.set('');
 
     this.ciudadSucursalService
-      .listarCiudades()
+      .listarCiudades(true)
       .pipe(finalize(() => this.cargando.set(false)))
       .subscribe({
         next: (ciudades) => {

@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -67,9 +68,9 @@ export class ColeccionesPage {
     }),
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(150)],
     }),
-    descripcion: new FormControl<string | null>(null),
+    descripcion: new FormControl<string | null>(null, Validators.maxLength(255)),
   });
 
   constructor() {
@@ -114,6 +115,7 @@ export class ColeccionesPage {
   }
 
   protected guardarColeccion(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
     if (this.coleccionForm.invalid) {
@@ -127,7 +129,7 @@ export class ColeccionesPage {
     this.procesando.set(true);
     const coleccionId = this.coleccionEditandoId();
 
-    const operacion: Observable<any> =
+    const operacion: Observable<unknown> =
       coleccionId === null
         ? this.coleccionService.crearColeccion({ temporada_id, nombre, descripcion })
         : this.coleccionService.actualizarColeccion(coleccionId, { temporada_id, nombre, descripcion });
@@ -144,18 +146,18 @@ export class ColeccionesPage {
       },
       error: (err: HttpErrorResponse) => {
         this.error.set(
-          err.error?.detail ||
-            'Ocurrió un error al guardar la colección. Por favor, intenta de nuevo.'
+          mensajeApi(err, 'Ocurrió un error al guardar la colección. Por favor, intenta de nuevo.')
         );
       },
     });
   }
 
   protected cambiarEstadoColeccion(coleccion: ColeccionResponse): void {
+    if (this.procesando() || !window.confirm(`${coleccion.activo ? 'Desactivar' : 'Activar'} ${coleccion.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
 
-    const operacion: Observable<any> = coleccion.activo
+    const operacion: Observable<unknown> = coleccion.activo
       ? this.coleccionService.desactivarColeccion(coleccion.id)
       : this.coleccionService.activarColeccion(coleccion.id);
 
@@ -173,8 +175,7 @@ export class ColeccionesPage {
       },
       error: (err: HttpErrorResponse) => {
         this.error.set(
-          err.error?.detail ||
-            'Ocurrió un error al cambiar el estado. Por favor, intenta de nuevo.'
+          mensajeApi(err, 'Ocurrió un error al cambiar el estado. Por favor, intenta de nuevo.')
         );
       },
     });
@@ -209,6 +210,11 @@ export class ColeccionesPage {
           );
         },
       });
+  }
+
+  protected reintentar(): void {
+    this.error.set('');
+    this.cargarDatos();
   }
 
   private limpiarMensajes(): void {

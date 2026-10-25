@@ -26,7 +26,8 @@ export const ADMINISTRACION_ROUTES: Routes = [
     component: CiudadesPage,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMIN_SAAS'],
+      roles: ['ADMINISTRADOR'],
+      permiso: 'ciudades:ver',
     },
   },
   {
@@ -35,6 +36,7 @@ export const ADMINISTRACION_ROUTES: Routes = [
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
+      permiso: 'sucursales:ver',
     },
   },
   {
@@ -42,7 +44,7 @@ export const ADMINISTRACION_ROUTES: Routes = [
     component: EmpleadosPage,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMINISTRADOR'],
+      roles: ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL'],
     },
   },
   {

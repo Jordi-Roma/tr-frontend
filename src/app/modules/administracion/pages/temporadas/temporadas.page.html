@@ -1,20 +1,21 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-calendar"></i>
+    <i class="pi pi-calendar" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Temporadas</p>
-    <h2>Gestion de temporadas</h2>
+    <h1>Gestion de temporadas</h1>
     <p>Administra las temporadas para clasificar colecciones de StyleAR.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
-@if (error()) {
-  <p class="error-message">{{ error() }}</p>
+@if (error() && !formularioAbierto()) {
+  <p class="error-message" role="alert">{{ error() }}</p>
+  <button type="button" class="secondary-button" (click)="reintentar()" [disabled]="cargando()">Reintentar consulta</button>
 }
 
 @if (cargando()) {
@@ -26,7 +27,7 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="temporadas-title">Temporadas registradas</h3>
+        <h2 id="temporadas-title">Temporadas registradas</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ temporadasFiltradas().length }} temporadas</span>
@@ -63,7 +64,7 @@
       </div>
     </div>
 
-    <div class="table-shell">
+    <div class="table-shell" tabindex="0" role="region" aria-label="Listado de temporadas">
       <table>
         <thead>
           <tr>
@@ -120,14 +121,15 @@
     (close)="cerrarFormulario()"
   >
     <form [formGroup]="temporadaForm" (ngSubmit)="guardarTemporada()" novalidate>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
       <label for="nombre">Nombre</label>
-      <input id="nombre" type="text" formControlName="nombre" />
+      <input id="nombre" type="text" formControlName="nombre" maxlength="120" />
 
       @if (
         temporadaForm.controls.nombre.invalid &&
         temporadaForm.controls.nombre.touched
       ) {
-        <p class="field-error">El nombre de la temporada es obligatorio.</p>
+        <p class="field-error">El nombre de la temporada es obligatorio (máximo 120 caracteres).</p>
       }
 
       <label for="anio">Años</label>

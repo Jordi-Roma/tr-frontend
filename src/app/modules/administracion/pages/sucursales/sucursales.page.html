@@ -1,20 +1,20 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-building"></i>
+    <i class="pi pi-building" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Sucursales</p>
-    <h2>Gestion de sucursales</h2>
+    <h1>Gestión de sucursales</h1>
     <p>Administra sucursales y su relacion con ciudades activas.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
 @if (error()) {
-  <p class="error-message">{{ error() }}</p>
+  <p class="error-message" role="alert">{{ error() }}</p>
 }
 
 @if (cargando()) {
@@ -26,12 +26,12 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="sucursales-title">Sucursales registradas</h3>
+        <h2 id="sucursales-title">Sucursales registradas</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ sucursalesFiltradas().length }} sucursales</span>
-        <button [appOperacionNueva]="false" type="button" (click)="abrirNuevaSucursal()">
-          <i class="pi pi-plus"></i>
+        <button [appOperacionNueva]="procesando() || !auth.puede('sucursales:crear')" type="button" (click)="abrirNuevaSucursal()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
           Nueva sucursal
         </button>
       </div>
@@ -81,7 +81,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarSucursal(sucursal)">
+                  <button [appOperacionNueva]="procesando() || !sucursal.activo || !auth.puede('sucursales:editar')" type="button" class="secondary-button" (click)="seleccionarSucursal(sucursal)">
                     Editar
                   </button>
                   <button
@@ -89,7 +89,7 @@
                     [class.danger-button]="sucursal.activo"
                     [class.secondary-button]="!sucursal.activo"
                     (click)="cambiarEstadoSucursal(sucursal)"
-                    [disabled]="procesando() || (!sucursal.activo && !planEstado.operacionesPermitidas())"
+                    [disabled]="procesando() || !auth.puede(sucursal.activo ? 'sucursales:desactivar' : 'sucursales:editar') || (!sucursal.activo && !planEstado.operacionesPermitidas())"
                   >
                     {{ sucursal.activo ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -113,6 +113,7 @@
     (close)="cerrarFormulario()"
   >
 <form [formGroup]="sucursalForm" (ngSubmit)="guardarSucursal()" novalidate>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
       <label for="ciudadId">Ciudad</label>
       <select id="ciudadId" formControlName="ciudadId">
         <option [ngValue]="null">Selecciona una ciudad</option>
@@ -180,6 +181,11 @@
           </button>
         </div>
         <div #sucursalMap class="branch-map"></div>
+        <p>También puedes introducir las coordenadas con el teclado.</p>
+        <label for="latitud">Latitud</label>
+        <input id="latitud" type="number" step="any" min="-90" max="90" formControlName="latitud" (change)="actualizarCoordenadas()" />
+        <label for="longitud">Longitud</label>
+        <input id="longitud" type="number" step="any" min="-180" max="180" formControlName="longitud" (change)="actualizarCoordenadas()" />
       </section>
 
       @if (
@@ -193,7 +199,7 @@
       <input id="telefono" type="text" formControlName="telefono" />
 
       <div class="form-actions">
-        <button type="submit" [appOperacionNueva]="sucursalForm.invalid || procesando()">
+        <button type="submit" [appOperacionNueva]="sucursalForm.invalid || procesando() || !auth.puede(sucursalEditandoId() === null ? 'sucursales:crear' : 'sucursales:editar')">
           {{ sucursalEditandoId() === null ? 'Crear sucursal' : 'Guardar sucursal' }}
         </button>
 

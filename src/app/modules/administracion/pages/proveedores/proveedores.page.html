@@ -1,20 +1,20 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-truck"></i>
+    <i class="pi pi-truck" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Proveedores</p>
-    <h2>Gestion de proveedores</h2>
-    <p>Administra proveedores de productos para StyleAR.</p>
+    <h1>Gestión de proveedores</h1>
+    <p>Administra proveedores y sus vínculos comerciales dentro de tu empresa.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
 @if (error()) {
-  <p class="error-message">{{ error() }}</p>
+  <p class="error-message" role="alert">{{ error() }}</p>
 }
 
 @if (cargando()) {
@@ -26,12 +26,12 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="proveedores-title">Proveedores registrados</h3>
+        <h2 id="proveedores-title">Proveedores registrados</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ proveedoresFiltrados().length }} proveedores</span>
         <button [appOperacionNueva]="false" type="button" (click)="abrirNuevoProveedor()">
-          <i class="pi pi-plus"></i>
+          <i class="pi pi-plus" aria-hidden="true"></i>
           Nuevo proveedor
         </button>
       </div>
@@ -97,7 +97,7 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button [appOperacionNueva]="false" type="button" class="secondary-button" (click)="seleccionarProveedor(proveedor)">
+                  <button [appOperacionNueva]="procesando() || !proveedor.activo" type="button" class="secondary-button" (click)="seleccionarProveedor(proveedor)">
                     Editar
                   </button>
                   <button
@@ -129,6 +129,8 @@
     (close)="cerrarFormulario()"
   >
 <form [formGroup]="proveedorForm" (ngSubmit)="guardarProveedor()" novalidate>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
+      @if (mensaje()) { <p class="success-message" role="status">{{ mensaje() }}</p> }
       <label for="nombre">Nombre</label>
       <input id="nombre" type="text" formControlName="nombre" />
 
@@ -184,7 +186,7 @@
       <hr />
       <section class="provider-users">
         <h3>Usuarios vinculados</h3>
-        <p class="field-hint">Solo usuarios con rol PROVEEDOR pueden entrar al panel de este proveedor.</p>
+        <p class="field-hint">Al vincular una cuenta se asigna el rol PROVEEDOR y se cierran sus sesiones para que ingrese nuevamente.</p>
 
         @if (usuariosProveedor().length === 0) {
           <p class="field-hint">Este proveedor todavía no tiene usuarios vinculados.</p>
@@ -204,13 +206,39 @@
         <form [formGroup]="vinculoForm" (ngSubmit)="vincularUsuario()" novalidate>
           <label for="usuarioProveedor">Vincular usuario proveedor</label>
           <select id="usuarioProveedor" formControlName="usuario_id">
-            <option [ngValue]="null">Selecciona un usuario con rol PROVEEDOR</option>
+            <option [ngValue]="null">Selecciona una cuenta disponible</option>
             @for (usuario of usuariosDisponiblesParaVincular(); track usuario.id) {
               <option [ngValue]="usuario.id">{{ etiquetaUsuario(usuario) }}</option>
             }
           </select>
           <button type="submit" [appOperacionNueva]="vinculoForm.invalid || procesando()">Vincular usuario</button>
         </form>
+      </section>
+      <section class="provider-users">
+        <h3>Crear cuenta de acceso</h3>
+        <form [formGroup]="cuentaForm" (ngSubmit)="crearCuenta()" novalidate>
+          <label for="cuentaNombre">Nombre de la cuenta</label><input id="cuentaNombre" formControlName="nombre" maxlength="100" />
+          <label for="cuentaApellido">Apellido de la cuenta</label><input id="cuentaApellido" formControlName="apellido" maxlength="100" />
+          <label for="cuentaUsername">Usuario de acceso</label><input id="cuentaUsername" formControlName="username" maxlength="80" />
+          <label for="cuentaCorreo">Correo de acceso</label><input id="cuentaCorreo" type="email" formControlName="correo" />
+          <label for="cuentaPassword">Contraseña inicial</label><input id="cuentaPassword" type="password" formControlName="password" autocomplete="new-password" />
+          <p class="field-hint">Al menos 8 caracteres. La cuenta podrá consultar únicamente este proveedor.</p>
+          <button type="submit" [appOperacionNueva]="procesando() || cuentaForm.invalid">Crear cuenta vinculada</button>
+        </form>
+      </section>
+      <section class="provider-users">
+        <h3>Productos vinculados</h3>
+        <ul>
+          @for (producto of productosVinculados(); track producto.producto_id) {
+            <li>{{ producto.nombre }} <button type="button" class="secondary-button" [disabled]="procesando()" (click)="quitarProducto(producto.producto_id)" [attr.aria-label]="'Quitar producto ' + producto.nombre">Quitar producto</button></li>
+          } @empty { <li>No hay productos vinculados.</li> }
+        </ul>
+        <label for="productoProveedor">Producto para vincular</label>
+        <select id="productoProveedor" [formControl]="productoElegido">
+          <option [ngValue]="null">Selecciona un producto de tu empresa</option>
+          @for (producto of productos(); track producto.id) { <option [ngValue]="producto.id">{{ producto.nombre }}</option> }
+        </select>
+        <button type="button" [appOperacionNueva]="procesando() || productoElegido.invalid" (click)="vincularProducto()">Vincular producto</button>
       </section>
     }
   </app-modal>

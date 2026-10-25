@@ -1,20 +1,21 @@
 <section class="page-heading">
   <span class="admin-heading-icon" aria-hidden="true">
-    <i class="pi pi-palette"></i>
+    <i class="pi pi-palette" aria-hidden="true"></i>
   </span>
   <div>
     <p class="eyebrow">Colores</p>
-    <h2>Gestion de colores</h2>
+    <h1>Gestion de colores</h1>
     <p>Administra los colores disponibles para las variantes de prendas de StyleAR.</p>
   </div>
 </section>
 
 @if (mensaje()) {
-  <p class="success-message">{{ mensaje() }}</p>
+  <p class="success-message" role="status">{{ mensaje() }}</p>
 }
 
-@if (error()) {
-  <p class="error-message">{{ error() }}</p>
+@if (error() && !formularioAbierto()) {
+  <p class="error-message" role="alert">{{ error() }}</p>
+  <button type="button" class="secondary-button" (click)="reintentar()" [disabled]="cargando()">Reintentar consulta</button>
 }
 
 @if (cargando()) {
@@ -26,7 +27,7 @@
     <div class="panel-header">
       <div>
         <p class="eyebrow">Listado</p>
-        <h3 id="colores-title">Colores registrados</h3>
+        <h2 id="colores-title">Colores registrados</h2>
       </div>
       <div class="panel-actions">
         <span class="count-badge">{{ coloresFiltrados().length }} colores</span>
@@ -63,7 +64,7 @@
       </div>
     </div>
 
-    <div class="table-shell">
+    <div class="table-shell" tabindex="0" role="region" aria-label="Listado de colores">
       <table>
         <thead>
           <tr>
@@ -137,14 +138,15 @@
     (close)="cerrarFormulario()"
   >
 <form [formGroup]="colorForm" (ngSubmit)="guardarColor()" novalidate>
+      @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
       <label for="nombre">Nombre</label>
-      <input id="nombre" type="text" formControlName="nombre" placeholder="Ej: Negro, Azul marino" />
+      <input id="nombre" type="text" formControlName="nombre" maxlength="80" placeholder="Ej: Negro, Azul marino" />
 
       @if (
         colorForm.controls.nombre.invalid &&
         colorForm.controls.nombre.touched
       ) {
-        <p class="field-error">El nombre del color es obligatorio.</p>
+        <p class="field-error">El nombre del color es obligatorio (máximo 80 caracteres).</p>
       }
 
       <label for="codigo_hex">Codigo hexadecimal</label>

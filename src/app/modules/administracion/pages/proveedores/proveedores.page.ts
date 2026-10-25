@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -9,11 +10,9 @@ import {
   Validators,
 } from '@angular/forms';
 import { finalize, Observable } from 'rxjs';
-import { ProveedorResponse } from '../../models/proveedor.models';
+import { CuentaProveedor, ProductoVinculable, ProveedorProductoPanel, ProveedorResponse } from '../../models/proveedor.models';
 import { ProveedorService } from '../../services/proveedor.service';
 import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
-import { UsuarioAdminResponse } from '../../../autenticacion/models/usuario-admin.models';
-import { UsuarioAdminService } from '../../../autenticacion/services/usuario-admin.service';
 
 @Component({
   imports: [OperacionNuevaDirective, ReactiveFormsModule, AppModalComponent],
@@ -24,10 +23,20 @@ import { UsuarioAdminService } from '../../../autenticacion/services/usuario-adm
 export class ProveedoresPage {
   protected readonly planEstado = inject(EstadoPlanService);
   private readonly proveedorService = inject(ProveedorService);
-  private readonly usuarioAdminService = inject(UsuarioAdminService);
+
 
   protected readonly proveedores = signal<ProveedorResponse[]>([]);
-  protected readonly usuarios = signal<UsuarioAdminResponse[]>([]);
+  protected readonly usuarios = signal<CuentaProveedor[]>([]);
+  protected readonly productos = signal<ProductoVinculable[]>([]);
+  protected readonly productosVinculados = signal<ProveedorProductoPanel[]>([]);
+  protected readonly productoElegido = new FormControl<number | null>(null, Validators.required);
+  protected readonly cuentaForm = new FormGroup({
+    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
+    apellido: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
+    username: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(4), Validators.maxLength(80)] }),
+    correo: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }),
+  });
   protected readonly busqueda = signal('');
   protected readonly filtroEstado = signal<'todos' | 'activos' | 'inactivos'>('todos');
   protected readonly cargando = signal(false);
@@ -82,6 +91,7 @@ export class ProveedoresPage {
   constructor() {
     this.cargarProveedores();
     this.cargarUsuarios();
+    this.proveedorService.productosDisponibles().subscribe({ next: p => this.productos.set(p), error: (e: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(e)) });
   }
 
   protected actualizarBusqueda(event: Event): void {
@@ -107,6 +117,10 @@ export class ProveedoresPage {
     });
     this.proveedorForm.controls.nit.disable();
     this.vinculoForm.reset();
+    this.cuentaForm.reset();
+    this.productoElegido.reset();
+    this.productosVinculados.set([]);
+    this.proveedorService.productosVinculados(proveedor.id).subscribe({ next: p => { if (this.proveedorEditandoId() === proveedor.id) this.productosVinculados.set(p); }, error: (e: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(e)) });
     this.formularioAbierto.set(true);
     this.limpiarMensajes();
   }
@@ -166,7 +180,7 @@ export class ProveedoresPage {
             ? 'Proveedor creado correctamente.'
             : 'Proveedor actualizado correctamente.'
         );
-        this.cancelarEdicion();
+        this.cerrarFormulario();
         this.cargarProveedores();
       },
       error: (error: HttpErrorResponse) => {
@@ -176,6 +190,7 @@ export class ProveedoresPage {
   }
 
   protected cambiarEstadoProveedor(proveedor: ProveedorResponse): void {
+    if (this.procesando() || !window.confirm(`${proveedor.activo ? 'Desactivar' : 'Activar'} ${proveedor.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
 
@@ -199,7 +214,7 @@ export class ProveedoresPage {
     });
   }
 
-  protected usuariosProveedor(): UsuarioAdminResponse[] {
+  protected usuariosProveedor(): CuentaProveedor[] {
     const proveedor = this.proveedorActual();
     if (!proveedor) {
       return [];
@@ -208,18 +223,18 @@ export class ProveedoresPage {
     return this.usuarios().filter((usuario) => ids.has(usuario.id));
   }
 
-  protected usuariosDisponiblesParaVincular(): UsuarioAdminResponse[] {
+  protected usuariosDisponiblesParaVincular(): CuentaProveedor[] {
     const proveedor = this.proveedorActual();
     if (!proveedor) {
       return [];
     }
     const vinculados = new Set(proveedor.usuarios_ids ?? []);
     return this.usuarios()
-      .filter((usuario) => usuario.activo && usuario.roles.includes('PROVEEDOR') && !vinculados.has(usuario.id))
+      .filter((usuario) => usuario.activo && usuario.proveedor_id === null && !vinculados.has(usuario.id))
       .sort((a, b) => `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`));
   }
 
-  protected etiquetaUsuario(usuario: UsuarioAdminResponse): string {
+  protected etiquetaUsuario(usuario: CuentaProveedor): string {
     return `${usuario.nombre} ${usuario.apellido} (@${usuario.username})`;
   }
 
@@ -238,6 +253,7 @@ export class ProveedoresPage {
       .subscribe({
         next: (proveedor) => {
           this.actualizarProveedorEnLista(proveedor);
+          this.cargarUsuarios();
           this.vinculoForm.reset();
           this.mensaje.set('Usuario vinculado al proveedor.');
         },
@@ -258,10 +274,42 @@ export class ProveedoresPage {
       .subscribe({
         next: (proveedor) => {
           this.actualizarProveedorEnLista(proveedor);
+          this.cargarUsuarios();
           this.mensaje.set('Usuario desvinculado del proveedor.');
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
       });
+  }
+
+  protected crearCuenta(): void {
+    const id = this.proveedorEditandoId();
+    if (id === null || this.cuentaForm.invalid) { this.cuentaForm.markAllAsTouched(); return; }
+    this.procesando.set(true);
+    this.limpiarMensajes();
+    this.proveedorService.crearCuenta(id, this.cuentaForm.getRawValue()).pipe(finalize(() => this.procesando.set(false))).subscribe({
+      next: proveedor => { this.actualizarProveedorEnLista(proveedor); this.cuentaForm.reset(); this.cargarUsuarios(); this.mensaje.set('Cuenta de proveedor creada y vinculada.'); },
+      error: (e: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(e)),
+    });
+  }
+
+  protected vincularProducto(): void {
+    const id = this.proveedorEditandoId(), producto = this.productoElegido.value;
+    if (id === null || producto === null) return;
+    this.procesando.set(true);
+    this.proveedorService.vincularProducto(id, producto).pipe(finalize(() => this.procesando.set(false))).subscribe({
+      next: productos => { if (this.proveedorEditandoId() === id) this.productosVinculados.set(productos); this.productoElegido.reset(); this.mensaje.set('Producto vinculado.'); },
+      error: (e: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(e)),
+    });
+  }
+
+  protected quitarProducto(productoId: number): void {
+    const id = this.proveedorEditandoId();
+    if (id === null) return;
+    this.procesando.set(true);
+    this.proveedorService.desvincularProducto(id, productoId).pipe(finalize(() => this.procesando.set(false))).subscribe({
+      next: productos => { if (this.proveedorEditandoId() === id) this.productosVinculados.set(productos); this.mensaje.set('Vínculo de producto retirado; historial conservado.'); },
+      error: (e: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(e)),
+    });
   }
 
   private proveedorActual(): ProveedorResponse | null {
@@ -294,7 +342,7 @@ export class ProveedoresPage {
   }
 
   private cargarUsuarios(): void {
-    this.usuarioAdminService.listarUsuarios().subscribe({
+    this.proveedorService.cuentasDisponibles().subscribe({
       next: (usuarios) => this.usuarios.set(usuarios),
       error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
     });
@@ -306,25 +354,6 @@ export class ProveedoresPage {
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-
-    if (detail !== '') {
-      return detail;
-    }
-
-    return 'No se pudo completar la operación. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-
-    return '';
+    return mensajeApi(error);
   }
 }

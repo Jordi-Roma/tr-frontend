@@ -1,3 +1,4 @@
+@import "../cu06.shared.css";
 :host {
   display: block;
 }
@@ -54,7 +55,7 @@ h2 {
   margin-bottom: 18px;
 }
 
-.panel h3 {
+.panel h2 {
   color: var(--color-primary);
   font-size: 1.28rem;
 }

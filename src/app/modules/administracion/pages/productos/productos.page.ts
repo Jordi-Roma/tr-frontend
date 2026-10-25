@@ -1,14 +1,17 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import {
+  FormArray,
   FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { finalize, Observable } from 'rxjs';
+import { finalize, forkJoin, Observable } from 'rxjs';
+import { RouterLink } from '@angular/router';
 import { ProductoResponse, ImagenProductoRequest } from '../../models/producto.models';
 import { ProductoService } from '../../services/producto.service';
 import { CatalogoService } from '../../services/catalogo.service';
@@ -17,13 +20,15 @@ import { ColeccionService } from '../../services/coleccion.service';
 import {
   CategoriaResponse,
   MarcaResponse,
+  TallaResponse,
+  ColorResponse,
   ColeccionResponse,
 } from '../../models/catalogo.models';
 import { ProveedorResponse } from '../../models/proveedor.models';
 import { AppDrawerComponent } from '../../../../shared/components/app-drawer/app-drawer.component';
 
 @Component({
-  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppDrawerComponent],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppDrawerComponent, RouterLink],
   selector: 'app-productos-page',
   styleUrl: './productos.page.css',
   templateUrl: './productos.page.html',
@@ -50,7 +55,9 @@ export class ProductosPage implements OnInit {
   protected readonly mensaje = signal('');
   protected readonly error = signal('');
 
-  // Se mantiene por compatibilidad con el backend, pero la UI no muestra imagenes por ahora.
+  protected readonly tallas = signal<TallaResponse[]>([]);
+  protected readonly colores = signal<ColorResponse[]>([]);
+  protected readonly variantesIniciales = new FormArray<FormGroup<{sku: FormControl<string>; talla_id: FormControl<number | null>; color_id: FormControl<number | null>; monto: FormControl<number | null>}>>([]);
   protected readonly imagenesEditando = signal<ImagenProductoRequest[]>([]);
 
   protected readonly productosFiltrados = computed(() => {
@@ -84,17 +91,18 @@ export class ProductosPage implements OnInit {
     marca_id: new FormControl<number | null>(null),
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(180)],
     }),
     descripcion: new FormControl<string | null>(null),
     material: new FormControl<string | null>(null),
     genero: new FormControl<string | null>(null),
     tipo_prenda: new FormControl<string>('SUPERIOR', { nonNullable: true }),
     tipo_corte: new FormControl<string>('REGULAR_FIT', { nonNullable: true }),
-    ancho_base_cm: new FormControl<number | null>(53.0),
-    largo_base_cm: new FormControl<number | null>(72.0),
+    ancho_base_cm: new FormControl<number | null>(53.0, [Validators.min(0.01), Validators.max(9999.99)]),
+    largo_base_cm: new FormControl<number | null>(72.0, [Validators.min(0.01), Validators.max(9999.99)]),
     colecciones_ids: new FormControl<number[]>([]),
     proveedores_ids: new FormControl<number[]>([]),
+    modelo_3d_url: new FormControl<string | null>(null),
     url_imagen_nueva: new FormControl<string | null>(null),
   });
 
@@ -106,23 +114,28 @@ export class ProductosPage implements OnInit {
     this.cargando.set(true);
     this.error.set('');
 
-    this.catalogoService
-      .listarCategorias()
-      .subscribe((data) => this.categorias.set(data.filter((categoria) => categoria.activo)));
-
-    this.catalogoService
-      .listarMarcas()
-      .subscribe((data) => this.marcas.set(data.filter((marca) => marca.activo)));
-
-    this.proveedorService
-      .listarProveedores()
-      .subscribe((data) => this.proveedores.set(data.filter((proveedor) => proveedor.activo)));
-
-    this.coleccionService
-      .listarColecciones()
-      .subscribe((data) => this.colecciones.set(data.filter((coleccion) => coleccion.activo)));
-
-    this.cargarProductos();
+    forkJoin({
+      categorias: this.catalogoService.listarCategorias(),
+      marcas: this.catalogoService.listarMarcas(),
+      proveedores: this.proveedorService.listarProveedores(),
+      colecciones: this.coleccionService.listarColecciones(),
+      tallas: this.catalogoService.listarTallas(),
+      colores: this.catalogoService.listarColores(),
+    }).subscribe({
+      next: datos => {
+        this.categorias.set(datos.categorias.filter(v => v.activo));
+        this.marcas.set(datos.marcas.filter(v => v.activo));
+        this.proveedores.set(datos.proveedores.filter(v => v.activo));
+        this.colecciones.set(datos.colecciones.filter(v => v.activo));
+        this.tallas.set(datos.tallas.filter(v => v.activo));
+        this.colores.set(datos.colores.filter(v => v.activo));
+        this.cargarProductos();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargando.set(false);
+        this.error.set(mensajeApi(error));
+      },
+    });
   }
 
   private cargarProductos(): void {
@@ -154,6 +167,7 @@ export class ProductosPage implements OnInit {
     this.productoForm.patchValue({
       categoria_id: producto.categoria_id,
       marca_id: producto.marca_id,
+      modelo_3d_url: producto.modelo_3d_url ?? null,
       nombre: producto.nombre,
       descripcion: producto.descripcion,
       material: producto.material,
@@ -184,10 +198,20 @@ export class ProductosPage implements OnInit {
   }
 
   protected cancelarEdicion(): void {
+    this.variantesIniciales.clear();
     this.productoEditandoId.set(null);
     this.productoForm.reset();
     this.imagenesEditando.set([]);
     this.formularioAbierto.set(false);
+  }
+
+  protected agregarVarianteInicial(): void {
+    this.variantesIniciales.push(new FormGroup({
+      sku: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(80)] }),
+      talla_id: new FormControl<number | null>(null),
+      color_id: new FormControl<number | null>(null),
+      monto: new FormControl<number | null>(null, [Validators.required, Validators.min(0.01)]),
+    }));
   }
 
   protected agregarImagen(): void {
@@ -210,6 +234,11 @@ export class ProductosPage implements OnInit {
     if (!input.files || input.files.length === 0) return;
 
     const file = input.files[0];
+    if (!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type) || file.size > 5*1024*1024) {
+      this.error.set('Utiliza una imagen PNG, JPEG, WEBP o GIF de hasta 5 MB.');
+      input.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const base64Url = reader.result as string;
@@ -268,9 +297,11 @@ export class ProductosPage implements OnInit {
   }
 
   protected guardarProducto(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
-    if (this.productoForm.invalid) {
+    if (this.productoForm.invalid || (this.productoEditandoId() === null && this.variantesIniciales.invalid)) {
+      this.variantesIniciales.markAllAsTouched();
       this.productoForm.markAllAsTouched();
       return;
     }
@@ -299,6 +330,11 @@ export class ProductosPage implements OnInit {
       colecciones_ids: value.colecciones_ids || [],
       proveedores_ids: value.proveedores_ids || [],
       imagenes: this.imagenesEditando(),
+      modelo_3d_url: value.modelo_3d_url?.trim() || null,
+      variantes: productoId === null ? this.variantesIniciales.getRawValue().map(v => ({
+        sku: v.sku.trim(), talla_id: v.talla_id, color_id: v.color_id,
+        precio: { monto: v.monto! },
+      })) : [],
     };
 
     const operacion =
@@ -323,6 +359,7 @@ export class ProductosPage implements OnInit {
   }
 
   protected cambiarEstadoProducto(producto: ProductoResponse): void {
+    if (this.procesando() || !window.confirm(`${producto.activo ? 'Desactivar' : 'Activar'} este registro?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const esActivo = producto.activo;
@@ -346,26 +383,16 @@ export class ProductosPage implements OnInit {
     });
   }
 
+  protected reintentar(): void {
+    this.cargarDatos();
+  }
+
   private limpiarMensajes(): void {
     this.mensaje.set('');
     this.error.set('');
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-    return detail !== '' ? detail : 'No se pudo completar la operacion. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-
-    return '';
+    return mensajeApi(error);
   }
 }

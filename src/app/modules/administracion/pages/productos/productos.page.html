@@ -14,6 +14,11 @@
     </div>
   </header>
 
+  @if (!formularioAbierto() && error()) {
+    <p class="error-message" role="alert">{{ error() }}</p>
+    <button type="button" (click)="reintentar()" [disabled]="cargando()">Reintentar consulta</button>
+  }
+  @if (!formularioAbierto() && mensaje()) { <p role="status">{{ mensaje() }}</p> }
   <div class="content-grid">
     <div class="list-section">
       <div class="card panel-card list-panel">
@@ -34,14 +39,14 @@
             <input
               type="text"
               class="form-control"
-              placeholder="Buscar por nombre, descripcion, marca..."
+              placeholder="Buscar por nombre, descripcion, marca..." aria-label="Buscar producto"
               (input)="actualizarBusqueda($event)"
               [value]="busqueda()"
             />
           </div>
 
           <select
-            class="form-control filter-select"
+            class="form-control filter-select" aria-label="Filtrar por estado"
             (change)="actualizarFiltroEstado($event)"
             [value]="filtroEstado()"
           >
@@ -64,7 +69,7 @@
             <p>No se encontraron productos con los filtros actuales.</p>
           </div>
         } @else {
-          <div class="table-container">
+          <div class="table-container" tabindex="0" role="region" aria-label="Listado de productos">
             <table class="data-table">
               <thead>
                 <tr>
@@ -118,6 +123,8 @@
                     </td>
                     <td class="text-right" (click)="$event.stopPropagation()">
                       <div class="action-buttons">
+                        <a routerLink="/variantes" [queryParams]="{producto_id: producto.id}">Variantes y precios</a>
+                        <a routerLink="/promociones" [queryParams]="{producto_id: producto.id}">Promociones</a>
                         <button [appOperacionNueva]="false"
                           class="btn-icon-only"
                           title="Editar"
@@ -177,14 +184,14 @@
         </div>
 
         @if (mensaje()) {
-          <div class="alert alert-success">
+          <div class="alert alert-success" role="status">
             <i class="pi pi-check-circle" aria-hidden="true"></i>
             {{ mensaje() }}
           </div>
         }
 
         @if (error()) {
-          <div class="alert alert-danger">
+          <div class="alert alert-danger" role="alert">
             <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
             {{ error() }}
           </div>
@@ -197,7 +204,7 @@
               type="text"
               id="nombre"
               class="form-control"
-              formControlName="nombre"
+              formControlName="nombre" maxlength="180"
               placeholder="Ej: Polera Classic"
               [class.is-invalid]="productoForm.get('nombre')?.invalid && productoForm.get('nombre')?.touched"
             />
@@ -266,7 +273,7 @@
           <!-- SECCIÓN VESTIDOR VIRTUAL / REALIDAD AUMENTADA -->
           <div class="ar-config-box" style="margin: 1.25rem 0; padding: 1.25rem; background: var(--surface-hover, #f8fafc); border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0);">
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-              <i class="pi pi-sparkles" style="color: var(--primary-color, #6366f1); font-size: 1.1rem;" aria-hidden="true"></i>
+              <i class="pi pi-sparkles" aria-hidden="true" style="color: var(--primary-color, #6366f1); font-size: 1.1rem;" aria-hidden="true"></i>
               <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Configuración de Realidad Aumentada y Medidas</h3>
             </div>
             <p style="font-size: 0.85rem; color: var(--text-secondary, #64748b); margin-bottom: 1rem;">
@@ -325,13 +332,14 @@
           </div>
 
           <div class="form-group images-section">
-            <label class="form-label">Imagenes del producto</label>
+            <p class="form-label">Imagenes del producto</p>
             <span class="help-text">Agrega imagenes por URL o sube archivos desde tu equipo (la primera o marcada con estrella sera la principal).</span>
 
             <div class="image-inputs-bar">
               <div class="url-input-wrapper">
                 <input
                   type="text"
+                  aria-label="URL de imagen"
                   class="form-control"
                   formControlName="url_imagen_nueva"
                   placeholder="Pegar URL de imagen (https://...)"
@@ -403,6 +411,40 @@
             }
           </div>
 
+          <label for="modelo_3d_url">Modelo 3D (URL opcional)</label>
+          <input id="modelo_3d_url" class="form-control" formControlName="modelo_3d_url" />
+          @if (productoEditandoId() === null) {
+            <section aria-label="Variantes iniciales">
+              <h3>Variantes y precios iniciales</h3>
+              <p>Puedes agregarlos ahora o después desde Variantes y precios. Las existencias se registran en Inventario.</p>
+              @for (variante of variantesIniciales.controls; track variante; let i = $index) {
+                <fieldset [formGroup]="variante">
+                  <legend>Variante {{ i + 1 }}</legend>
+                  <label [for]="'sku-inicial-' + i">SKU</label>
+                  <input [id]="'sku-inicial-' + i" formControlName="sku" maxlength="80" />
+                  <label [for]="'talla-inicial-' + i">Talla</label>
+                  <select [id]="'talla-inicial-' + i" formControlName="talla_id">
+                    <option [ngValue]="null">No aplica</option>
+                    @for (talla of tallas(); track talla.id) {
+                      @if (talla.tipo_prenda === productoForm.controls.tipo_prenda.value) {
+                        <option [ngValue]="talla.id">{{ talla.nombre }}</option>
+                      }
+                    }
+                  </select>
+                  <label [for]="'color-inicial-' + i">Color</label>
+                  <select [id]="'color-inicial-' + i" formControlName="color_id">
+                    <option [ngValue]="null">No aplica</option>
+                    @for (color of colores(); track color.id) { <option [ngValue]="color.id">{{ color.nombre }}</option> }
+                  </select>
+                  <label [for]="'precio-inicial-' + i">Precio inicial</label>
+                  <input [id]="'precio-inicial-' + i" type="number" min="0.01" step="0.01" formControlName="monto" />
+                  @if (variante.invalid && variante.touched) { <p role="alert">Completa el SKU y un precio mayor que cero.</p> }
+                  <button type="button" (click)="variantesIniciales.removeAt(i)">Quitar variante {{ i + 1 }}</button>
+                </fieldset>
+              }
+              <button type="button" (click)="agregarVarianteInicial()">Agregar variante inicial</button>
+            </section>
+          }
           <div class="form-actions">
             <button type="button" class="btn btn-outline" (click)="cerrarFormulario()" [disabled]="procesando()">
               <i class="pi pi-times" aria-hidden="true"></i>

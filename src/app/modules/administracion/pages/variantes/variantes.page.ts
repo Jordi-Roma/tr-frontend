@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -8,7 +9,8 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { finalize, Observable } from 'rxjs';
+import { finalize, forkJoin, Observable } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { VarianteResponse, PrecioResponse } from '../../../administracion/models/variante.models';
 import { VarianteService } from '../../../administracion/services/variante.service';
 import { ProductoService } from '../../services/producto.service';
@@ -26,6 +28,8 @@ import { AppDrawerComponent } from '../../../../shared/components/app-drawer/app
 })
 export class VariantesPage implements OnInit {
   protected readonly planEstado = inject(EstadoPlanService);
+  private readonly route = inject(ActivatedRoute);
+  protected readonly filtroProductoId = Number(this.route.snapshot.queryParamMap.get('producto_id')) || null;
   private readonly varianteService = inject(VarianteService);
   private readonly productoService = inject(ProductoService);
   private readonly catalogoService = inject(CatalogoService);
@@ -63,7 +67,7 @@ export class VariantesPage implements OnInit {
         (estado === 'activos' && variante.activo) ||
         (estado === 'inactivos' && !variante.activo);
 
-      return coincideBusqueda && coincideEstado;
+      return coincideBusqueda && coincideEstado && (this.filtroProductoId === null || variante.producto_id === this.filtroProductoId);
     });
   });
 
@@ -78,7 +82,7 @@ export class VariantesPage implements OnInit {
     const filtradas = this.tallas().filter(
       (t) => (t.tipo_prenda || 'SUPERIOR').toUpperCase() === tipo
     );
-    return filtradas.length > 0 ? filtradas : this.tallas();
+    return filtradas;
   });
 
   protected readonly varianteForm = new FormGroup({
@@ -87,10 +91,10 @@ export class VariantesPage implements OnInit {
     color_id: new FormControl<number | null>(null),
     sku: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(80)],
     }),
-    ancho_cm: new FormControl<number | null>(null),
-    largo_cm: new FormControl<number | null>(null),
+    ancho_cm: new FormControl<number | null>(null, [Validators.min(0.01), Validators.max(9999.99)]),
+    largo_cm: new FormControl<number | null>(null, [Validators.min(0.01), Validators.max(9999.99)]),
   });
 
   protected readonly precioForm = new FormGroup({
@@ -107,11 +111,15 @@ export class VariantesPage implements OnInit {
     this.cargando.set(true);
     this.error.set('');
 
-    this.productoService.listarProductos().subscribe(data => this.productos.set(data.filter(p => p.activo)));
-    this.catalogoService.listarTallas().subscribe(data => this.tallas.set(data.filter(t => t.activo)));
-    this.catalogoService.listarColores().subscribe(data => this.colores.set(data.filter(c => c.activo)));
-
-    this.cargarVariantes();
+    forkJoin({ productos: this.productoService.listarProductos(), tallas: this.catalogoService.listarTallas(), colores: this.catalogoService.listarColores() }).subscribe({
+      next: datos => {
+        this.productos.set(datos.productos);
+        this.tallas.set(datos.tallas.filter(t => t.activo));
+        this.colores.set(datos.colores.filter(c => c.activo));
+        this.cargarVariantes();
+      },
+      error: (error: HttpErrorResponse) => { this.cargando.set(false); this.error.set(mensajeApi(error)); },
+    });
   }
 
   private cargarVariantes(): void {
@@ -185,6 +193,10 @@ export class VariantesPage implements OnInit {
 
   protected abrirNuevaVariante(): void {
     this.cancelarEdicion();
+    if (this.filtroProductoId !== null) {
+      this.varianteForm.controls.producto_id.setValue(this.filtroProductoId);
+      this.productoSeleccionadoId.set(this.filtroProductoId);
+    }
     this.formularioAbierto.set(true);
     this.limpiarMensajes();
   }
@@ -204,6 +216,7 @@ export class VariantesPage implements OnInit {
   }
 
   protected guardarVariante(): void {
+    if (this.procesando()) return;
     this.limpiarMensajes();
 
     if (this.varianteForm.invalid) {
@@ -264,6 +277,7 @@ export class VariantesPage implements OnInit {
   }
   
   protected asignarPrecio(): void {
+      if (this.procesando()) return;
       this.limpiarMensajes();
       
       const varianteId = this.varianteEditandoId();
@@ -278,6 +292,10 @@ export class VariantesPage implements OnInit {
       }
       
       const val = this.precioForm.getRawValue();
+      if (val.fecha_inicio && val.fecha_fin && val.fecha_fin.slice(0,10) < val.fecha_inicio.slice(0,10)) {
+        this.error.set('La fecha fin no puede ser anterior a la fecha inicio.');
+        return;
+      }
       if (!val.monto) {
           this.error.set("El monto es obligatorio.");
           return;
@@ -305,6 +323,7 @@ export class VariantesPage implements OnInit {
   }
 
   protected cambiarEstadoVariante(variante: VarianteResponse): void {
+    if (this.procesando() || !window.confirm(`${variante.activo ? 'Desactivar' : 'Activar'} este registro?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const esActivo = variante.activo;
@@ -328,25 +347,25 @@ export class VariantesPage implements OnInit {
     });
   }
 
+  protected estadoPrecio(precio: PrecioResponse): string {
+    if (!precio.activo) return 'Reemplazado';
+    const ahora = new Date();
+    const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth()+1).padStart(2,'0')}-${String(ahora.getDate()).padStart(2,'0')}`;
+    if (precio.fecha_inicio.slice(0,10) > hoy) return 'Programado';
+    if (precio.fecha_fin && precio.fecha_fin.slice(0,10) < hoy) return 'Finalizado';
+    return 'Vigente';
+  }
+
+  protected reintentar(): void {
+    this.cargarDatos();
+  }
+
   private limpiarMensajes(): void {
     this.mensaje.set('');
     this.error.set('');
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const detail = this.obtenerDetail(error.error);
-    return detail !== '' ? detail : 'No se pudo completar la operación. Intenta nuevamente.';
-  }
-
-  private obtenerDetail(error: unknown): string {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'detail' in error &&
-      typeof error.detail === 'string'
-    ) {
-      return error.detail;
-    }
-    return '';
+    return mensajeApi(error);
   }
 }

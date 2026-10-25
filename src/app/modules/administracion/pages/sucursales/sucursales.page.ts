@@ -1,3 +1,4 @@
+import { AuthService } from '../../../autenticacion/services/auth.service';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -25,6 +26,7 @@ import { DeliveryService } from '../../../ventas_inventario/services/delivery.se
   templateUrl: './sucursales.page.html',
 })
 export class SucursalesPage {
+  protected readonly auth = inject(AuthService);
   protected readonly planEstado = inject(EstadoPlanService);
   private readonly ciudadSucursalService = inject(CiudadSucursalService);
   private readonly deliveryService = inject(DeliveryService);
@@ -90,10 +92,10 @@ export class SucursalesPage {
     }),
     telefono: new FormControl<string | null>(null),
     latitud: new FormControl<number | null>(null, {
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.min(-90), Validators.max(90)],
     }),
     longitud: new FormControl<number | null>(null, {
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.min(-180), Validators.max(180)],
     }),
   });
 
@@ -214,7 +216,7 @@ export class SucursalesPage {
             ? 'Sucursal creada correctamente.'
             : 'Sucursal actualizada correctamente.'
         );
-        this.cancelarEdicion();
+        this.cerrarFormulario();
         this.cargarSucursales();
       },
       error: (error: HttpErrorResponse) => {
@@ -224,6 +226,7 @@ export class SucursalesPage {
   }
 
   protected cambiarEstadoSucursal(sucursal: SucursalResponse): void {
+    if (this.procesando() || !window.confirm(`${sucursal.activo ? 'Desactivar' : 'Activar'} ${sucursal.nombre}?`)) return;
     this.limpiarMensajes();
     this.procesando.set(true);
     const operacion = sucursal.activo
@@ -258,7 +261,7 @@ export class SucursalesPage {
     this.error.set('');
 
     this.ciudadSucursalService
-      .listarSucursales()
+      .listarSucursales(true)
       .pipe(finalize(() => this.cargando.set(false)))
       .subscribe({
         next: (sucursales) => {
@@ -329,6 +332,8 @@ export class SucursalesPage {
 
     this.sucursalMarker = L.marker([latitud, longitud], {
       draggable: true,
+      title: 'Ubicación de la sucursal',
+      alt: 'Ubicación de la sucursal',
       icon: L.divIcon({
         className: 'branch-map-marker',
         html: '<span></span>',
@@ -365,6 +370,14 @@ export class SucursalesPage {
     }
     this.sucursalMarker.setLatLng([latitud, longitud]);
     this.sucursalMap.setView([latitud, longitud], Math.max(this.sucursalMap.getZoom(), 14));
+  }
+
+  protected actualizarCoordenadas(): void {
+    const { latitud, longitud } = this.sucursalForm.getRawValue();
+    if (latitud !== null && longitud !== null &&
+        this.sucursalForm.controls.latitud.valid && this.sucursalForm.controls.longitud.valid) {
+      this.sincronizarMapa(latitud, longitud);
+    }
   }
 
   private toNumber(value: number | string): number {
