@@ -1,6 +1,15 @@
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import {
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import * as L from 'leaflet';
 import QRCode from 'qrcode';
@@ -11,7 +20,10 @@ import { ReservaResponse } from '../../models/reservas.models';
 import { CarritoService } from '../../../reservas/services/carrito.service';
 import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publico.service';
 import { ReservasService } from '../../services/reservas.service';
-import { DeliveryCheckoutRequest, DeliveryCotizacionResponse } from '../../../ventas_inventario/models/delivery.models';
+import {
+  DeliveryCheckoutRequest,
+  DeliveryCotizacionResponse,
+} from '../../../ventas_inventario/models/delivery.models';
 import { CheckoutQrResponse } from '../../../ventas_inventario/models/pago.models';
 import { DeliveryService } from '../../../ventas_inventario/services/delivery.service';
 import { PagoService } from '../../../ventas_inventario/services/pago.service';
@@ -73,7 +85,9 @@ export class CarritoPage implements OnInit, OnDestroy {
 
   protected readonly tiempoRestanteQrFormateado = computed(() => {
     const s = this.segundosRestantesQr();
-    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const m = Math.floor(s / 60)
+      .toString()
+      .padStart(2, '0');
     const seg = (s % 60).toString().padStart(2, '0');
     return `${m}:${seg}`;
   });
@@ -81,21 +95,19 @@ export class CarritoPage implements OnInit, OnDestroy {
   protected readonly items = computed(() => this.carrito()?.items ?? []);
   protected readonly subtotal = computed(() => this.toNumber(this.carrito()?.total));
   protected readonly costoDelivery = computed(() =>
-    this.tipoEntrega() === 'DELIVERY' ? this.toNumber(this.cotizacionDelivery()?.costo_delivery) : 0
+    this.tipoEntrega() === 'DELIVERY'
+      ? this.toNumber(this.cotizacionDelivery()?.costo_delivery)
+      : 0,
   );
   protected readonly totalCompra = computed(() => this.subtotal() + this.costoDelivery());
-  protected readonly montoReserva = computed(() => {
-    if (this.tipoEntrega() !== 'RECOJO_SUCURSAL') {
-      return 0;
-    }
-    const dias = this.diasHastaCita();
-    return dias * 10;
-  });
+  protected readonly montoReserva = computed(() => 0);
   protected readonly totalItems = computed(() =>
-    this.items().reduce((total, item) => total + item.cantidad, 0)
+    this.items().reduce((total, item) => total + item.cantidad, 0),
   );
-  protected readonly excedeMaximoReserva = computed(() =>
-    this.tipoEntrega() === 'RECOJO_SUCURSAL' && this.items().some((item) => Number(item.cantidad) > 2)
+  protected readonly excedeMaximoReserva = computed(
+    () =>
+      this.tipoEntrega() === 'RECOJO_SUCURSAL' &&
+      this.items().some((item) => Number(item.cantidad) > 2),
   );
 
   ngOnInit(): void {
@@ -191,7 +203,10 @@ export class CarritoPage implements OnInit, OnDestroy {
       .subscribe({
         next: (resultado) => {
           this.direccionEntrega.set(resultado.direccion);
-          this.actualizarUbicacion(this.toNumber(resultado.latitud), this.toNumber(resultado.longitud));
+          this.actualizarUbicacion(
+            this.toNumber(resultado.latitud),
+            this.toNumber(resultado.longitud),
+          );
           this.cotizarDelivery();
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
@@ -217,9 +232,11 @@ export class CarritoPage implements OnInit, OnDestroy {
       },
       () => {
         this.cotizandoDelivery.set(false);
-        this.error.set('No se pudo obtener tu ubicación. Puedes buscar tu dirección o mover el marcador en el mapa.');
+        this.error.set(
+          'No se pudo obtener tu ubicación. Puedes buscar tu dirección o mover el marcador en el mapa.',
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   }
 
@@ -245,6 +262,7 @@ export class CarritoPage implements OnInit, OnDestroy {
   }
 
   protected confirmarReserva(): void {
+    if (this.guardando()) return;
     const sucursalId = this.sucursalId();
 
     if (sucursalId === null) {
@@ -431,10 +449,16 @@ export class CarritoPage implements OnInit, OnDestroy {
   }
 
   protected entregaLista(): boolean {
+    if (!this.items().length || this.items().some((i) => i.disponible_para_compra === false))
+      return false;
     if (this.tipoEntrega() === 'RECOJO_SUCURSAL') {
       return Boolean(this.fechaCita()) && !this.excedeMaximoReserva();
     }
     return Boolean(this.deliveryCheckout());
+  }
+
+  protected fechaMaximaCita(): string {
+    return this.fechaLocalDesdeHoy(7);
   }
 
   protected fechaMinimaCita(): string {
@@ -468,17 +492,6 @@ export class CarritoPage implements OnInit, OnDestroy {
   private toNumber(value: number | string | null | undefined): number {
     const parsed = Number(value ?? 0);
     return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  private diasHastaCita(): number {
-    const fecha = this.fechaCita();
-    if (!fecha) {
-      return 0;
-    }
-    const hoy = new Date(this.fechaLocalDesdeHoy(0));
-    const cita = new Date(`${fecha}T00:00:00`);
-    const diferencia = cita.getTime() - hoy.getTime();
-    return Math.max(Math.round(diferencia / 86_400_000), 0);
   }
 
   private fechaLocalDesdeHoy(dias: number): string {
@@ -524,7 +537,10 @@ export class CarritoPage implements OnInit, OnDestroy {
     };
   }
 
-  private aplicarCarrito(carrito: CarritoResponse, sucursalesBase: CatalogoSucursal[] | null = null): void {
+  private aplicarCarrito(
+    carrito: CarritoResponse,
+    sucursalesBase: CatalogoSucursal[] | null = null,
+  ): void {
     this.carrito.set(carrito);
     this.tiendaState.reemplazarCarritoDesdeBackend(carrito.items);
     const sucursalesDisponibles = this.sucursalesDesdeCarrito(carrito);
@@ -545,7 +561,7 @@ export class CarritoPage implements OnInit, OnDestroy {
 
   private resolverSucursalInicial(
     carrito: CarritoResponse,
-    sucursales: CatalogoSucursal[]
+    sucursales: CatalogoSucursal[],
   ): number | null {
     const sucursalGuardada = this.tiendaState.sucursalCarrito();
     const idsDisponibles = new Set(sucursales.map((sucursal) => Number(sucursal.id)));
@@ -554,9 +570,10 @@ export class CarritoPage implements OnInit, OnDestroy {
       return sucursalGuardada;
     }
 
-    const sucursalDelCarrito = carrito.items
-      .map((item) => item.sucursal_id)
-      .find((sucursalId) => sucursalId !== null && sucursalId !== undefined) ?? null;
+    const sucursalDelCarrito =
+      carrito.items
+        .map((item) => item.sucursal_id)
+        .find((sucursalId) => sucursalId !== null && sucursalId !== undefined) ?? null;
 
     if (sucursalDelCarrito !== null && idsDisponibles.has(Number(sucursalDelCarrito))) {
       this.tiendaState.seleccionarSucursalCarrito(sucursalDelCarrito);
@@ -570,7 +587,7 @@ export class CarritoPage implements OnInit, OnDestroy {
 
   private filtrarSucursalesDisponibles(
     sucursales: CatalogoSucursal[],
-    carrito: CarritoResponse
+    carrito: CarritoResponse,
   ): CatalogoSucursal[] {
     const sucursalesDelCarrito = this.sucursalesDesdeCarrito(carrito);
     if (sucursalesDelCarrito.length > 0 || carrito.items.length > 0) {
@@ -580,7 +597,9 @@ export class CarritoPage implements OnInit, OnDestroy {
     const sucursalesPorId = new Map<number, CatalogoSucursal>();
     sucursales.forEach((sucursal) => sucursalesPorId.set(Number(sucursal.id), sucursal));
 
-    const itemsConSucursal = carrito.items.filter((item) => item.sucursal_id !== null && item.sucursal_id !== undefined);
+    const itemsConSucursal = carrito.items.filter(
+      (item) => item.sucursal_id !== null && item.sucursal_id !== undefined,
+    );
 
     if (itemsConSucursal.length === 0) {
       return sucursales;
@@ -799,4 +818,3 @@ export class CarritoPage implements OnInit, OnDestroy {
     }
   }
 }
-

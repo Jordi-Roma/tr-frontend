@@ -1,96 +1,249 @@
-<section class="admin-page-shell">
+<section class="admin-page-shell" aria-labelledby="venta-title">
   <div class="admin-page-header">
     <div>
       <p class="admin-eyebrow">Ventas e inventario</p>
-      <h1>Venta presencial</h1>
-      <p>Registra ventas en caja y descuenta stock automáticamente.</p>
-    </div>
-    <div class="filters-row">
-      <label>
-        Sucursal
-        <select [value]="filtroSucursalId() ?? ''" (change)="cambiarFiltroSucursal($event)">
-          <option value="">Todas</option>
-          @for (sucursal of sucursales(); track sucursal.id) {
-            <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
-          }
-        </select>
-      </label>
+      <h1 id="venta-title">Venta presencial</h1>
+      <p>Registra la compra y entrega una nota de venta de tu empresa.</p>
     </div>
   </div>
-
-  @if (mensaje()) { <p class="feedback success">{{ mensaje() }}</p> }
-  @if (error()) { <p class="feedback error">{{ error() }}</p> }
-
+  @if (mensaje()) {
+    <p class="feedback success" role="status">{{ mensaje() }}</p>
+  }
+  @if (error()) {
+    <p class="feedback error" role="alert">{{ error() }}</p>
+  }
+  @if (cargando()) {
+    <p role="status">Cargando ventas…</p>
+  }
   <details class="admin-card form-details">
     <summary>Registrar venta presencial</summary>
     <div class="sale-form">
-    <label>
-      Sucursal
-      <select [value]="form().sucursal_id ?? ''" (change)="actualizarCampo('sucursal_id', $event)">
-        <option value="">Seleccionar</option>
-        @for (sucursal of sucursales(); track sucursal.id) {
-          <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Prenda
-      <select [value]="form().producto_variante_id ?? ''" (change)="actualizarCampo('producto_variante_id', $event)">
-        <option value="">Seleccionar</option>
-        @for (variante of variantes(); track variante.id) {
-          <option [value]="variante.id">{{ etiquetaVariante(variante) }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Cantidad
-      <input type="number" min="1" [value]="form().cantidad" (input)="actualizarCampo('cantidad', $event)" />
-    </label>
-    <label>
-      Descuento
-      <input type="number" min="0" step="0.01" [value]="form().descuento" (input)="actualizarCampo('descuento', $event)" />
-    </label>
-    <label>
-      Pago
-      <select [value]="form().metodo_pago" (change)="actualizarCampo('metodo_pago', $event)">
-        <option value="EFECTIVO">Efectivo</option>
-        <option value="QR">QR</option>
-        <option value="TARJETA">Tarjeta</option>
-      </select>
-    </label>
-    <label>
-      Observación
-      <input type="text" [value]="form().observacion" (input)="actualizarCampo('observacion', $event)" />
-    </label>
-    <button class="primary-action" type="button" [appOperacionNueva]="guardando()" (click)="registrarVenta()">
-      {{ guardando() ? 'Guardando...' : 'Registrar venta' }}
-    </button>
+      <label
+        >Sucursal<select
+          [value]="sucursalId() ?? ''"
+          [disabled]="asignada() !== null || guardando()"
+          (change)="cambiarSucursal($event)"
+        >
+          <option value="">Seleccionar</option>
+          @for (s of sucursales(); track s.id) {
+            <option [value]="s.id" [selected]="s.id === sucursalId()">{{ s.nombre }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Buscar prenda<input
+          type="search"
+          (change)="buscarPrendas(texto($event))"
+          placeholder="Nombre o SKU"
+      /></label>
+      <label
+        >Prenda<select
+          [value]="varianteId() ?? ''"
+          (change)="varianteId.set(numero($event) || null)"
+        >
+          <option value="">Seleccionar</option>
+          @for (v of variantes(); track v.id) {
+            <option [value]="v.id">{{ etiqueta(v) }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Cantidad<input
+          type="number"
+          min="1"
+          step="1"
+          [value]="cantidad()"
+          (input)="cantidad.set(numero($event))"
+      /></label>
+      @if (puedeDescontar()) {
+        <label
+          >Descuento de esta línea (Bs)<input
+            type="number"
+            min="0"
+            step="0.01"
+            [value]="descuento()"
+            (input)="descuento.set(numero($event))"
+        /></label>
+      }
+      <button type="button" class="ghost-button" [disabled]="guardando()" (click)="agregar()">
+        Agregar prenda
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>
+          Prendas de la venta
+        </caption>
+        <thead>
+          <tr>
+            <th>Prenda</th>
+            <th>Cantidad</th>
+            <th>Precio unitario</th>
+            <th>Descuento</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (linea of lineas(); track linea.variante.id) {
+            <tr>
+              <td>
+                {{ linea.variante.producto_nombre }} · {{ linea.variante.talla_nombre }} /
+                {{ linea.variante.color_nombre }}
+              </td>
+              <td>{{ linea.cantidad }}</td>
+              <td>{{ monto(linea.variante.precio) }}</td>
+              <td>{{ monto(linea.descuento) }}</td>
+              <td>
+                <button
+                  type="button"
+                  [disabled]="guardando()"
+                  (click)="quitar(linea.variante.id)"
+                  [attr.aria-label]="'Quitar ' + linea.variante.producto_nombre"
+                >
+                  Quitar
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">Agrega las prendas que compra el cliente.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="sale-form">
+      <label
+        >Buscar cliente<input
+          type="search"
+          (change)="buscarClientes(texto($event))"
+          placeholder="Nombre o correo"
+      /></label>
+      <label
+        >Cliente<select
+          [value]="clienteId() ?? ''"
+          (change)="clienteId.set(numero($event) || null)"
+        >
+          <option value="">Consumidor final</option>
+          @for (c of clientes(); track c.id) {
+            <option [value]="c.id">{{ c.nombre }} — {{ c.correo }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Método de pago<select [value]="metodoPago()" (change)="metodoPago.set(texto($event))">
+          <option value="EFECTIVO">Efectivo</option>
+          <option value="QR">QR</option>
+          <option value="TARJETA">Tarjeta</option>
+          <option value="TRANSFERENCIA">Transferencia</option>
+        </select></label
+      >
+      <label
+        >Observación<input
+          maxlength="1000"
+          [value]="observacion()"
+          (input)="observacion.set(texto($event))"
+      /></label>
+      <p>
+        <strong>Total estimado: {{ monto(total()) }}</strong
+        >. El precio vigente se verifica al registrar.
+      </p>
+      <button
+        class="primary-action"
+        type="button"
+        [appOperacionNueva]="guardando() || lineas().length === 0"
+        (click)="registrarVenta()"
+      >
+        {{ guardando() ? 'Guardando…' : 'Registrar venta' }}
+      </button>
     </div>
   </details>
-
+  @if (esAdmin) {
+    <details class="admin-card form-details">
+      <summary>Identidad y condiciones de las notas de venta</summary>
+      <div class="sale-form">
+        <p>
+          Las notas se emiten con el nombre de tu empresa y los datos de la sucursal. Los cambios
+          siguientes se aplican a futuras notas.
+        </p>
+        <label
+          >Logo de la empresa (PNG o JPG, hasta 2 MB)<input
+            type="file"
+            accept="image/png,image/jpeg"
+            (change)="subirLogo($event)"
+        /></label>
+        <label
+          >Condiciones comerciales<textarea
+            rows="4"
+            maxlength="1500"
+            [value]="condiciones()"
+            (input)="condiciones.set(texto($event))"
+          ></textarea>
+        </label>
+        <button
+          type="button"
+          class="ghost-button"
+          [appOperacionNueva]="false"
+          (click)="guardarCondiciones()"
+        >
+          Guardar condiciones
+        </button>
+      </div>
+    </details>
+  }
   <div class="admin-card table-wrap">
     <table>
+      <caption>
+        Ventas registradas
+      </caption>
       <thead>
         <tr>
-          <th>Fecha</th><th>Código</th><th>Sucursal</th><th>Pago</th><th>Total</th><th>Detalle</th>
+          <th>Fecha</th>
+          <th>Código</th>
+          <th>Sucursal</th>
+          <th>Pago</th>
+          <th>Total</th>
+          <th>Prendas</th>
+          <th>Nota de venta</th>
         </tr>
       </thead>
       <tbody>
         @for (venta of ventas(); track venta.id) {
           <tr>
-            <td>{{ fechaCorta(venta.fecha_venta) }}</td>
-            <td><strong>{{ venta.codigo }}</strong></td>
-            <td>{{ venta.sucursal }}</td>
-            <td><span class="pill">{{ venta.metodo_pago || '-' }}</span></td>
-            <td><strong>{{ monto(venta.total) }}</strong></td>
+            <td>{{ fecha(venta.fecha_venta) }}</td>
             <td>
-              @for (detalle of venta.detalles; track detalle.id) {
-                <div>{{ detalle.producto }} · {{ detalle.talla }} / {{ detalle.color }} x {{ detalle.cantidad }}</div>
+              <strong>{{ venta.codigo }}</strong>
+            </td>
+            <td>{{ venta.sucursal }}</td>
+            <td>{{ venta.metodo_pago }}</td>
+            <td>{{ monto(venta.total) }}</td>
+            <td>
+              @for (d of venta.detalles; track d.id) {
+                <div>{{ d.producto }} · {{ d.talla }} / {{ d.color }} × {{ d.cantidad }}</div>
               }
+            </td>
+            <td>
+              <button
+                type="button"
+                (click)="descargar(venta.id)"
+                [attr.aria-label]="'Descargar nota de ' + venta.codigo"
+              >
+                Descargar PDF
+              </button>
+              <button
+                type="button"
+                [disabled]="guardando()"
+                (click)="enviar(venta.id)"
+                [attr.aria-label]="'Enviar nota de ' + venta.codigo + ' al cliente'"
+              >
+                Enviar al correo
+              </button>
             </td>
           </tr>
         } @empty {
-          <tr><td colspan="6">No hay ventas registradas.</td></tr>
+          <tr>
+            <td colspan="7">No hay ventas registradas.</td>
+          </tr>
         }
       </tbody>
     </table>

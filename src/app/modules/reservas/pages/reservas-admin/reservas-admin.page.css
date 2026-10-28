@@ -346,3 +346,8 @@ td:nth-child(9) {
     grid-template-columns: 1fr;
   }
 }
+
+.sale-close-panel label,
+.sale-close-panel span {
+  color: #414141;
+}

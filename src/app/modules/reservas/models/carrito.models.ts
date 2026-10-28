@@ -13,6 +13,7 @@ export interface CarritoItemResponse {
   precio_unitario: number | string;
   subtotal: number | string;
   stock_disponible: number;
+  disponible_para_compra?: boolean;
 }
 
 export interface CarritoSucursalDisponible {

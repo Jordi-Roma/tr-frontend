@@ -69,6 +69,14 @@ def capturar_correo(destino, asunto, cuerpo):
         captura.write_text(json.dumps(mensajes), encoding='utf-8')
 password_reset_service.enviar_correo = capturar_correo
 
+# Notas de venta: comprobar el adjunto sin enviar correo fuera de la fixture.
+from app.core import email as correo_comercial
+def capturar_nota(destino, asunto, cuerpo, archivo, nombre, emisor):
+    assert destino.endswith('@example.invalid')
+    assert archivo.startswith(b'%PDF') and nombre.endswith('.pdf')
+    assert emisor in asunto and emisor in cuerpo
+correo_comercial.enviar_correo_con_adjunto = capturar_nota
+
 with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
     os.environ['STYLEAR_BACKUP_DIR'] = str(Path(privado)/'copias')
     os.environ['STYLEAR_BACKUP_KEY'] = Fernet.generate_key().decode()
@@ -78,4 +86,6 @@ with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
     os.environ['STRIPE_SECRET_KEY'] = 'MODO_PRUEBA'
     from app.modules.administracion.services import respaldo_service
     respaldo_service.STATIC = Path(privado)/'static'
+    from app.modules.ventas_inventario.services import nota_venta_service
+    nota_venta_service.DIRECTORIO_LOGOS = Path(privado)/'static'/'empresas'
     uvicorn.run('app.main:app',host='127.0.0.1',port=58127,log_level='warning')

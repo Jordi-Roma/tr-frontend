@@ -14,7 +14,12 @@
     <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
     <h2>No se pudo procesar</h2>
     <p>{{ error() }}</p>
-    <button type="button" class="primary-button" (click)="reintentarCarga()" style="margin-top: 1rem;">
+    <button
+      type="button"
+      class="primary-button"
+      (click)="reintentarCarga()"
+      style="margin-top: 1rem"
+    >
       <i class="pi pi-refresh"></i> Reintentar
     </button>
   </section>
@@ -38,7 +43,7 @@
             <h2>{{ item.producto }}</h2>
             <p>{{ item.categoria }} · {{ item.talla }} / {{ item.color }}</p>
             <p>
-              {{ item.sucursal ? (item.ciudad + ' - ' + item.sucursal) : 'Sucursal por confirmar' }}
+              {{ item.sucursal ? item.ciudad + ' - ' + item.sucursal : 'Sucursal por confirmar' }}
             </p>
             <strong>{{ formatPrecio(item.precio_unitario) }}</strong>
             <small>Stock disponible: {{ item.stock_disponible }}</small>
@@ -64,6 +69,11 @@
             </button>
           </div>
 
+          @if (item.disponible_para_compra === false) {
+            <p class="stock-warning" role="status">
+              Esta prenda ya no está disponible. Retírala para continuar.
+            </p>
+          }
           <strong class="line-total">{{ formatPrecio(item.subtotal) }}</strong>
 
           <button
@@ -97,7 +107,9 @@
       @if (tipoEntrega() === 'DELIVERY') {
         <div>
           <span>Delivery</span>
-          <strong>{{ cotizacionDelivery()?.disponible ? formatPrecio(costoDelivery()) : 'Por cotizar' }}</strong>
+          <strong>{{
+            cotizacionDelivery()?.disponible ? formatPrecio(costoDelivery()) : 'Por cotizar'
+          }}</strong>
         </div>
         <div>
           <span>Total</span>
@@ -163,21 +175,43 @@
           </label>
 
           <div class="delivery-map-shell">
-            <div #deliveryMap class="delivery-map" aria-label="Mapa para seleccionar la ubicación de entrega"></div>
+            <div
+              #deliveryMap
+              class="delivery-map"
+              aria-label="Mapa para seleccionar la ubicación de entrega"
+            ></div>
             <div class="delivery-map-legend" aria-hidden="true">
               <span><i class="legend-dot branch"></i>Sucursal</span>
               <span><i class="legend-dot client"></i>Tu ubicación</span>
             </div>
           </div>
-          <small>Busca tu dirección o mueve el marcador en el mapa para ajustar la ubicación de entrega.</small>
+          <small
+            >Busca tu dirección o mueve el marcador en el mapa para ajustar la ubicación de
+            entrega.</small
+          >
 
-          <button type="button" class="secondary-button" [disabled]="cotizandoDelivery()" (click)="buscarDireccion()">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="cotizandoDelivery()"
+            (click)="buscarDireccion()"
+          >
             Buscar ubicación
           </button>
-          <button type="button" class="secondary-button" [disabled]="cotizandoDelivery()" (click)="usarUbicacionActual()">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="cotizandoDelivery()"
+            (click)="usarUbicacionActual()"
+          >
             Usar mi ubicación actual
           </button>
-          <button type="button" class="secondary-button" [disabled]="cotizandoDelivery()" (click)="cotizarDelivery()">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="cotizandoDelivery()"
+            (click)="cotizarDelivery()"
+          >
             Cotizar delivery
           </button>
 
@@ -185,7 +219,9 @@
             <div class="delivery-quote" [class.invalid]="!cotizacion.disponible">
               <span>Distancia: {{ cotizacion.distancia_km }} km</span>
               <span>Tiempo aprox.: {{ cotizacion.tiempo_estimado_min }} min</span>
-              <strong>{{ cotizacion.disponible ? formatPrecio(cotizacion.costo_delivery) : cotizacion.mensaje }}</strong>
+              <strong>{{
+                cotizacion.disponible ? formatPrecio(cotizacion.costo_delivery) : cotizacion.mensaje
+              }}</strong>
             </div>
           }
         </section>
@@ -196,15 +232,19 @@
           <input
             type="date"
             [min]="fechaMinimaCita()"
+            [max]="fechaMaximaCita()"
             [value]="fechaCita()"
             (change)="actualizarFechaCita($event)"
           />
         </label>
 
         <div class="reservation-fee">
-          <span>Anticipo de reserva</span>
+          <span>Reserva gratuita</span>
           <strong>{{ formatMonto(montoReserva()) }}</strong>
-          <small>Se cobra Bs 10 por día hasta tu cita y se descuenta si compras en tienda.</small>
+          <small
+            >Sin anticipo. Apartamos tus prendas durante 7 días desde la creación de la
+            reserva.</small
+          >
         </div>
 
         @if (excedeMaximoReserva()) {
@@ -266,7 +306,7 @@
             (click)="confirmarReserva()"
           >
             <i class="pi pi-calendar-check" aria-hidden="true"></i>
-            Solo reservar (pagar en tienda)
+            Reservar gratis por 7 días
           </button>
         </div>
       } @else {
@@ -292,12 +332,7 @@
           </button>
         }
       }
-      <button
-        type="button"
-        class="secondary-button"
-        [disabled]="guardando()"
-        (click)="vaciar()"
-      >
+      <button type="button" class="secondary-button" [disabled]="guardando()" (click)="vaciar()">
         Vaciar carrito
       </button>
     </aside>
@@ -307,9 +342,16 @@
     <div class="qr-modal-backdrop" (click)="cerrarModalQr()">
       <div class="qr-modal-card" (click)="$event.stopPropagation()">
         <div class="qr-modal-header">
-          <span class="qr-bank-badge"><i class="pi pi-qrcode"></i> {{ checkoutQr()!.banco }} (QR Simple)</span>
+          <span class="qr-bank-badge"
+            ><i class="pi pi-qrcode"></i> {{ checkoutQr()!.banco }} (QR Simple)</span
+          >
           <h3>Pagar con QR Simple</h3>
-          <p>Total a pagar: <strong class="qr-monto-destacado">{{ formatPrecio(checkoutQr()!.monto_total) }}</strong></p>
+          <p>
+            Total a pagar:
+            <strong class="qr-monto-destacado">{{
+              formatPrecio(checkoutQr()!.monto_total)
+            }}</strong>
+          </p>
           <div class="qr-timer-pill">
             <i class="pi pi-clock"></i> Expira en {{ tiempoRestanteQrFormateado() }}
           </div>
@@ -328,8 +370,17 @@
             <span class="qr-info-label">Cuenta:</span>
             <span class="qr-info-val">
               {{ checkoutQr()!.cuenta }}
-              <button type="button" class="qr-copy-btn" (click)="copiarQr(checkoutQr()!.cuenta, 'cuenta')" title="Copiar cuenta">
-                <i class="pi" [class.pi-copy]="copiadoQr() !== 'cuenta'" [class.pi-check]="copiadoQr() === 'cuenta'"></i>
+              <button
+                type="button"
+                class="qr-copy-btn"
+                (click)="copiarQr(checkoutQr()!.cuenta, 'cuenta')"
+                title="Copiar cuenta"
+              >
+                <i
+                  class="pi"
+                  [class.pi-copy]="copiadoQr() !== 'cuenta'"
+                  [class.pi-check]="copiadoQr() === 'cuenta'"
+                ></i>
               </button>
             </span>
           </div>
@@ -337,8 +388,17 @@
             <span class="qr-info-label">Glosa:</span>
             <span class="qr-info-val">
               {{ checkoutQr()!.glosa }}
-              <button type="button" class="qr-copy-btn" (click)="copiarQr(checkoutQr()!.glosa, 'glosa')" title="Copiar glosa">
-                <i class="pi" [class.pi-copy]="copiadoQr() !== 'glosa'" [class.pi-check]="copiadoQr() === 'glosa'"></i>
+              <button
+                type="button"
+                class="qr-copy-btn"
+                (click)="copiarQr(checkoutQr()!.glosa, 'glosa')"
+                title="Copiar glosa"
+              >
+                <i
+                  class="pi"
+                  [class.pi-copy]="copiadoQr() !== 'glosa'"
+                  [class.pi-check]="copiadoQr() === 'glosa'"
+                ></i>
               </button>
             </span>
           </div>
@@ -352,10 +412,20 @@
         }
 
         <div class="qr-modal-actions">
-          <button type="button" class="secondary-button" [disabled]="guardando()" (click)="cerrarModalQr()">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="guardando()"
+            (click)="cerrarModalQr()"
+          >
             Cancelar
           </button>
-          <button type="button" class="primary-button qr-confirm-btn" [disabled]="guardando()" (click)="confirmarPagoQr()">
+          <button
+            type="button"
+            class="primary-button qr-confirm-btn"
+            [disabled]="guardando()"
+            (click)="confirmarPagoQr()"
+          >
             @if (guardando()) {
               <i class="pi pi-spin pi-spinner"></i> Confirmando...
             } @else {
@@ -367,4 +437,3 @@
     </div>
   }
 }
-

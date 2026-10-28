@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
+import { ReintentoComercialService } from '../../../core/services/reintento-comercial.service';
 import {
   CambiarEstadoReservaRequest,
   CrearReservaDesdeCarritoRequest,
@@ -15,17 +16,21 @@ import {
 })
 export class ReservasService {
   private readonly http = inject(HttpClient);
+  private readonly operaciones = inject(ReintentoComercialService);
   private readonly apiUrl = `${API_BASE_URL}/api/v1/reservas`;
 
   crearDesdeCarrito(request: CrearReservaDesdeCarritoRequest): Observable<ReservaResponse> {
-    return this.http.post<ReservaResponse>(`${this.apiUrl}/desde-carrito`, request);
+    return this.operaciones.post<ReservaResponse>(`${this.apiUrl}/desde-carrito`, request);
   }
 
   listarMisReservas(): Observable<ReservaResponse[]> {
     return this.http.get<ReservaResponse[]>(`${this.apiUrl}/mis-reservas`);
   }
 
-  listarReservas(estado?: string | null, sucursalId?: number | null): Observable<ReservaResponse[]> {
+  listarReservas(
+    estado?: string | null,
+    sucursalId?: number | null,
+  ): Observable<ReservaResponse[]> {
     let params = new HttpParams();
 
     if (estado) {
@@ -59,7 +64,10 @@ export class ReservasService {
     return this.http.post<ReservaPagoResponse>(`${this.apiUrl}/${id}/anticipo/stripe`, {});
   }
 
-  finalizarMiReserva(id: number, request: FinalizarReservaRequest): Observable<ReservaPagoResponse> {
+  finalizarMiReserva(
+    id: number,
+    request: FinalizarReservaRequest,
+  ): Observable<ReservaPagoResponse> {
     return this.http.post<ReservaPagoResponse>(`${this.apiUrl}/${id}/finalizar`, request);
   }
 }

@@ -339,7 +339,6 @@ h1 {
   color: #fff !important;
 }
 
-
 .success-message {
   border-radius: 16px;
   padding: 10px 12px;
@@ -399,4 +398,17 @@ h1 {
   .payment-summary {
     grid-template-columns: 1fr;
   }
+}
+
+.payment-panel p,
+.payment-panel label,
+.payment-summary span {
+  color: #414141;
+}
+.qr-confirm-btn {
+  background: #166534 !important;
+}
+
+.danger-button {
+  background: #b93828;
 }

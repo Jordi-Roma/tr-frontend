@@ -8,10 +8,16 @@
     <div class="filters-row">
       <label>
         Sucursal
-        <select [value]="filtroSucursalId() ?? ''" (change)="cambiarFiltroSucursal($event)">
+        <select
+          [disabled]="sucursalAsignada() !== null"
+          [value]="filtroSucursalId() ?? ''"
+          (change)="cambiarFiltroSucursal($event)"
+        >
           <option value="">Todas</option>
           @for (sucursal of sucursales(); track sucursal.id) {
-            <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
+            <option [value]="sucursal.id" [selected]="sucursal.id === filtroSucursalId()">
+              {{ sucursal.ciudad }} - {{ sucursal.nombre }}
+            </option>
           }
         </select>
       </label>
@@ -27,68 +33,115 @@
     </div>
   </div>
 
-  @if (mensaje()) { <p class="feedback success">{{ mensaje() }}</p> }
-  @if (error()) { <p class="feedback error">{{ error() }}</p> }
+  @if (mensaje()) {
+    <p class="feedback success" role="status">{{ mensaje() }}</p>
+  }
+  @if (error()) {
+    <p class="feedback error" role="alert">{{ error() }}</p>
+  }
 
   <details class="admin-card form-details">
     <summary>Registrar movimiento</summary>
     <div class="movement-form">
-    <label>
-      Sucursal
-      <select [value]="form().sucursal_id ?? ''" (change)="actualizarCampo('sucursal_id', $event)">
-        <option value="">Seleccionar</option>
-        @for (sucursal of sucursales(); track sucursal.id) {
-          <option [value]="sucursal.id">{{ sucursal.ciudad }} - {{ sucursal.nombre }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Prenda
-      <select [value]="form().producto_variante_id ?? ''" (change)="actualizarCampo('producto_variante_id', $event)">
-        <option value="">Seleccionar</option>
-        @for (variante of variantes(); track variante.id) {
-          <option [value]="variante.id">{{ etiquetaVariante(variante) }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Tipo
-      <select [value]="form().tipo" (change)="actualizarCampo('tipo', $event)">
-        @for (tipo of tipos; track tipo) {
-          <option [value]="tipo">{{ tipo }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Cantidad
-      <input type="number" min="1" [value]="form().cantidad" (input)="actualizarCampo('cantidad', $event)" />
-    </label>
-    @if (form().tipo === 'ENTRADA') {
       <label>
-        Proveedor
-        <select [value]="form().proveedor_id ?? ''" (change)="actualizarCampo('proveedor_id', $event)">
-          <option value="">Sin proveedor específico</option>
-          @for (proveedor of proveedores(); track proveedor.id) {
-            <option [value]="proveedor.id">{{ proveedor.nombre }}</option>
+        Sucursal
+        <select
+          [disabled]="sucursalAsignada() !== null"
+          [value]="form().sucursal_id ?? ''"
+          (change)="actualizarCampo('sucursal_id', $event)"
+        >
+          <option value="">Seleccionar</option>
+          @for (sucursal of sucursales(); track sucursal.id) {
+            <option [value]="sucursal.id" [selected]="sucursal.id === form().sucursal_id">
+              {{ sucursal.ciudad }} - {{ sucursal.nombre }}
+            </option>
           }
         </select>
       </label>
-    }
-    <label>
-      Motivo
-      <input type="text" [value]="form().motivo" (input)="actualizarCampo('motivo', $event)" placeholder="Compra, ajuste, merma..." />
-    </label>
-    <button class="primary-action" type="button" [appOperacionNueva]="guardando()" (click)="registrarMovimiento()">
-      {{ guardando() ? 'Guardando...' : 'Registrar movimiento' }}
-    </button>
+      <label
+        >Buscar prenda por nombre o SKU<input type="search" (change)="buscarPrendas($event)"
+      /></label>
+      <label>
+        Prenda
+        <select
+          [value]="form().producto_variante_id ?? ''"
+          (change)="actualizarCampo('producto_variante_id', $event)"
+        >
+          <option value="">Seleccionar</option>
+          @for (variante of variantes(); track variante.id) {
+            <option [value]="variante.id">{{ etiquetaVariante(variante) }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Tipo
+        <select [value]="form().tipo" (change)="actualizarCampo('tipo', $event)">
+          @for (tipo of tipos; track tipo) {
+            <option [value]="tipo">{{ tipo }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Cantidad
+        <input
+          type="number"
+          min="1"
+          [value]="form().cantidad"
+          (input)="actualizarCampo('cantidad', $event)"
+        />
+      </label>
+      @if (form().tipo === 'ENTRADA') {
+        <label>
+          Proveedor
+          <select
+            [value]="form().proveedor_id ?? ''"
+            (change)="actualizarCampo('proveedor_id', $event)"
+          >
+            <option value="">Sin proveedor específico</option>
+            @for (proveedor of proveedores(); track proveedor.id) {
+              <option [value]="proveedor.id">{{ proveedor.nombre }}</option>
+            }
+          </select>
+        </label>
+      }
+      <label>
+        Motivo
+        <input
+          type="text"
+          [value]="form().motivo"
+          (input)="actualizarCampo('motivo', $event)"
+          placeholder="Compra, ajuste, merma..."
+        />
+      </label>
+      <button
+        class="primary-action"
+        type="button"
+        [appOperacionNueva]="guardando()"
+        (click)="registrarMovimiento()"
+      >
+        {{ guardando() ? 'Guardando...' : 'Registrar movimiento' }}
+      </button>
     </div>
   </details>
 
-  <div class="admin-card table-wrap">
+  <div
+    class="admin-card table-wrap"
+    tabindex="0"
+    role="region"
+    aria-label="Tabla de movimientos inventario"
+  >
     <table class="movements-table">
       <thead>
         <tr>
-          <th>Fecha</th><th>Sucursal</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock anterior</th><th>Stock nuevo</th><th>Proveedor</th><th>Motivo</th>
+          <th>Fecha</th>
+          <th>Sucursal</th>
+          <th>Producto</th>
+          <th>Tipo</th>
+          <th>Cantidad</th>
+          <th>Stock anterior</th>
+          <th>Stock nuevo</th>
+          <th>Proveedor</th>
+          <th>Motivo</th>
         </tr>
       </thead>
       <tbody>
@@ -97,15 +150,21 @@
             <td>{{ fechaCorta(movimiento.fecha_movimiento) }}</td>
             <td>{{ movimiento.ciudad }} - {{ movimiento.sucursal }}</td>
             <td>{{ movimiento.producto }} · {{ movimiento.talla }} / {{ movimiento.color }}</td>
-            <td><span class="pill">{{ movimiento.tipo }}</span></td>
+            <td>
+              <span class="pill">{{ movimiento.tipo }}</span>
+            </td>
             <td>{{ movimiento.cantidad }}</td>
             <td>{{ movimiento.stock_anterior }}</td>
-            <td><strong>{{ movimiento.stock_nuevo }}</strong></td>
+            <td>
+              <strong>{{ movimiento.stock_nuevo }}</strong>
+            </td>
             <td>{{ movimiento.proveedor || '-' }}</td>
             <td>{{ movimiento.motivo || '-' }}</td>
           </tr>
         } @empty {
-          <tr><td colspan="9">No hay movimientos registrados.</td></tr>
+          <tr>
+            <td colspan="9">No hay movimientos registrados.</td>
+          </tr>
         }
       </tbody>
     </table>

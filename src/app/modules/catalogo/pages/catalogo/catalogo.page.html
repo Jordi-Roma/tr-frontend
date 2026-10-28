@@ -124,9 +124,7 @@
     Solo disponibles
   </label>
 
-  <button type="button" class="clear-button" (click)="limpiarFiltros()">
-    Limpiar
-  </button>
+  <button type="button" class="clear-button" (click)="limpiarFiltros()">Limpiar</button>
 </section>
 
 @if (cargando()) {
@@ -158,7 +156,7 @@
           @if (item.imagen_principal) {
             <img [src]="item.imagen_principal" [alt]="item.nombre" class="catalog-thumb-img" />
           } @else {
-            <span>{{ inicialesCategoria(item) }}</span>
+            <i class="pi pi-image" aria-hidden="true"></i>
           }
         </a>
 
@@ -186,7 +184,7 @@
             }
             <strong>{{ formatPrecio(item.precio_final ?? item.precio_vigente) }}</strong>
           </div>
-          <span>{{ item.marca || 'StyleAR' }}</span>
+          <span>{{ item.marca || 'Sin marca' }}</span>
         </div>
 
         @if (item.tiene_promocion) {
@@ -218,7 +216,12 @@
           }
         </div>
 
-        <button [appOperacionNueva]="false" type="button" class="cart-button" (click)="agregarAlCarrito(item)">
+        <button
+          [appOperacionNueva]="false"
+          type="button"
+          class="cart-button"
+          (click)="agregarAlCarrito(item)"
+        >
           <i class="pi pi-shopping-cart" aria-hidden="true"></i>
           Elegir variante
         </button>

@@ -174,7 +174,7 @@ export class MainLayout {
           label: 'Reservas',
           path: '/reservas-admin',
           icon: 'pi pi-calendar-check',
-          roles: ADMIN_O_ENCARGADO,
+          roles: ADMIN_ENCARGADO_CAJERO,
         },
       ],
     },

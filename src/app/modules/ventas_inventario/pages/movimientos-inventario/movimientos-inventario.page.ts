@@ -5,31 +5,37 @@ import { finalize, forkJoin } from 'rxjs';
 import { CatalogoSucursal } from '../../../catalogo/models/catalogo-publico.models';
 import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publico.service';
 import { MovimientoInventarioResponse } from '../../models/inventario.models';
-import { VarianteResponse } from '../../../administracion/models/variante.models';
+import { VarianteVenta } from '../../services/ventas.service';
 import { ProveedorResponse } from '../../../administracion/models/proveedor.models';
 import { InventarioService } from '../../services/inventario.service';
 import { ProveedorService } from '../../../administracion/services/proveedor.service';
-import { VarianteService } from '../../../administracion/services/variante.service';
+import { VentasService } from '../../services/ventas.service';
 
-type MovimientoCampo = 'sucursal_id' | 'producto_variante_id' | 'tipo' | 'cantidad' | 'motivo' | 'proveedor_id';
+type MovimientoCampo =
+  'sucursal_id' | 'producto_variante_id' | 'tipo' | 'cantidad' | 'motivo' | 'proveedor_id';
 
 @Component({
   imports: [OperacionNuevaDirective],
   selector: 'app-movimientos-inventario-page',
-  styleUrls: ['../../../administracion/pages/admin-crud.shared.css', './movimientos-inventario.page.css'],
+  styleUrls: [
+    '../../../administracion/pages/admin-crud.shared.css',
+    './movimientos-inventario.page.css',
+  ],
   templateUrl: './movimientos-inventario.page.html',
 })
 export class MovimientosInventarioPage implements OnInit {
   private readonly inventarioService = inject(InventarioService);
   private readonly catalogoService = inject(CatalogoPublicoService);
-  private readonly varianteService = inject(VarianteService);
+  private readonly varianteService = inject(VentasService);
   private readonly proveedorService = inject(ProveedorService);
 
   protected readonly tipos = ['ENTRADA', 'SALIDA', 'AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO'];
   protected readonly movimientos = signal<MovimientoInventarioResponse[]>([]);
   protected readonly sucursales = signal<CatalogoSucursal[]>([]);
-  protected readonly variantes = signal<VarianteResponse[]>([]);
-  protected readonly proveedores = signal<Pick<ProveedorResponse, 'id' | 'nombre' | 'activo'>[]>([]);
+  protected readonly variantes = signal<VarianteVenta[]>([]);
+  protected readonly proveedores = signal<Pick<ProveedorResponse, 'id' | 'nombre' | 'activo'>[]>(
+    [],
+  );
   protected readonly filtroSucursalId = signal<number | null>(null);
   protected readonly tipoFiltro = signal('');
   protected readonly form = signal({
@@ -40,6 +46,7 @@ export class MovimientosInventarioPage implements OnInit {
     motivo: '',
     proveedor_id: null as number | null,
   });
+  protected readonly sucursalAsignada = signal<number | null>(null);
   protected readonly cargando = signal(false);
   protected readonly guardando = signal(false);
   protected readonly error = signal('');
@@ -65,8 +72,10 @@ export class MovimientosInventarioPage implements OnInit {
     const parsedValue = ['sucursal_id', 'producto_variante_id', 'cantidad'].includes(campo)
       ? Number(value)
       : campo === 'proveedor_id'
-        ? (value === '' ? null : Number(value))
-      : value;
+        ? value === ''
+          ? null
+          : Number(value)
+        : value;
     this.form.update((actual) => ({
       ...actual,
       [campo]: parsedValue,
@@ -75,6 +84,7 @@ export class MovimientosInventarioPage implements OnInit {
   }
 
   protected registrarMovimiento(): void {
+    if (this.guardando()) return;
     const data = this.form();
     if (!data.sucursal_id || !data.producto_variante_id || data.cantidad <= 0) {
       this.error.set('Selecciona sucursal, variante y una cantidad válida.');
@@ -104,7 +114,15 @@ export class MovimientosInventarioPage implements OnInit {
       });
   }
 
-  protected etiquetaVariante(variante: VarianteResponse): string {
+  protected buscarPrendas(event: Event): void {
+    const q = (event.target as HTMLInputElement).value;
+    this.varianteService.opciones(this.sucursalAsignada(), q).subscribe({
+      next: (r) => this.variantes.set(r.variantes),
+      error: (e: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(e)),
+    });
+  }
+
+  protected etiquetaVariante(variante: VarianteVenta): string {
     const detalle = [variante.talla_nombre, variante.color_nombre].filter(Boolean).join(' / ');
     return `${variante.producto_nombre} - ${detalle || variante.sku}`;
   }
@@ -117,15 +135,20 @@ export class MovimientosInventarioPage implements OnInit {
     this.cargando.set(true);
     forkJoin({
       sucursales: this.catalogoService.listarSucursales(),
-      variantes: this.varianteService.listarVariantes(),
+      opciones: this.varianteService.opciones(),
       proveedores: this.proveedorService.opcionesInventario(),
       movimientos: this.inventarioService.listarMovimientos(),
     })
       .pipe(finalize(() => this.cargando.set(false)))
       .subscribe({
-        next: ({ sucursales, variantes, proveedores, movimientos }) => {
-          this.sucursales.set(sucursales);
-          this.variantes.set(variantes.filter((variante) => variante.activo));
+        next: ({ sucursales, opciones, proveedores, movimientos }) => {
+          this.sucursales.set(
+            sucursales.filter((s) => opciones.sucursales.some((o) => o.id === s.id)),
+          );
+          this.variantes.set(opciones.variantes);
+          this.sucursalAsignada.set(opciones.sucursal_asignada);
+          this.form.update((f) => ({ ...f, sucursal_id: opciones.sucursal_asignada }));
+          this.filtroSucursalId.set(opciones.sucursal_asignada);
           this.proveedores.set(proveedores.filter((proveedor) => proveedor.activo));
           this.movimientos.set(movimientos);
         },
@@ -149,6 +172,8 @@ export class MovimientosInventarioPage implements OnInit {
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    return typeof error.error?.detail === 'string' ? error.error.detail : 'No se pudo procesar inventario.';
+    return typeof error.error?.detail === 'string'
+      ? error.error.detail
+      : 'No se pudo procesar inventario.';
   }
 }

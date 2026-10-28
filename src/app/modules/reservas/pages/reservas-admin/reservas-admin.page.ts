@@ -1,3 +1,5 @@
+import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
+import { VentasService } from '../../../ventas_inventario/services/ventas.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { finalize } from 'rxjs';
@@ -7,15 +9,25 @@ import { ReservaResponse } from '../../models/reservas.models';
 import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publico.service';
 import { ReservasService } from '../../services/reservas.service';
 
-const ESTADOS = ['PENDIENTE_ANTICIPO', 'PENDIENTE', 'PREPARADA', 'EN_ATENCION', 'COMPLETADA', 'CANCELADA', 'VENCIDA'];
+const ESTADOS = [
+  'PENDIENTE_ANTICIPO',
+  'PENDIENTE',
+  'PREPARADA',
+  'EN_ATENCION',
+  'COMPLETADA',
+  'CANCELADA',
+  'VENCIDA',
+];
 
 @Component({
+  imports: [AppModalComponent],
   selector: 'app-reservas-admin-page',
   styleUrls: ['../../../administracion/pages/admin-crud.shared.css', './reservas-admin.page.css'],
   templateUrl: './reservas-admin.page.html',
 })
 export class ReservasAdminPage implements OnInit {
   private readonly reservasService = inject(ReservasService);
+  private readonly ventasService = inject(VentasService);
   private readonly catalogoService = inject(CatalogoPublicoService);
   private readonly authService = inject(AuthService);
 
@@ -53,7 +65,7 @@ export class ReservasAdminPage implements OnInit {
   protected verDetalle(reserva: ReservaResponse): void {
     this.reservaSeleccionada.set(reserva);
     this.cantidadesVenta.set(
-      Object.fromEntries(reserva.detalles.map((detalle) => [detalle.id, detalle.cantidad]))
+      Object.fromEntries(reserva.detalles.map((detalle) => [detalle.id, detalle.cantidad])),
     );
     this.metodoPago.set('EFECTIVO');
     this.observacionVenta.set('');
@@ -63,6 +75,37 @@ export class ReservasAdminPage implements OnInit {
     this.reservaSeleccionada.set(null);
     this.cantidadesVenta.set({});
     this.observacionVenta.set('');
+  }
+
+  protected estadosDisponibles(reserva: ReservaResponse): string[] {
+    const siguientes: Record<string, string[]> = {
+      PENDIENTE_ANTICIPO: ['CANCELADA'],
+      PENDIENTE: ['PREPARADA', 'CANCELADA'],
+      PREPARADA: ['EN_ATENCION', 'CANCELADA'],
+      EN_ATENCION: ['CANCELADA'],
+    };
+    const permitidos = siguientes[reserva.estado] ?? [];
+    const puedeCancelar =
+      this.authService.tieneRol('ADMINISTRADOR') || this.authService.tieneRol('ENCARGADO_SUCURSAL');
+    return [reserva.estado, ...permitidos.filter((e) => e !== 'CANCELADA' || puedeCancelar)];
+  }
+
+  protected cantidadDesdeEvento(id: number, event: Event, maximo: number): void {
+    this.actualizarCantidadVenta(id, (event.target as HTMLInputElement).value, maximo);
+  }
+
+  protected descargarNota(id: number): void {
+    this.ventasService.descargarNota(id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nota-venta-${id}.pdf`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      },
+      error: () => this.error.set('No se pudo descargar la nota de venta.'),
+    });
   }
 
   protected cambiarEstado(reserva: ReservaResponse, event: Event): void {
@@ -82,10 +125,10 @@ export class ReservasAdminPage implements OnInit {
       .subscribe({
         next: (actualizada) => {
           this.reservas.update((items) =>
-            items.map((item) => (item.id === actualizada.id ? actualizada : item))
+            items.map((item) => (item.id === actualizada.id ? actualizada : item)),
           );
           this.reservaSeleccionada.update((item) =>
-            item?.id === actualizada.id ? actualizada : item
+            item?.id === actualizada.id ? actualizada : item,
           );
           this.mensaje.set(`Reserva ${actualizada.codigo} actualizada a ${actualizada.estado}.`);
         },
@@ -127,9 +170,11 @@ export class ReservasAdminPage implements OnInit {
 
   protected puedeFinalizar(reserva: ReservaResponse): boolean {
     const requiereAnticipo = Number(reserva.monto_reserva ?? 0) > 0 && !reserva.anticipo_pagado;
-    return !requiereAnticipo
-      && !['COMPLETADA', 'CANCELADA', 'VENCIDA', 'PENDIENTE_ANTICIPO'].includes(reserva.estado)
-      && this.subtotalVenta(reserva) > 0;
+    return (
+      !requiereAnticipo &&
+      !['COMPLETADA', 'CANCELADA', 'VENCIDA', 'PENDIENTE_ANTICIPO'].includes(reserva.estado) &&
+      reserva.detalles.some((d) => (this.cantidadesVenta()[d.id] ?? 0) > 0)
+    );
   }
 
   protected finalizarVenta(reserva: ReservaResponse): void {
@@ -156,7 +201,7 @@ export class ReservasAdminPage implements OnInit {
           this.reservas.update((items) =>
             ['COMPLETADA', 'CANCELADA', 'VENCIDA'].includes(actualizada.estado)
               ? items.filter((item) => item.id !== actualizada.id)
-              : items.map((item) => (item.id === actualizada.id ? actualizada : item))
+              : items.map((item) => (item.id === actualizada.id ? actualizada : item)),
           );
           this.reservaSeleccionada.set(actualizada);
           this.mensaje.set(`Reserva ${actualizada.codigo} cerrada como venta presencial.`);

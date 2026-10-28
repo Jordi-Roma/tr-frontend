@@ -47,6 +47,7 @@ export function esOperacionNueva(metodo: string, ruta: string): boolean {
   )
     return false;
   if (/^\/api\/v1\/pagos\/(qr\/confirmar|stripe\/confirmar-prueba)\/\d+$/.test(ruta)) return false;
+  if (/^\/api\/v1\/ventas-presenciales\/\d+\/nota\/correo$/.test(ruta)) return false;
   if (
     /^\/api\/v1\/reservas\/\d+\/(cancelar|estado|anticipo\/stripe|finalizar|finalizar-venta)$/.test(
       ruta,

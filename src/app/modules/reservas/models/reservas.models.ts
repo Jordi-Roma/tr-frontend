@@ -20,6 +20,7 @@ export interface ReservaResponse {
   sucursal: string;
   ciudad: string;
   estado: string;
+  es_gratuita?: boolean;
   total: number | string;
   monto_reserva: number | string;
   monto_aplicado: number | string;

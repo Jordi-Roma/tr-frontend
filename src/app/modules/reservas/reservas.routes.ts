@@ -36,7 +36,7 @@ export const RESERVAS_ROUTES: Routes = [
     component: ReservasAdminPage,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL'],
+      roles: ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL', 'CAJERO'],
     },
   },
 ];

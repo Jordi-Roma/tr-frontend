@@ -5,26 +5,34 @@ import { finalize, forkJoin } from 'rxjs';
 import { CatalogoSucursal } from '../../../catalogo/models/catalogo-publico.models';
 import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publico.service';
 import { TransferenciaResponse } from '../../models/inventario.models';
-import { VarianteResponse } from '../../../administracion/models/variante.models';
+import { VarianteVenta } from '../../services/ventas.service';
 import { InventarioService } from '../../services/inventario.service';
-import { VarianteService } from '../../../administracion/services/variante.service';
+import { VentasService } from '../../services/ventas.service';
 
-type TransferenciaCampo = 'sucursal_origen_id' | 'sucursal_destino_id' | 'producto_variante_id' | 'cantidad' | 'observacion';
+type TransferenciaCampo =
+  | 'sucursal_origen_id'
+  | 'sucursal_destino_id'
+  | 'producto_variante_id'
+  | 'cantidad'
+  | 'observacion';
 
 @Component({
   imports: [OperacionNuevaDirective],
   selector: 'app-transferencias-stock-page',
-  styleUrls: ['../../../administracion/pages/admin-crud.shared.css', './transferencias-stock.page.css'],
+  styleUrls: [
+    '../../../administracion/pages/admin-crud.shared.css',
+    './transferencias-stock.page.css',
+  ],
   templateUrl: './transferencias-stock.page.html',
 })
 export class TransferenciasStockPage implements OnInit {
   private readonly inventarioService = inject(InventarioService);
   private readonly catalogoService = inject(CatalogoPublicoService);
-  private readonly varianteService = inject(VarianteService);
+  private readonly varianteService = inject(VentasService);
 
   protected readonly transferencias = signal<TransferenciaResponse[]>([]);
   protected readonly sucursales = signal<CatalogoSucursal[]>([]);
-  protected readonly variantes = signal<VarianteResponse[]>([]);
+  protected readonly variantes = signal<VarianteVenta[]>([]);
   protected readonly filtroSucursalId = signal<number | null>(null);
   protected readonly form = signal({
     sucursal_origen_id: null as number | null,
@@ -33,6 +41,7 @@ export class TransferenciasStockPage implements OnInit {
     cantidad: 1,
     observacion: '',
   });
+  protected readonly sucursalAsignada = signal<number | null>(null);
   protected readonly cargando = signal(false);
   protected readonly guardando = signal(false);
   protected readonly error = signal('');
@@ -55,8 +64,14 @@ export class TransferenciasStockPage implements OnInit {
   }
 
   protected crearTransferencia(): void {
+    if (this.guardando()) return;
     const data = this.form();
-    if (!data.sucursal_origen_id || !data.sucursal_destino_id || !data.producto_variante_id || data.cantidad <= 0) {
+    if (
+      !data.sucursal_origen_id ||
+      !data.sucursal_destino_id ||
+      !data.producto_variante_id ||
+      data.cantidad <= 0
+    ) {
       this.error.set('Completa origen, destino, prenda y cantidad.');
       return;
     }
@@ -79,14 +94,27 @@ export class TransferenciasStockPage implements OnInit {
       .subscribe({
         next: () => {
           this.mensaje.set('Transferencia registrada y stock actualizado.');
-          this.form.update((actual) => ({ ...actual, producto_variante_id: null, cantidad: 1, observacion: '' }));
+          this.form.update((actual) => ({
+            ...actual,
+            producto_variante_id: null,
+            cantidad: 1,
+            observacion: '',
+          }));
           this.cargarTransferencias();
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
       });
   }
 
-  protected etiquetaVariante(variante: VarianteResponse): string {
+  protected buscarPrendas(event: Event): void {
+    const q = (event.target as HTMLInputElement).value;
+    this.varianteService.opciones(this.sucursalAsignada(), q).subscribe({
+      next: (r) => this.variantes.set(r.variantes),
+      error: (e: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(e)),
+    });
+  }
+
+  protected etiquetaVariante(variante: VarianteVenta): string {
     const detalle = [variante.talla_nombre, variante.color_nombre].filter(Boolean).join(' / ');
     return `${variante.producto_nombre} - ${detalle || variante.sku}`;
   }
@@ -99,14 +127,17 @@ export class TransferenciasStockPage implements OnInit {
     this.cargando.set(true);
     forkJoin({
       sucursales: this.catalogoService.listarSucursales(),
-      variantes: this.varianteService.listarVariantes(),
+      opciones: this.varianteService.opciones(),
       transferencias: this.inventarioService.listarTransferencias(),
     })
       .pipe(finalize(() => this.cargando.set(false)))
       .subscribe({
-        next: ({ sucursales, variantes, transferencias }) => {
+        next: ({ sucursales, opciones, transferencias }) => {
           this.sucursales.set(sucursales);
-          this.variantes.set(variantes.filter((variante) => variante.activo));
+          this.variantes.set(opciones.variantes);
+          this.sucursalAsignada.set(opciones.sucursal_asignada);
+          this.form.update((f) => ({ ...f, sucursal_origen_id: opciones.sucursal_asignada }));
+          this.filtroSucursalId.set(opciones.sucursal_asignada);
           this.transferencias.set(transferencias);
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
@@ -126,6 +157,8 @@ export class TransferenciasStockPage implements OnInit {
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    return typeof error.error?.detail === 'string' ? error.error.detail : 'No se pudo procesar la transferencia.';
+    return typeof error.error?.detail === 'string'
+      ? error.error.detail
+      : 'No se pudo procesar la transferencia.';
   }
 }

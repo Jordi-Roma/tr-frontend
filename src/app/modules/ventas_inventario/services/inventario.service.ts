@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
+import { ReintentoComercialService } from '../../../core/services/reintento-comercial.service';
 import {
   CrearTransferenciaRequest,
   InventarioResponse,
@@ -13,6 +14,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class InventarioService {
   private readonly http = inject(HttpClient);
+  private readonly operaciones = inject(ReintentoComercialService);
   private readonly apiUrl = `${API_BASE_URL}/api/v1`;
 
   listarInventario(filtros: Record<string, unknown> = {}): Observable<InventarioResponse[]> {
@@ -27,14 +29,21 @@ export class InventarioService {
     });
   }
 
-  listarMovimientos(filtros: Record<string, unknown> = {}): Observable<MovimientoInventarioResponse[]> {
+  listarMovimientos(
+    filtros: Record<string, unknown> = {},
+  ): Observable<MovimientoInventarioResponse[]> {
     return this.http.get<MovimientoInventarioResponse[]>(`${this.apiUrl}/movimientos-inventario`, {
       params: this.toParams(filtros),
     });
   }
 
-  registrarMovimiento(request: MovimientoInventarioRequest): Observable<MovimientoInventarioResponse> {
-    return this.http.post<MovimientoInventarioResponse>(`${this.apiUrl}/movimientos-inventario`, request);
+  registrarMovimiento(
+    request: MovimientoInventarioRequest,
+  ): Observable<MovimientoInventarioResponse> {
+    return this.operaciones.post<MovimientoInventarioResponse>(
+      `${this.apiUrl}/movimientos-inventario`,
+      request,
+    );
   }
 
   listarTransferencias(sucursalId?: number | null): Observable<TransferenciaResponse[]> {
@@ -44,7 +53,10 @@ export class InventarioService {
   }
 
   crearTransferencia(request: CrearTransferenciaRequest): Observable<TransferenciaResponse> {
-    return this.http.post<TransferenciaResponse>(`${this.apiUrl}/transferencias-stock`, request);
+    return this.operaciones.post<TransferenciaResponse>(
+      `${this.apiUrl}/transferencias-stock`,
+      request,
+    );
   }
 
   private toParams(filtros: Record<string, unknown>): HttpParams {

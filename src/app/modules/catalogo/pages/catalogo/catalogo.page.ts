@@ -3,7 +3,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
-import { TiendaProductoItem, TiendaStateService } from '../../../../core/services/tienda-state.service';
+import {
+  TiendaProductoItem,
+  TiendaStateService,
+} from '../../../../core/services/tienda-state.service';
 import { AuthService } from '../../../autenticacion/services/auth.service';
 import {
   CatalogoPrendaItem,
@@ -56,9 +59,7 @@ export class CatalogoPage implements OnInit {
   ngOnInit(): void {
     const categoriaRuta = this.route.snapshot.data['categoria'];
     const busquedaRuta =
-      typeof categoriaRuta === 'string' && categoriaRuta.trim() !== ''
-        ? categoriaRuta
-        : '';
+      typeof categoriaRuta === 'string' && categoriaRuta.trim() !== '' ? categoriaRuta : '';
 
     this.route.queryParamMap.subscribe((params) => {
       this.busqueda.set(params.get('q')?.trim() || busquedaRuta);
@@ -147,7 +148,8 @@ export class CatalogoPage implements OnInit {
       ? this.recomendacionesService.quitarFavorito(item.producto_id)
       : this.recomendacionesService.guardarFavorito(item.producto_id);
     llamada.subscribe({
-      next: (items) => this.tiendaState.reemplazarFavoritos(items.map((prenda) => this.toTiendaItem(prenda))),
+      next: (items) =>
+        this.tiendaState.reemplazarFavoritos(items.map((prenda) => this.toTiendaItem(prenda))),
       error: () => this.error.set('No se pudo actualizar el favorito.'),
     });
   }
@@ -159,10 +161,6 @@ export class CatalogoPage implements OnInit {
   protected formatPrecio(precio: number | string | null | undefined): string {
     const value = this.toNumber(precio);
     return value > 0 ? `Bs ${value.toFixed(2)}` : 'Precio pendiente';
-  }
-
-  protected inicialesCategoria(item: CatalogoPrendaItem): string {
-    return (item.categoria || 'ST').slice(0, 2).toUpperCase();
   }
 
   private cargarCatalogo(): void {

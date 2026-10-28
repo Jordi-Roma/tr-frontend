@@ -341,7 +341,7 @@ h1 {
   margin: 5px;
   border-radius: 50%;
   background: var(--color-surface);
-  content: "";
+  content: '';
 }
 
 .delivery-card small {
@@ -702,3 +702,16 @@ h1 {
   box-sizing: border-box;
 }
 
+.reservation-fee > span,
+.reservation-fee > small {
+  color: #414141;
+}
+
+.qr-action-btn {
+  background: #166534 !important;
+  color: #fff !important;
+}
+
+.qr-confirm-btn {
+  background: #166534 !important;
+}

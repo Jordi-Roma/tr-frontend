@@ -34,7 +34,13 @@
       </div>
       <div>
         <span>Anticipo</span>
-        <strong>{{ formatPrecio(item.monto_reserva) }} · {{ item.anticipo_pagado ? 'Pagado' : 'Pendiente' }}</strong>
+        <strong>{{
+          item.es_gratuita
+            ? 'Reserva gratuita · sin anticipo'
+            : formatPrecio(item.monto_reserva) +
+              ' · ' +
+              (item.anticipo_pagado ? 'Pagado' : 'Pendiente')
+        }}</strong>
       </div>
       @if (item.venta_id) {
         <div>
@@ -62,9 +68,17 @@
       <section class="payment-panel">
         <div>
           <h2>Pagar anticipo de reserva</h2>
-          <p>Esta reserva tiene un anticipo no reembolsable de {{ formatPrecio(item.monto_reserva) }}. Después de pagarlo, la reserva queda activa para recoger en sucursal.</p>
+          <p>
+            Esta reserva anterior tiene un anticipo de {{ formatPrecio(item.monto_reserva) }}.
+            Después de pagarlo, la reserva queda activa para recoger en sucursal.
+          </p>
         </div>
-        <button type="button" class="primary-button" [disabled]="guardando()" (click)="pagarAnticipo()">
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="guardando()"
+          (click)="pagarAnticipo()"
+        >
           Pagar anticipo con Stripe
         </button>
       </section>
@@ -72,7 +86,9 @@
       <section class="payment-panel">
         <div>
           <h2>Elegir prendas y pagar reserva</h2>
-          <p>Coloca 0 en las prendas que ya no quieras llevar. Se liberarán al completar el pago.</p>
+          <p>
+            Coloca 0 en las prendas que ya no quieras llevar. Se liberarán al completar el pago.
+          </p>
         </div>
 
         <div class="selection-list">
@@ -80,23 +96,33 @@
             <label>
               <span>
                 <strong>{{ detalle.producto }}</strong>
-                <small>{{ detalle.talla }} / {{ detalle.color }} · máx. {{ detalle.cantidad }}</small>
+                <small
+                  >{{ detalle.talla }} / {{ detalle.color }} · máx. {{ detalle.cantidad }}</small
+                >
               </span>
               <input
                 type="number"
                 min="0"
                 [max]="detalle.cantidad"
                 [value]="cantidades()[detalle.id] ?? detalle.cantidad"
-                (input)="actualizarCantidad(detalle.id, $any($event.target).value, detalle.cantidad)"
+                (input)="
+                  actualizarCantidad(detalle.id, $any($event.target).value, detalle.cantidad)
+                "
               />
             </label>
           }
         </div>
 
         <div class="payment-summary">
-          <div><span>Subtotal elegido</span><strong>{{ formatPrecio(subtotalSeleccionado()) }}</strong></div>
-          <div><span>Anticipo aplicado</span><strong>-{{ formatPrecio(anticipoAplicado()) }}</strong></div>
-          <div><span>Saldo a pagar</span><strong>{{ formatPrecio(saldoAPagar()) }}</strong></div>
+          <div>
+            <span>Subtotal elegido</span><strong>{{ formatPrecio(subtotalSeleccionado()) }}</strong>
+          </div>
+          <div>
+            <span>Anticipo aplicado</span><strong>-{{ formatPrecio(anticipoAplicado()) }}</strong>
+          </div>
+          <div>
+            <span>Saldo a pagar</span><strong>{{ formatPrecio(saldoAPagar()) }}</strong>
+          </div>
         </div>
 
         <label class="field-label">
@@ -110,7 +136,12 @@
 
         <label class="field-label">
           Observación
-          <textarea rows="2" [value]="observacion()" (input)="actualizarObservacion($event)" placeholder="Opcional"></textarea>
+          <textarea
+            rows="2"
+            [value]="observacion()"
+            (input)="actualizarObservacion($event)"
+            placeholder="Opcional"
+          ></textarea>
         </label>
 
         @if (metodoPago() === 'QR' && mostrandoQr()) {
@@ -118,7 +149,9 @@
             <div class="qr-header">
               <span class="qr-badge"><i class="pi pi-qrcode"></i> {{ banco }} (QR Simple)</span>
               <h3>Pago por QR Simple</h3>
-              <p>Escanea este código para pagar <strong>{{ formatPrecio(saldoAPagar()) }}</strong></p>
+              <p>
+                Escanea este código para pagar <strong>{{ formatPrecio(saldoAPagar()) }}</strong>
+              </p>
               <div class="qr-timer">
                 <i class="pi pi-clock"></i> Expira en {{ tiempoRestanteFormateado() }}
               </div>
@@ -135,8 +168,17 @@
                 <span class="qr-label">Cuenta:</span>
                 <span class="qr-value">
                   {{ cuenta }}
-                  <button type="button" class="copy-btn" (click)="copiar(cuenta, 'cuenta')" title="Copiar cuenta">
-                    <i class="pi" [class.pi-copy]="copiado() !== 'cuenta'" [class.pi-check]="copiado() === 'cuenta'"></i>
+                  <button
+                    type="button"
+                    class="copy-btn"
+                    (click)="copiar(cuenta, 'cuenta')"
+                    title="Copiar cuenta"
+                  >
+                    <i
+                      class="pi"
+                      [class.pi-copy]="copiado() !== 'cuenta'"
+                      [class.pi-check]="copiado() === 'cuenta'"
+                    ></i>
                   </button>
                 </span>
               </div>
@@ -144,24 +186,56 @@
                 <span class="qr-label">Glosa:</span>
                 <span class="qr-value">
                   {{ glosa() }}
-                  <button type="button" class="copy-btn" (click)="copiar(glosa(), 'glosa')" title="Copiar glosa">
-                    <i class="pi" [class.pi-copy]="copiado() !== 'glosa'" [class.pi-check]="copiado() === 'glosa'"></i>
+                  <button
+                    type="button"
+                    class="copy-btn"
+                    (click)="copiar(glosa(), 'glosa')"
+                    title="Copiar glosa"
+                  >
+                    <i
+                      class="pi"
+                      [class.pi-copy]="copiado() !== 'glosa'"
+                      [class.pi-check]="copiado() === 'glosa'"
+                    ></i>
                   </button>
                 </span>
               </div>
             </div>
 
             <div class="qr-actions">
-              <button type="button" class="secondary-button" [disabled]="guardando()" (click)="cerrarQr()">Cambiar método</button>
-              <button type="button" class="primary-button qr-confirm-btn" [disabled]="guardando()" (click)="finalizarReserva()">
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="guardando()"
+                (click)="cerrarQr()"
+              >
+                Cambiar método
+              </button>
+              <button
+                type="button"
+                class="primary-button qr-confirm-btn"
+                [disabled]="guardando()"
+                (click)="finalizarReserva()"
+              >
                 <i class="pi pi-check-circle"></i> Confirmar pago QR
               </button>
             </div>
           </section>
         }
 
-        <button type="button" class="primary-button" [disabled]="guardando() || !puedeFinalizar(item)" (click)="finalizarReserva()">
-          {{ metodoPago() === 'STRIPE' ? 'Pagar reserva con Stripe' : metodoPago() === 'QR' ? 'Generar QR de pago' : 'Completar reserva' }}
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="guardando() || !puedeFinalizar(item)"
+          (click)="finalizarReserva()"
+        >
+          {{
+            metodoPago() === 'STRIPE'
+              ? 'Pagar reserva con Stripe'
+              : metodoPago() === 'QR'
+                ? 'Generar QR de pago'
+                : 'Completar reserva'
+          }}
         </button>
       </section>
     }

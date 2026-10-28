@@ -32,11 +32,11 @@
   </div>
 
   @if (mensaje()) {
-    <p class="feedback success">{{ mensaje() }}</p>
+    <p class="feedback success" role="status">{{ mensaje() }}</p>
   }
 
   @if (error()) {
-    <p class="feedback error">{{ error() }}</p>
+    <p class="feedback error" role="alert">{{ error() }}</p>
   }
 
   <div class="admin-card">
@@ -76,7 +76,13 @@
                 <td>{{ reserva.ciudad }} - {{ reserva.sucursal }}</td>
                 <td>{{ formatFecha(reserva.fecha_reserva) }}</td>
                 <td>{{ reserva.fecha_cita || 'Sin cita' }}</td>
-                <td>{{ formatPrecio(reserva.monto_reserva) }}</td>
+                <td>
+                  {{
+                    reserva.es_gratuita
+                      ? 'Gratuita · sin anticipo'
+                      : formatPrecio(reserva.monto_reserva)
+                  }}
+                </td>
                 <td>{{ formatPrecio(reserva.total) }}</td>
                 <td>
                   <span [class]="'estado-pill ' + estadoClase(reserva.estado)">
@@ -89,11 +95,12 @@
                   </button>
                   <select
                     class="state-select"
+                    [attr.aria-label]="'Estado de reserva ' + reserva.codigo"
                     [value]="reserva.estado"
                     [disabled]="guardando()"
                     (change)="cambiarEstado(reserva, $event)"
                   >
-                    @for (estado of estados; track estado) {
+                    @for (estado of estadosDisponibles(reserva); track estado) {
                       <option [value]="estado">{{ estado }}</option>
                     }
                   </select>
@@ -108,12 +115,7 @@
 </section>
 
 @if (reservaSeleccionada(); as reserva) {
-  <div class="modal-backdrop" role="presentation" (click)="cerrarDetalle()"></div>
-  <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reserva-modal-title">
-    <button type="button" class="close-button" aria-label="Cerrar" (click)="cerrarDetalle()">
-      <i class="pi pi-times" aria-hidden="true"></i>
-    </button>
-
+  <app-modal [open]="true" title="Detalle de la reserva" (close)="cerrarDetalle()">
     <p class="admin-eyebrow">Detalle</p>
     <h2 id="reserva-modal-title">{{ reserva.codigo }}</h2>
 
@@ -140,12 +142,17 @@
       </div>
       <div>
         <span>Anticipo pagado/cobrado</span>
-        <strong>{{ formatPrecio(reserva.monto_reserva) }}</strong>
+        <strong>{{
+          reserva.es_gratuita ? 'Gratuita · sin anticipo' : formatPrecio(reserva.monto_reserva)
+        }}</strong>
       </div>
       @if (reserva.venta_id) {
         <div>
           <span>Venta generada</span>
           <strong>#{{ reserva.venta_id }}</strong>
+          <button type="button" (click)="descargarNota(reserva.venta_id)">
+            Descargar nota de venta PDF
+          </button>
         </div>
       }
     </div>
@@ -167,7 +174,7 @@
                 min="0"
                 [max]="detalle.cantidad"
                 [value]="cantidadesVenta()[detalle.id] ?? detalle.cantidad"
-                (input)="actualizarCantidadVenta(detalle.id, $any($event.target).value, detalle.cantidad)"
+                (input)="cantidadDesdeEvento(detalle.id, $event, detalle.cantidad)"
               />
             </label>
           }
@@ -213,5 +220,5 @@
         </button>
       </section>
     }
-  </section>
+  </app-modal>
 }

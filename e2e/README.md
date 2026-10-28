@@ -68,3 +68,20 @@ npm run build
 ```
 
 El build de producción incluye fuentes externas y puede necesitar red. La suite de navegador verifica pagos de prueba; no efectúa cobros ni prueba proveedores externos de imagen/IA. La prueba de cupo reproduce un formulario abierto cuyo último cupo consume otro operador antes del envío; la serialización concurrente del servidor también tiene pruebas en `tr-backend/tests/test_multitenant_integration.py`.
+
+## CU11–CU15
+
+`cu11-cu15.spec.ts` agrega siete recorridos de catálogo, carrito, reserva gratuita
+por siete días, atención por cajero, inventario, transferencia, venta presencial
+y configuración/descarga/envío de notas de la empresa. Incluye AXE y utiliza la
+misma fixture con PostgreSQL real desechable. El envío PDF se intercepta dentro
+del proceso de fixture, exclusivamente para correos `@example.invalid`; no se
+cambia el proveedor de correo de la aplicación desplegada.
+
+```powershell
+npm run test:e2e -- e2e/cu11-cu15.spec.ts
+```
+
+Aplicar primero la migración `2026_10_27_cu11_cu15_01` mediante el inicializador
+en el destino de pruebas. La fixture usa almacenamiento temporal también para
+los logos de notas. No ejecutar esta suite contra la base del negocio.
