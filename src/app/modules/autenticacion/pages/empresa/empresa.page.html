@@ -3,10 +3,42 @@
     <a class="marca" routerLink="/empresa" aria-label="StyleAR, directorio de empresas"
       >Style<span>AR</span></a
     >
-    <a class="plataforma" routerLink="/saas/login"
-      >Administración de la plataforma <span aria-hidden="true">↗</span></a
-    >
-    <a class="plataforma" routerLink="/crear-empresa">Crear mi empresa</a>
+    <nav class="acciones-cabecera" aria-label="Opciones de la plataforma">
+      <a class="enlace-cabecera acceso-plataforma" routerLink="/saas/login">
+        <svg
+          aria-hidden="true"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 3 4 6v6c0 4 8 9 8 9s8-5 8-9V6l-8-3Z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+        <span>Administración de la plataforma</span>
+      </a>
+      <a class="enlace-cabecera crear-empresa" routerLink="/crear-empresa">
+        <svg
+          aria-hidden="true"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 10h18l-2-6H5l-2 6Z" />
+          <path d="M4 10v10h16V10M9 20v-6h6v6" />
+        </svg>
+        <span>Crear mi empresa</span>
+      </a>
+    </nav>
   </header>
 
   <main id="contenido">
