@@ -6,6 +6,13 @@ import { NotFoundPage } from './shared/pages/not-found/not-found.page';
 
 export const routes: Routes = [
   {
+    path: 'crear-empresa',
+    loadComponent: () =>
+      import('./modules/autenticacion/pages/crear-empresa/crear-empresa.page').then(
+        (m) => m.CrearEmpresaPage,
+      ),
+  },
+  {
     path: 'empresa',
     loadComponent: () =>
       import('./modules/autenticacion/pages/empresa/empresa.page').then((m) => m.EmpresaPage),

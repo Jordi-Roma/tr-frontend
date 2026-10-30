@@ -51,7 +51,10 @@ const funcion = () => new FormControl<boolean | null>(null);
                 <strong>{{ plan.nombre }}</strong
                 ><small>{{ plan.codigo }}</small>
               </td>
-              <td>{{ plan.activo ? 'Activo' : 'Inactivo' }}</td>
+              <td>
+                {{ plan.activo ? 'Activo' : 'Inactivo'
+                }}<small>{{ plan.publico ? 'Disponible para registro' : 'Privado' }}</small>
+              </td>
               <td>
                 @for (clave of cuotas; track clave) {
                   <small>{{ etiquetas[clave] }}: {{ plan.limites[clave] ?? 'Sin límite' }}</small>
@@ -102,6 +105,10 @@ const funcion = () => new FormControl<boolean | null>(null);
               maxlength="120" /></label
           ><label class="check" for="plan-activo"
             ><input id="plan-activo" type="checkbox" formControlName="activo" />Plan activo</label
+          >
+          <label class="check" for="plan-publico"
+            ><input id="plan-publico" type="checkbox" formControlName="publico" />Disponible en el
+            registro de empresas</label
           >
         </div>
         <fieldset>
@@ -191,6 +198,7 @@ export class PlanesPage {
       ],
     }),
     activo: new FormControl(true, { nonNullable: true }),
+    publico: new FormControl(false, { nonNullable: true }),
     usuarios: cupo(),
     empleados: cupo(),
     productos: cupo(),
@@ -220,6 +228,7 @@ export class PlanesPage {
       codigo: plan.codigo,
       nombre: plan.nombre,
       activo: plan.activo,
+      publico: plan.publico,
       usuarios: plan.limites.usuarios ?? null,
       empleados: plan.limites.empleados ?? null,
       productos: plan.limites.productos ?? null,
@@ -258,6 +267,7 @@ export class PlanesPage {
       limites,
       funciones,
       activo: f.activo,
+      publico: f.publico,
     };
     const id = this.editando();
     this.ocupado.set(true);

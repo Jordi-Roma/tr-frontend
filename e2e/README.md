@@ -85,3 +85,19 @@ npm run test:e2e -- e2e/cu11-cu15.spec.ts
 Aplicar primero la migración `2026_10_27_cu11_cu15_01` mediante el inicializador
 en el destino de pruebas. La fixture usa almacenamiento temporal también para
 los logos de notas. No ejecutar esta suite contra la base del negocio.
+
+## Registro público de empresas — CU01/CU26
+
+La suite `registro-empresa.spec.ts` verifica publicación de un plan por el AS,
+registro sin SMTP ni verificación de correo, ocultamiento de la empresa pendiente,
+aprobación en la interfaz y acceso posterior de su administrador. También simula
+una respuesta perdida para confirmar que el reintento no duplica el alta ni cambia
+la sesión de otra tienda. Incluye AXE y el estado sin planes en pantalla estrecha.
+
+```powershell
+npm run test:e2e -- e2e/registro-empresa.spec.ts
+```
+
+Requiere la migración `2026_10_28_registro_empresa_01` en la base desechable de la
+fixture. Se publica únicamente el plan sintético de esa base; no se crean planes
+ni empresas de muestra en la aplicación real.

@@ -62,8 +62,14 @@ const texto = (min = 1, max = 150) =>
             <tr>
               <td>
                 <strong>{{ empresa.nombre }}</strong
-                ><small>{{ empresa.codigo }}</small
-                ><a [routerLink]="['/e', empresa.codigo]">Abrir entrada pública</a>
+                ><small>{{ empresa.codigo }}</small>
+                @if (empresa.estado === 'ACTIVA' || empresa.estado === 'SUSPENDIDA') {
+                  <a [routerLink]="['/e', empresa.codigo]">Abrir entrada pública</a>
+                }
+                @if (empresa.correo_contacto) {
+                  <small>Responsable: {{ empresa.responsable }}</small>
+                  <small>Contacto: {{ empresa.correo_contacto }} (correo sin verificar)</small>
+                }
               </td>
               <td>
                 <span class="estado">{{ empresa.estado }}</span>
@@ -119,11 +125,21 @@ const texto = (min = 1, max = 150) =>
           </div>
         </form>
         <h3>Estado de acceso</h3>
+        @if (empresa.estado === 'PENDIENTE') {
+          <p class="aviso">
+            Solicitud de registro público. Revisa el contacto, elige plan y vigencia y aprueba la
+            empresa en la sección de suscripción. El correo no fue verificado.
+          </p>
+        }
         <form [formGroup]="estadoForm" (ngSubmit)="guardarEstado()">
           <label for="empresa-estado"
             >Estado<select id="empresa-estado" formControlName="estado">
-              <option value="ACTIVA">Activa</option>
-              <option value="SUSPENDIDA">Suspendida</option>
+              @if (empresa.estado === 'PENDIENTE') {
+                <option value="PENDIENTE" disabled>Pendiente de aprobación</option>
+              } @else {
+                <option value="ACTIVA">Activa</option>
+                <option value="SUSPENDIDA">Suspendida</option>
+              }
               <option value="CANCELADA">Cancelada</option>
             </select></label
           >
@@ -131,9 +147,17 @@ const texto = (min = 1, max = 150) =>
             Suspender bloquea operaciones nuevas y conserva consultas y pendientes. Cancelar impide
             el acceso.
           </p>
-          <button [disabled]="ocupado()">Aplicar estado</button>
+          <button [disabled]="ocupado() || estadoForm.controls.estado.value === 'PENDIENTE'">
+            Aplicar estado
+          </button>
         </form>
-        <h3>Asignar o renovar suscripción</h3>
+        <h3>
+          {{
+            empresa.estado === 'PENDIENTE'
+              ? 'Aprobar empresa y activar suscripción'
+              : 'Asignar o renovar suscripción'
+          }}
+        </h3>
         <form [formGroup]="suscripcion" (ngSubmit)="asignar()">
           <div class="grid">
             <label for="sus-plan"
@@ -158,7 +182,11 @@ const texto = (min = 1, max = 150) =>
             /></label>
           </div>
           <p>Esta asignación reemplaza la suscripción activa y conserva su historial.</p>
-          <button [disabled]="ocupado() || suscripcion.invalid">Guardar suscripción</button>
+          <button [disabled]="ocupado() || suscripcion.invalid">
+            {{
+              empresa.estado === 'PENDIENTE' ? 'Aprobar y activar empresa' : 'Guardar suscripción'
+            }}
+          </button>
         </form>
       </section>
     }
@@ -390,7 +418,9 @@ export class EmpresasPage {
       return;
     this.ejecutar(
       this.api.suscribir(e.id, f.plan_id, f.fecha_inicio, f.fecha_vencimiento || null),
-      'Suscripción actualizada.',
+      e.estado === 'PENDIENTE'
+        ? 'Empresa aprobada y suscripción activada.'
+        : 'Suscripción actualizada.',
     );
   }
   private ejecutar(operacion: import('rxjs').Observable<unknown>, mensaje: string): void {

@@ -300,3 +300,6 @@ footer span {
     transition: none;
   }
 }
+.cabecera {
+  flex-wrap: wrap;
+}

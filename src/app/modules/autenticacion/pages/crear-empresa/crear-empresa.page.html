@@ -1,0 +1,207 @@
+<header class="cabecera-registro">
+  <a routerLink="/empresa">StyleAR</a><a routerLink="/empresa">Volver al directorio</a>
+</header>
+<main>
+  @if (resultado(); as r) {
+    <section class="panel" aria-labelledby="registro-listo">
+      <p class="ceja">Solicitud recibida</p>
+      <h1 id="registro-listo" tabindex="-1">{{ r.empresa.nombre }}</h1>
+      <p role="status">{{ r.mensaje }}</p>
+      @if (r.empresa.estado === 'PENDIENTE') {
+        <p>
+          Tu empresa aparecerá en el directorio cuando sea aprobada. Después podrás ingresar con el
+          usuario y la contraseña que elegiste.
+        </p>
+      } @else if (r.empresa.estado === 'ACTIVA') {
+        <p>
+          Ya puedes seleccionar tu empresa en el directorio e ingresar con tu usuario y contraseña.
+        </p>
+      }
+      <p>
+        Identificador de tu empresa: <strong>{{ r.empresa.codigo }}</strong>
+      </p>
+      <a routerLink="/empresa">Ir al directorio de empresas</a>
+    </section>
+  } @else {
+    <header class="encabezado">
+      <div>
+        <p class="ceja">Tu negocio en StyleAR</p>
+        <h1>Crear mi empresa</h1>
+        <p>
+          Elige un plan y registra a la persona que administrará tu tienda. La administración de
+          StyleAR revisará la solicitud antes de activar el acceso.
+        </p>
+      </div>
+    </header>
+    @if (cargando()) {
+      <p role="status">Cargando planes disponibles…</p>
+    }
+    @if (errorPlanes()) {
+      <p role="alert" class="error">{{ errorPlanes() }}</p>
+      <button type="button" (click)="cargarPlanes()">Reintentar carga de planes</button>
+    }
+    @if (!cargando() && !errorPlanes() && planes().length === 0) {
+      <section class="panel">
+        <h2>No hay planes disponibles para registro</h2>
+        <p>
+          La administración de StyleAR debe publicar un plan para que puedas registrar tu empresa.
+        </p>
+        <button type="button" class="secundario" (click)="cargarPlanes()">Actualizar planes</button>
+      </section>
+    }
+    @if (planes().length) {
+      @if (error()) {
+        <p id="registro-error" tabindex="-1" role="alert" class="error">{{ error() }}</p>
+      }
+      <form [formGroup]="form" (ngSubmit)="enviar()">
+        <fieldset class="panel">
+          <legend>1. Elige tu plan</legend>
+          <div class="planes-registro">
+            @for (plan of planes(); track plan.id) {
+              <label class="opcion-plan" [for]="'registro-plan-' + plan.id">
+                <span
+                  ><input
+                    [id]="'registro-plan-' + plan.id"
+                    type="radio"
+                    formControlName="plan_id"
+                    [value]="plan.id"
+                    required
+                  />
+                  <strong>{{ plan.nombre }}</strong></span
+                >
+                <span class="cuotas-plan">
+                  @for (clave of cuotas; track clave) {
+                    <span>{{ etiquetas[clave] }}: {{ plan.limites[clave] ?? 'Sin límite' }}</span>
+                  }
+                </span>
+                <span class="cuotas-plan">
+                  @for (clave of funciones; track clave) {
+                    <span
+                      >{{ etiquetas[clave] }}:
+                      {{ plan.funciones[clave] ? 'Incluido' : 'No incluido' }}</span
+                    >
+                  }
+                </span>
+              </label>
+            }
+          </div>
+        </fieldset>
+        <fieldset class="panel">
+          <legend>2. Datos de tu empresa</legend>
+          <div class="grid">
+            <label for="registro-empresa"
+              >Nombre de la empresa<input
+                id="registro-empresa"
+                formControlName="empresa_nombre"
+                maxlength="150"
+                required
+                autocomplete="organization"
+            /></label>
+            <div class="campo">
+              <label for="registro-codigo"
+                >Identificador público<input
+                  id="registro-codigo"
+                  formControlName="empresa_codigo"
+                  maxlength="40"
+                  required
+                  autocomplete="off"
+                  aria-describedby="registro-codigo-ayuda" /></label
+              ><small id="registro-codigo-ayuda"
+                >De 2 a 40 letras minúsculas, números o guiones. Se usará en el enlace de tu
+                tienda.</small
+              >
+            </div>
+          </div>
+        </fieldset>
+        <fieldset class="panel">
+          <legend>3. Cuenta administradora de tu empresa</legend>
+          <p>Elige un usuario y un correo que aún no estén registrados en StyleAR.</p>
+          <div class="grid">
+            <label for="registro-nombre"
+              >Nombre<input
+                id="registro-nombre"
+                formControlName="nombre"
+                maxlength="120"
+                required
+                autocomplete="given-name"
+            /></label>
+            <label for="registro-apellido"
+              >Apellido<input
+                id="registro-apellido"
+                formControlName="apellido"
+                maxlength="120"
+                required
+                autocomplete="family-name"
+            /></label>
+            <div class="campo">
+              <label for="registro-usuario"
+                >Usuario<input
+                  id="registro-usuario"
+                  formControlName="username"
+                  minlength="4"
+                  maxlength="80"
+                  required
+                  autocomplete="username"
+                  aria-describedby="usuario-ayuda" /></label
+              ><small id="usuario-ayuda"
+                >Al menos 4 caracteres: letras, números, puntos o guion bajo.</small
+              >
+            </div>
+            <div class="campo">
+              <label for="registro-correo"
+                >Correo de contacto<input
+                  id="registro-correo"
+                  type="email"
+                  formControlName="correo"
+                  maxlength="150"
+                  required
+                  autocomplete="email"
+                  aria-describedby="correo-ayuda" /></label
+              ><small id="correo-ayuda"
+                >Se guarda como contacto. No se enviarán códigos de verificación.</small
+              >
+            </div>
+            <div class="campo">
+              <label for="registro-password"
+                >Contraseña<input
+                  id="registro-password"
+                  type="password"
+                  formControlName="password"
+                  minlength="8"
+                  maxlength="72"
+                  required
+                  autocomplete="new-password"
+                  aria-describedby="password-ayuda" /></label
+              ><small id="password-ayuda"
+                >Al menos 8 caracteres, con mayúscula, minúscula, número y símbolo.</small
+              >
+            </div>
+            <div class="campo">
+              <label for="registro-confirmar"
+                >Confirmar contraseña<input
+                  id="registro-confirmar"
+                  type="password"
+                  formControlName="confirmar_password"
+                  maxlength="72"
+                  required
+                  autocomplete="new-password"
+              /></label>
+              @if (form.hasError('noCoinciden') && form.controls.confirmar_password.touched) {
+                <small class="error">Las contraseñas no coinciden.</small>
+              }
+            </div>
+          </div>
+        </fieldset>
+        <div class="panel">
+          <p>
+            Esta cuenta administrará únicamente tu empresa. El acceso se habilitará después de la
+            aprobación.
+          </p>
+          <button type="submit" [disabled]="enviando() || cargando()">
+            {{ enviando() ? 'Enviando solicitud…' : 'Solicitar registro de empresa' }}
+          </button>
+        </div>
+      </form>
+    }
+  }
+</main>

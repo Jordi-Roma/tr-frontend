@@ -9,6 +9,7 @@ export interface Plan {
   codigo: string;
   nombre: string;
   activo: boolean;
+  publico: boolean;
   limites: Limites;
   funciones: Funciones;
 }
@@ -17,7 +18,9 @@ export interface Empresa {
   id: number;
   codigo: string;
   nombre: string;
-  estado: 'ACTIVA' | 'SUSPENDIDA' | 'CANCELADA';
+  estado: 'PENDIENTE' | 'ACTIVA' | 'SUSPENDIDA' | 'CANCELADA';
+  correo_contacto: string | null;
+  responsable: string | null;
   plan_id: number | null;
   plan_nombre: string | null;
   plan_codigo: string | null;
