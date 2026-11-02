@@ -1,5 +1,7 @@
 :host {
   display: block;
+  --color-muted:#53584d;
+  --color-accent:#435832;
 }
 
 .back-link {
@@ -152,3 +154,7 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+button { background:#435832; color:white; padding:.7rem 1rem; border:1px solid #435832; border-radius:8px; margin:.5rem; }
+button:disabled { opacity:.65; }
+input[type="checkbox"] { width:auto; }

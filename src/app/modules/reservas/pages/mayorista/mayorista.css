@@ -1,0 +1,10 @@
+:host { display:block; color:#242a20; }
+section, article, fieldset { margin:1rem 0; padding:1rem; border:1px solid #65705e; border-radius:12px; background:#fff; }
+h2,h3 { color:#27371e; }
+.paquetes { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+label { display:block; margin:.8rem 0 .3rem; }
+input:not([type="checkbox"]) { padding:.6rem; width:100%; max-width:16rem; border:1px solid #59634e; border-radius:6px; }
+button { padding:.7rem 1rem; margin:.5rem .5rem .5rem 0; color:white; background:#435832; border:1px solid #435832; border-radius:8px; cursor:pointer; }
+button:disabled { opacity:.6; cursor:default; }
+button[aria-pressed="true"] { outline:3px solid #27371e; outline-offset:3px; }
+[role="alert"] { color:#a12620; }

@@ -1,0 +1,306 @@
+<div class="returns-page">
+  <header class="page-heading">
+    <div>
+      <h1>{{ gestion() ? 'Gestión de cambios' : 'Mis cambios de prendas' }}</h1>
+      <p>Consulta la inspección, el reemplazo y la liquidación de tu cambio.</p>
+    </div>
+    <button type="button" class="button secondary" (click)="cargar()">Actualizar cambios</button>
+    @if (personal) {
+      <button type="button" class="button secondary" (click)="cambiarVista()">
+        {{ gestion() ? 'Ver mis cambios' : 'Gestionar sucursal' }}
+      </button>
+    }
+  </header>
+  @if (error()) {
+    <p class="notice error" role="alert">{{ error() }}</p>
+  }
+  @if (aviso()) {
+    <p class="notice success" role="status">{{ aviso() }}</p>
+  }
+  @if (!gestion()) {
+    @if (politica(); as p) {
+      <section class="panel">
+        <h2>Política de cambios</h2>
+        <p>
+          {{
+            p.cambios_habilitados
+              ? 'Plazo: ' + p.plazo_cambios + ' días desde la compra.'
+              : 'La empresa no habilitó cambios de prendas.'
+          }}
+        </p>
+        <p>{{ p.condiciones_cambios }}</p>
+        <p>
+          El crédito usa el importe pagado por la prenda original. El reemplazo se cotiza por unidad
+          al precio y promoción vigentes; no forma un nuevo paquete mayorista.
+        </p>
+      </section>
+    }
+    <section class="panel">
+      <h2>Compras elegibles</h2>
+      @for (v of ventas(); track v.venta_id) {
+        <article class="purchase-card">
+          <h3>{{ v.venta_codigo }}</h3>
+          @for (l of v.detalles; track l.venta_detalle_id) {
+            @if (l.cantidad_disponible > 0) {
+              <p>
+                {{ l.producto }} · {{ l.talla }} / {{ l.color }} · Disponibles:
+                {{ l.cantidad_disponible }}
+              </p>
+              <button
+                class="button secondary"
+                type="button"
+                (click)="iniciar(v.venta_id, l.venta_detalle_id, l.cantidad_disponible)"
+              >
+                Solicitar cambio
+              </button>
+            }
+          }
+        </article>
+      } @empty {
+        <p>No tienes compras elegibles para cambio.</p>
+      }
+      @if (solicitud(); as s) {
+        <div class="request-panel">
+          <label class="field"
+            >Cantidad a cambiar<input
+              type="number"
+              min="1"
+              [max]="s.max"
+              [value]="cantidad()"
+              (input)="cantidad.set(+texto($event))" /></label
+          ><label class="field"
+            >Motivo del cambio<input
+              maxlength="500"
+              [value]="motivo()"
+              (input)="motivo.set(texto($event))" /></label
+          ><button
+            class="button primary"
+            type="button"
+            [disabled]="ocupado()"
+            (click)="solicitar()"
+          >
+            Enviar solicitud de cambio
+          </button>
+        </div>
+      }
+    </section>
+  }
+  <section class="panel">
+    <h2>Solicitudes de cambio</h2>
+    @for (c of lista(); track c.id) {
+      <article class="return-card">
+        <h3>Cambio {{ c.id }} · {{ c.original.venta_codigo }}</h3>
+        <p>{{ c.estado }} · {{ c.cantidad }} prenda(s) · {{ c.original.cliente_nombre }}</p>
+        <button class="button secondary" type="button" (click)="abrir(c)">
+          Ver cambio {{ c.id }}
+        </button>
+      </article>
+    } @empty {
+      <p>No hay solicitudes de cambio.</p>
+    }
+  </section>
+  @if (elegido(); as c) {
+    <section class="panel management-panel" #detalle tabindex="-1" aria-label="Detalle del cambio">
+      <h2>Cambio {{ c.id }}</h2>
+      <p>
+        Estado del cambio: <strong>{{ c.estado }}</strong>
+      </p>
+      <p>Motivo: {{ c.original.motivo }}</p>
+      <p>Inspección: {{ c.original.observacion || 'Pendiente' }}</p>
+      @for (l of c.original.detalles; track l.id) {
+        <p>
+          {{ l.producto }} · {{ l.talla }} / {{ l.color }} · Solicitadas:
+          {{ l.cantidad_solicitada }} · No vendibles: {{ l.cantidad_no_vendible || 0 }}
+        </p>
+      }
+      @if (c.credito !== null) {
+        <p>Crédito reconocido: {{ monto(c.credito) }}</p>
+      }
+      @if (gestion() && c.estado === 'SOLICITADO') {
+        <label class="field"
+          >Condición de la prenda / motivo del rechazo<textarea
+            maxlength="500"
+            [value]="condicion()"
+            (input)="condicion.set(texto($event))"
+          ></textarea>
+        </label>
+        <label class="field"
+          >Unidades no vendibles<input
+            type="number"
+            min="0"
+            [max]="c.cantidad"
+            [value]="noVendibles()"
+            (input)="noVendibles.set(+texto($event))"
+        /></label>
+        <label
+          ><input
+            type="checkbox"
+            [checked]="recepcion()"
+            (change)="recepcion.set(marcado($event))"
+          />
+          Confirmo la recepción física y la inspección</label
+        >
+        <button
+          class="button primary"
+          type="button"
+          [disabled]="ocupado() || !recepcion()"
+          (click)="revisar(true)"
+        >
+          Aceptar cambio inspeccionado</button
+        ><button
+          class="button danger-button"
+          type="button"
+          [disabled]="ocupado()"
+          (click)="revisar(false)"
+        >
+          Rechazar cambio
+        </button>
+      }
+      @if (!gestion() && (c.estado === 'APROBADO' || c.estado === 'COTIZADO')) {
+        <button
+          class="button secondary"
+          type="button"
+          [disabled]="ocupado()"
+          (click)="cargarOpciones()"
+        >
+          Consultar reemplazos disponibles
+        </button>
+        @if (opciones().length) {
+          <label class="field"
+            >Prenda de reemplazo<select [value]="opcion()" (change)="opcion.set(+texto($event))">
+              @for (o of opciones(); track o.id) {
+                <option [value]="o.id">
+                  {{ o.producto }} · {{ o.talla }} / {{ o.color }} · {{ monto(o.precio) }} por
+                  prenda
+                </option>
+              }
+            </select></label
+          ><button
+            type="button"
+            class="button secondary"
+            [disabled]="ocupado()"
+            (click)="cotizar()"
+          >
+            Cotizar reemplazo
+          </button>
+        }
+        <button type="button" class="button secondary" [disabled]="ocupado()" (click)="convertir()">
+          Continuar por devolución
+        </button>
+      }
+      @if (c.reemplazo) {
+        <p>
+          Reemplazo: {{ c.reemplazo.producto }} · {{ c.reemplazo.talla }} /
+          {{ c.reemplazo.color }} · {{ monto(c.precio_reemplazo) }} por prenda
+        </p>
+        <p>
+          Diferencia (positivo: pagar; negativo: reintegro):
+          <strong>{{ monto(c.diferencia) }}</strong>
+        </p>
+      }
+      @if (!gestion() && c.estado === 'COTIZADO') {
+        <button class="button primary" type="button" [disabled]="ocupado()" (click)="aceptar()">
+          Aceptar reemplazo y diferencia
+        </button>
+      }
+      @if (!gestion() && c.estado === 'ESPERA_PAGO') {
+        @if (!c.pago) {
+          <button
+            class="button primary"
+            type="button"
+            [disabled]="ocupado()"
+            (click)="pagar('QR_BCP')"
+          >
+            Pagar diferencia con QR</button
+          ><button
+            class="button primary"
+            type="button"
+            [disabled]="ocupado()"
+            (click)="pagar('STRIPE')"
+          >
+            Pagar diferencia con Stripe
+          </button>
+        }
+        @if (c.pago; as p) {
+          <p>Pago {{ p.id }}: {{ p.estado }} · {{ monto(p.monto_total) }}</p>
+          @if (p.simulable) {
+            <p>Pago simulado de prueba. No mueve dinero real.</p>
+            <button class="button primary" type="button" [disabled]="ocupado()" (click)="simular()">
+              Simular pago de diferencia aprobado
+            </button>
+          } @else if (p.checkout_url) {
+            <a [href]="p.checkout_url">Abrir pago de diferencia</a>
+          }
+        }
+      }
+      @if (gestion() && c.estado === 'ESPERA_REINTEGRO') {
+        <p>Reintegro pendiente del excedente por el medio de pago original.</p>
+        @if (
+          c.original.metodo_pago_original === 'EFECTIVO' && !c.original.proveedor_pago_original
+        ) {
+          <label class="field"
+            >Referencia del recibo de efectivo<input
+              [value]="referencia()"
+              (input)="referencia.set(texto($event))" /></label
+          ><button
+            class="button primary"
+            type="button"
+            [disabled]="ocupado()"
+            (click)="reintegrar(true)"
+          >
+            Registrar entrega del excedente en efectivo
+          </button>
+        } @else {
+          <button
+            class="button primary"
+            type="button"
+            [disabled]="ocupado()"
+            (click)="reintegrar(false)"
+          >
+            Procesar reintegro del excedente
+          </button>
+        }
+      }
+      @if (gestion() && c.estado === 'LISTO') {
+        <label
+          ><input type="checkbox" [checked]="entrega()" (change)="entrega.set(marcado($event))" />
+          Confirmo la entrega física del reemplazo</label
+        ><button
+          class="button primary"
+          type="button"
+          [disabled]="ocupado() || !entrega()"
+          (click)="completar()"
+        >
+          Completar cambio y emitir comprobante
+        </button>
+      }
+      @if (
+        !gestion() &&
+        (c.estado === 'SOLICITADO' ||
+          c.estado === 'APROBADO' ||
+          c.estado === 'COTIZADO' ||
+          c.estado === 'ESPERA_PAGO')
+      ) {
+        <button
+          class="button secondary"
+          type="button"
+          [disabled]="ocupado()"
+          (click)="accion('cancelar')"
+        >
+          Desistir del cambio
+        </button>
+      }
+      @if (c.estado === 'DEVOLUCION') {
+        <p>Continúa con la aceptación del importe y su reintegro en devoluciones.</p>
+        <a [routerLink]="gestion() ? '/devoluciones' : '/mis-devoluciones'">Abrir devoluciones</a>
+      }
+      @if (c.comprobante; as p) {
+        <h3>Comprobante {{ p.codigo }}</h3>
+        <p>
+          Crédito: {{ monto(p.credito) }} · Reemplazo por prenda: {{ monto(p.precio_reemplazo) }} ·
+          Diferencia liquidada: {{ monto(p.diferencia) }}
+        </p>
+      }
+    </section>
+  }
+</div>

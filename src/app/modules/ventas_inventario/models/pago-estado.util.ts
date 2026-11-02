@@ -7,6 +7,9 @@ export type PagoEstadoVisual = {
 export function obtenerEstadoPagoVisual(estado: string | null | undefined): PagoEstadoVisual {
   const normalizado = (estado ?? '').toUpperCase();
 
+  if (normalizado === 'REEMBOLSO_PENDIENTE') return { etiqueta: 'Reembolso pendiente', descripcion: 'Se recibió el pago, pero la compra no se completó. El reintegro aún no está confirmado.', clase: 'pendiente' };
+  if (normalizado === 'REEMBOLSADO') return { etiqueta: 'Reembolsado', descripcion: 'El reintegro fue confirmado. La compra no se completó.', clase: 'neutro' };
+
   if (['PAGADO', 'COMPLETADO', 'COMPLETADA'].includes(normalizado)) {
     return {
       etiqueta: 'Aprobado',

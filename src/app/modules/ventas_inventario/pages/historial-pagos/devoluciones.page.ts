@@ -8,7 +8,6 @@ import { DevolucionService } from '../../services/devolucion.service';
 
 @Component({
   selector: 'app-devoluciones-page',
-  standalone: true,
   templateUrl: './devoluciones.page.html',
   styleUrl: './devoluciones.page.css',
 })
@@ -22,6 +21,10 @@ export class DevolucionesPage implements OnInit {
   protected readonly guardando = signal(false);
   protected readonly mensaje = signal('');
   protected readonly error = signal('');
+  protected readonly politica=signal<{devoluciones_habilitadas:boolean;plazo_devoluciones:number|null;condiciones_devoluciones:string}|null>(null);
+  protected readonly noVendibles=signal<Record<number,number>>({});
+  protected aceptar(item:Devolucion):void {if(window.confirm('¿Aceptas la devolución y el importe mostrado? El dinero permanecerá pendiente hasta confirmar el reintegro.'))this.ejecutar(this.service.aceptar(item.id,item.monto_aprobado),'Devolución confirmada. Reintegro pendiente.');}
+  protected cambiarNoVendible(id:number,event:Event):void {this.noVendibles.update(v=>({...v,[id]:Number((event.target as HTMLInputElement).value)||0}));}
   protected readonly ventas = signal<VentaDevolucionElegible[]>([]);
   protected readonly devoluciones = signal<Devolucion[]>([]);
   protected readonly ventaSeleccionada = signal<VentaDevolucionElegible | null>(null);
@@ -39,9 +42,10 @@ export class DevolucionesPage implements OnInit {
 
   ngOnInit(): void {
     this.esCliente.set(this.route.snapshot.data['vista'] === 'cliente');
-    const autorizado = this.auth.tieneRol('ADMINISTRADOR') || this.auth.tieneRol('ENCARGADO_SUCURSAL');
+    const autorizado = this.auth.tieneRol('ADMINISTRADOR') || this.auth.tieneRol('ENCARGADO_SUCURSAL') || this.auth.tieneRol('CAJERO');
     this.puedeRevisar.set(autorizado);
     this.puedeReembolsar.set(autorizado);
+    this.service.politica().subscribe({next:p=>this.politica.set(p),error:(err:HttpErrorResponse)=>this.error.set(this.mensajeError(err))});
     this.cargar();
   }
 
@@ -53,7 +57,7 @@ export class DevolucionesPage implements OnInit {
       : this.service.listarGestion(this.estadoFiltro() || undefined);
     solicitud.pipe(finalize(() => this.cargando.set(false))).subscribe({
       next: (items) => this.devoluciones.set(items),
-      error: (err: HttpErrorResponse) => this.error.set(this.mensajeError(err)),
+      error: (err: HttpErrorResponse) => { this.devoluciones.set([]); this.error.set(this.mensajeError(err)); },
     });
     if (this.esCliente()) {
       this.service.listarVentasElegibles().subscribe({
@@ -108,6 +112,7 @@ export class DevolucionesPage implements OnInit {
       devolucion.detalles.map((detalle) => [detalle.id, detalle.cantidad_solicitada]),
     ));
     this.notaGestion.set('');
+    this.noVendibles.set({});
     this.referencia.set('');
   }
 
@@ -144,15 +149,17 @@ export class DevolucionesPage implements OnInit {
     const detalles = item.detalles.map((detalle) => ({
       detalle_id: detalle.id,
       cantidad_aceptada: this.cantidadesRecibidas()[detalle.id] ?? 0,
+      cantidad_no_vendible:this.noVendibles()[detalle.id]||0,
+      observacion:this.notaGestion().trim(),
     }));
-    this.ejecutar(this.service.recibir(item.id, detalles), 'Recepción registrada; se repusieron solo las unidades aceptadas.');
+    this.ejecutar(this.service.recibir(item.id, detalles), 'Inspección registrada. El cliente debe aceptar el importe antes de reponer prendas vendibles.');
   }
 
   protected procesarReembolso(): void {
     const item = this.devolucionSeleccionada();
     if (!item) return;
-    if (item.proveedor_pago_original?.toUpperCase() === 'STRIPE') {
-      this.ejecutar(this.service.reembolsarStripe(item.id), 'Resultado del reembolso recibido desde Stripe.');
+    if (item.proveedor_pago_original) {
+      this.ejecutar(this.service.reembolsarStripe(item.id), 'Consulta el estado del reintegro por el medio original.');
       return;
     }
     if (this.referencia().trim().length < 3) {

@@ -137,6 +137,8 @@
         </div>
       </div>
 
+      <h2>Comprar por unidad</h2>
+      <p>Cantidad libre por talla y color, con el precio unitario mostrado.</p>
       <div class="quantity-row">
         <span>Cantidad · stock seleccionado: {{ stockSeleccionado() }}</span>
         <div>
@@ -180,6 +182,8 @@
       }
     </article>
   </section>
+
+  <app-comprar-mayorista [productoId]="item.producto_id" [sucursalId]="sucursalId()" />
 
   <section class="recommendations-section" aria-labelledby="recommendations-title">
     <div class="recommendations-heading">

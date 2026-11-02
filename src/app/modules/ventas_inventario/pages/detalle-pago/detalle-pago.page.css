@@ -1,4 +1,4 @@
-:host { display: block; min-width: 0; }
+:host { display: block; min-width: 0; --color-muted:#53584d; --color-accent:#435832; }
 
 .payment-page-shell { width: min(100%, 1440px); min-width: 0; margin: 0 auto; padding: clamp(20px, 3vw, 42px); }
 .payment-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }

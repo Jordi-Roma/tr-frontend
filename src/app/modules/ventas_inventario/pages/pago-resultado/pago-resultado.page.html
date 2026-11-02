@@ -1,7 +1,7 @@
 <section class="payment-result">
   <p class="eyebrow">Pasarela de pago</p>
   <h1>Resultado del pago</h1>
-  <p>Consulta el estado de tu orden registrada con Stripe.</p>
+  <p>Consulta el estado confirmado por el servidor para esta compra.</p>
 
   @if (cargando()) {
     <article class="result-card">
@@ -43,20 +43,27 @@
         <p class="success-message">{{ mensaje() }}</p>
       }
 
-      @if (item.estado === 'PENDIENTE') {
+      @if (item.modo_pago === 'PRUEBA') { <p role="status">Entorno de pruebas. No transfieras dinero al QR simulado.</p> }
+      @if (item.motivo_incidencia) { <p>{{ item.motivo_incidencia }}</p> }
+      @if (item.estado === 'PENDIENTE' && item.confirmacion_prueba) {
         <div class="test-actions">
           <p>
-            El pago aún está pendiente de confirmación. Puedes actualizar el estado de la orden manualmente.
+            Simulación habilitada por el servidor. Estas acciones no mueven dinero real.
           </p>
           <button type="button" [disabled]="procesando()" (click)="confirmarPrueba(true)">
-            Marcar como pagado
+            Simular pago aprobado
           </button>
           <button type="button" class="secondary" [disabled]="procesando()" (click)="confirmarPrueba(false)">
-            Cancelar pago
+            Simular rechazo o cancelación
           </button>
         </div>
       }
 
+      <button type="button" (click)="actualizar()" [disabled]="cargando() || procesando()">Actualizar estado</button>
+      @if (item.estado === 'PENDIENTE' && item.confirmacion_prueba) { <button type="button" (click)="cancelar()" [disabled]="procesando()">Cancelar intento</button> }
+      @if (item.estado === 'PENDIENTE' && !item.confirmacion_prueba && item.checkout_url?.startsWith('https://')) {
+        <a [href]="item.checkout_url">Continuar en Stripe de prueba</a>
+      }
       <div class="actions">
         <a routerLink="/catalogo">Seguir comprando</a>
         <a routerLink="/carrito">Volver al carrito</a>

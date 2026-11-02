@@ -41,11 +41,12 @@ export function esOperacionNueva(metodo: string, ruta: string): boolean {
   ruta = ruta.replace(/\/$/, '');
   if (ruta === '/api/v1/usuarios' || ruta.startsWith('/api/v1/usuarios/')) return false;
   if (
-    ['/api/v1/saas/', '/api/v1/perfil', '/api/v1/autenticacion/', '/api/v1/devoluciones'].some(
+    ['/api/v1/pagos-empresa', '/api/v1/notificaciones', '/api/v1/saas/', '/api/v1/perfil', '/api/v1/autenticacion/', '/api/v1/devoluciones', '/api/v1/posventa'].some(
       (prefijo) => ruta.startsWith(prefijo),
     )
   )
     return false;
+  if (/^\/api\/v1\/delivery\/\d+\/(estado|incidencias)$/.test(ruta)) return false;
   if (/^\/api\/v1\/pagos\/(qr\/confirmar|stripe\/confirmar-prueba)\/\d+$/.test(ruta)) return false;
   if (/^\/api\/v1\/ventas-presenciales\/\d+\/nota\/correo$/.test(ruta)) return false;
   if (

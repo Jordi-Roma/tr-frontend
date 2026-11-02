@@ -1,3 +1,4 @@
+<button type="button" (click)="cargar()" [disabled]="cargando() || guardando()">Actualizar seguimiento</button>
 <a class="back-link" [routerLink]="vistaCliente() ? '/mis-deliveries' : '/delivery'">Volver</a>
 
 @if (cargando()) {
@@ -16,6 +17,8 @@
     <p class="status success">{{ mensaje() }}</p>
   }
 
+  @if(!item.pago_confirmado){<p role="status">No se puede despachar: no consta la compra y el envío pagados.</p>}
+  @if(item.incidencia_abierta){<p role="status">Hay una incidencia pendiente de coordinación. Un envío cancelado no significa que el dinero ya haya sido reembolsado.</p>}
   <section class="detail-grid">
     <article class="card">
       <h2>Datos del envío</h2>
@@ -33,30 +36,43 @@
     </article>
 
     <article class="card">
-      <h2>Mapa</h2>
+      <h2>Destino y ruta aceptada</h2>
+      @if(rutaPuntos()){
+        <svg viewBox="0 0 600 240" role="img" aria-label="Trazado de la ruta calculada por OpenRouteService" style="width:100%;background:#f1f4ed;border:1px solid #65705e">
+          <polyline [attr.points]="rutaPuntos()" fill="none" stroke="#36552c" stroke-width="5" />
+        </svg>
+      } @else {<p>Esta entrega anterior no conserva un trazado de ruta.</p>}
       <iframe class="map" title="Mapa de delivery" [src]="mapaUrl()" loading="lazy"></iframe>
-      <p class="muted">Ruta estimada entre sucursal y domicilio. No representa rastreo en tiempo real.</p>
+      <p class="muted">El mapa sitúa el destino; el trazado muestra la ruta de la cotización. No es rastreo del delivery en tiempo real.</p>
     </article>
   </section>
 
-  @if (!vistaCliente()) {
+  @if (!vistaCliente() && item.puede_gestionar) {
     <section class="card manage-card">
       <h2>Actualizar estado</h2>
       <label>
         Estado
         <select [value]="nuevoEstado()" (change)="actualizarEstado($event)">
-          <option value="PENDIENTE">Pendiente</option>
-          <option value="EN_PREPARACION">En preparación</option>
-          <option value="EN_CAMINO">En camino</option>
-          <option value="ENTREGADO">Entregado</option>
-          <option value="CANCELADO">Cancelado</option>
+          <option [value]="item.estado">{{ item.estado }} (actual)</option>
+          @for(estado of item.transiciones;track estado){<option [value]="estado">{{ estado }}</option>}
         </select>
       </label>
       <label>
         Observación
         <textarea [value]="observacion()" (input)="actualizarObservacion($event)" rows="3"></textarea>
       </label>
-      <button type="button" [disabled]="guardando()" (click)="guardarEstado()">Guardar estado</button>
+      @if(nuevoEstado()==='ENTREGADO'){
+        <label><input type="checkbox" [checked]="recepcion()" (change)="aceptarRecepcion($event)" /> Confirmo que la entrega física se realizó</label>
+      }
+      <button type="button" [disabled]="guardando() || !item.transiciones.includes(nuevoEstado()) || (nuevoEstado()==='ENTREGADO' && (!recepcion() || item.incidencia_abierta))" (click)="guardarEstado()">Guardar estado</button>
+      <p>Para una incidencia o cancelación escribe al menos cinco caracteres en Observación.</p>
+      <button type="button" [disabled]="guardando() || observacion().trim().length<5" (click)="incidencia(item.incidencia_abierta)">{{ item.incidencia_abierta ? 'Resolver incidencia' : 'Registrar incidencia' }}</button>
     </section>
   }
+  <section class="card" aria-labelledby="historial-entrega"><h2 id="historial-entrega">Historial del seguimiento</h2>
+    @for(h of item.historial;track h.version){
+      <article><h3>{{ h.tipo }} · {{ h.estado_nuevo }}</h3><p>{{ formatFecha(h.fecha) }}</p>@if(h.observacion){<p>{{ h.observacion }}</p>}</article>
+    } @empty {<p>No hay eventos registrados para esta entrega anterior.</p>}
+  </section>
+
 }

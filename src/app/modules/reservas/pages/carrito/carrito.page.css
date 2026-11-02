@@ -527,7 +527,7 @@ h1 {
 }
 
 .qr-action-btn {
-  background: #16a34a !important;
+  background: #166534 !important;
   color: #ffffff !important;
 }
 
@@ -601,7 +601,7 @@ h1 {
 }
 
 .qr-monto-destacado {
-  color: #16a34a;
+  color: #166534;
   font-size: 1.15rem;
 }
 
@@ -610,7 +610,7 @@ h1 {
   align-items: center;
   gap: 5px;
   background: #fef2f2;
-  color: #dc2626;
+  color: #a12620;
   padding: 3px 10px;
   border-radius: 12px;
   font-size: 0.78rem;
@@ -650,7 +650,7 @@ h1 {
 }
 
 .qr-info-label {
-  color: #64748b;
+  color: #46556b;
   font-weight: 600;
 }
 
@@ -715,3 +715,5 @@ h1 {
 .qr-confirm-btn {
   background: #166534 !important;
 }
+
+.qr-modal-content { display: flex; flex-direction: column; align-items: center; gap: 16px; }

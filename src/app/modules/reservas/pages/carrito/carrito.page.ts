@@ -1,3 +1,6 @@
+import { PerfilService } from '../../../autenticacion/services/perfil.service';
+import { DireccionResponse } from '../../../autenticacion/models/perfil.models';
+import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -24,19 +27,32 @@ import {
   DeliveryCheckoutRequest,
   DeliveryCotizacionResponse,
 } from '../../../ventas_inventario/models/delivery.models';
-import { CheckoutQrResponse } from '../../../ventas_inventario/models/pago.models';
+import { CheckoutQrResponse, OrdenPagoResponse } from '../../../ventas_inventario/models/pago.models';
 import { DeliveryService } from '../../../ventas_inventario/services/delivery.service';
 import { PagoService } from '../../../ventas_inventario/services/pago.service';
 import { TiendaStateService } from '../../../../core/services/tienda-state.service';
 
 @Component({
-  imports: [OperacionNuevaDirective, RouterLink],
+  imports: [OperacionNuevaDirective, RouterLink, AppModalComponent],
   selector: 'app-carrito-page',
   styleUrl: './carrito.page.css',
   templateUrl: './carrito.page.html',
 })
 export class CarritoPage implements OnInit, OnDestroy {
   private readonly carritoService = inject(CarritoService);
+  private readonly perfil=inject(PerfilService);
+  protected readonly direcciones=signal<DireccionResponse[]>([]);
+  protected readonly direccionGuardada=signal<number|null>(null);
+  protected readonly cotizacionAceptada=signal(false);
+  private solicitudCotizacion=0;
+  private invalidarCotizacion():void {this.solicitudCotizacion++;this.cotizacionDelivery.set(null);this.cotizacionAceptada.set(false);this.cotizandoDelivery.set(false);if(this.deliveryLine){this.deliveryLine.remove();this.deliveryLine=undefined;}}
+  protected venceCotizacion():string {const fecha=this.cotizacionDelivery()?.vence_en;return fecha?new Date(fecha).toLocaleString('es-BO'):'';}
+  protected aceptarCotizacion(event:Event):void {this.cotizacionAceptada.set((event.target as HTMLInputElement).checked);}
+  protected elegirDireccion(event:Event):void {
+    const id=Number((event.target as HTMLSelectElement).value)||null;
+    this.direccionGuardada.set(id);this.invalidarCotizacion();
+    const d=this.direcciones().find(x=>x.id===id);if(d){this.direccionEntrega.set(d.direccion);this.referenciaEntrega.set(d.referencia||'');this.buscarDireccion();}
+  }
   private readonly catalogoService = inject(CatalogoPublicoService);
   private readonly reservasService = inject(ReservasService);
   private readonly deliveryService = inject(DeliveryService);
@@ -76,21 +92,12 @@ export class CarritoPage implements OnInit, OnDestroy {
 
   protected readonly metodoPagoDigital = signal<'QR' | 'STRIPE'>('QR');
   protected readonly mostrandoModalQr = signal(false);
+  protected readonly intentoPendiente = signal<OrdenPagoResponse | null>(null);
   protected readonly checkoutQr = signal<CheckoutQrResponse | null>(null);
   protected readonly qrDataUrl = signal('');
-  protected readonly segundosRestantesQr = signal(15 * 60);
   protected readonly copiadoQr = signal<string | null>(null);
   protected readonly errorQr = signal('');
-  private timerQr?: ReturnType<typeof setInterval>;
 
-  protected readonly tiempoRestanteQrFormateado = computed(() => {
-    const s = this.segundosRestantesQr();
-    const m = Math.floor(s / 60)
-      .toString()
-      .padStart(2, '0');
-    const seg = (s % 60).toString().padStart(2, '0');
-    return `${m}:${seg}`;
-  });
 
   protected readonly items = computed(() => this.carrito()?.items ?? []);
   protected readonly subtotal = computed(() => this.toNumber(this.carrito()?.total));
@@ -107,11 +114,16 @@ export class CarritoPage implements OnInit, OnDestroy {
   protected readonly excedeMaximoReserva = computed(
     () =>
       this.tipoEntrega() === 'RECOJO_SUCURSAL' &&
-      this.items().some((item) => Number(item.cantidad) > 2),
+      this.items().some((item) => !!item.paquete_id || Number(item.cantidad) > 2),
   );
 
   ngOnInit(): void {
+    this.perfil.listarDirecciones().subscribe({next:d=>this.direcciones.set(d.direcciones),error:()=>this.direcciones.set([])});
     this.cargarCarrito();
+    this.pagoService.obtenerPendiente().subscribe({
+      next: orden => this.intentoPendiente.set(orden),
+      error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+    });
   }
 
   protected cambiarCantidad(item: CarritoItemResponse, cantidad: number): void {
@@ -162,7 +174,7 @@ export class CarritoPage implements OnInit, OnDestroy {
     const sucursalId = value === '' ? null : Number(value);
     this.sucursalId.set(sucursalId);
     this.tiendaState.seleccionarSucursalCarrito(sucursalId);
-    this.cotizacionDelivery.set(null);
+    this.invalidarCotizacion();
     this.sincronizarMapa(this.latitudEntrega(), this.longitudEntrega());
   }
 
@@ -170,7 +182,7 @@ export class CarritoPage implements OnInit, OnDestroy {
     this.tipoEntrega.set(tipo);
     this.error.set('');
     if (tipo === 'RECOJO_SUCURSAL') {
-      this.cotizacionDelivery.set(null);
+      this.invalidarCotizacion();
       return;
     }
     this.programarMapa();
@@ -178,11 +190,11 @@ export class CarritoPage implements OnInit, OnDestroy {
 
   protected actualizarDireccion(event: Event): void {
     this.direccionEntrega.set((event.target as HTMLInputElement).value);
-    this.cotizacionDelivery.set(null);
+    this.invalidarCotizacion();
   }
 
   protected actualizarReferencia(event: Event): void {
-    this.referenciaEntrega.set((event.target as HTMLInputElement).value);
+    this.referenciaEntrega.set((event.target as HTMLInputElement).value);this.invalidarCotizacion();
   }
 
   protected actualizarFechaCita(event: Event): void {
@@ -202,6 +214,7 @@ export class CarritoPage implements OnInit, OnDestroy {
       .pipe(finalize(() => this.cotizandoDelivery.set(false)))
       .subscribe({
         next: (resultado) => {
+          if(this.direccionEntrega().trim()!==direccion)return;
           this.direccionEntrega.set(resultado.direccion);
           this.actualizarUbicacion(
             this.toNumber(resultado.latitud),
@@ -243,21 +256,26 @@ export class CarritoPage implements OnInit, OnDestroy {
   protected cotizarDelivery(): void {
     const request = this.deliveryRequest();
     if (!request) {
+      this.error.set('Selecciona sucursal e ingresa una dirección de al menos cinco caracteres.');
       return;
     }
+    this.invalidarCotizacion();
+    const n=this.solicitudCotizacion;
     this.cotizandoDelivery.set(true);
     this.error.set('');
     this.deliveryService
       .cotizar(request)
-      .pipe(finalize(() => this.cotizandoDelivery.set(false)))
+      .pipe(finalize(() => {if(n===this.solicitudCotizacion)this.cotizandoDelivery.set(false);}))
       .subscribe({
         next: (cotizacion) => {
+          if(n!==this.solicitudCotizacion)return;
           this.cotizacionDelivery.set(cotizacion);
+          if(this.deliveryMap&&cotizacion.ruta?.length){this.deliveryLine=L.polyline(cotizacion.ruta.map(p=>[p[1],p[0]] as L.LatLngTuple),{color:'#36552c',weight:4}).addTo(this.deliveryMap);}
           if (!cotizacion.disponible) {
             this.error.set(cotizacion.mensaje || 'La direccion esta fuera del rango de delivery.');
           }
         },
-        error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+        error: (error: HttpErrorResponse) => {if(n===this.solicitudCotizacion)this.error.set(this.obtenerMensajeError(error));},
       });
   }
 
@@ -330,7 +348,6 @@ export class CarritoPage implements OnInit, OnDestroy {
             });
             this.qrDataUrl.set(dataUrl);
             this.mostrandoModalQr.set(true);
-            this.iniciarTimerQr();
           } catch {
             this.error.set('No se pudo generar la imagen del código QR.');
           }
@@ -341,7 +358,7 @@ export class CarritoPage implements OnInit, OnDestroy {
 
   protected confirmarPagoQr(): void {
     const checkout = this.checkoutQr();
-    if (!checkout) return;
+    if (!checkout || this.guardando() || !checkout.confirmacion_prueba) return;
 
     this.guardando.set(true);
     this.errorQr.set('');
@@ -362,7 +379,6 @@ export class CarritoPage implements OnInit, OnDestroy {
   }
 
   protected cerrarModalQr(): void {
-    this.detenerTimerQr();
     this.mostrandoModalQr.set(false);
     this.qrDataUrl.set('');
     this.checkoutQr.set(null);
@@ -382,25 +398,6 @@ export class CarritoPage implements OnInit, OnDestroy {
         this.copiadoQr.set(null);
       }
     }, 2000);
-  }
-
-  private iniciarTimerQr(): void {
-    this.detenerTimerQr();
-    this.segundosRestantesQr.set(15 * 60);
-    this.timerQr = setInterval(() => {
-      if (this.segundosRestantesQr() > 0) {
-        this.segundosRestantesQr.update((s) => s - 1);
-      } else {
-        this.detenerTimerQr();
-      }
-    }, 1000);
-  }
-
-  private detenerTimerQr(): void {
-    if (this.timerQr) {
-      clearInterval(this.timerQr);
-      this.timerQr = undefined;
-    }
   }
 
   protected pagarConStripe(): void {
@@ -452,7 +449,7 @@ export class CarritoPage implements OnInit, OnDestroy {
     if (!this.items().length || this.items().some((i) => i.disponible_para_compra === false))
       return false;
     if (this.tipoEntrega() === 'RECOJO_SUCURSAL') {
-      return Boolean(this.fechaCita()) && !this.excedeMaximoReserva();
+      return this.sucursalId() !== null;
     }
     return Boolean(this.deliveryCheckout());
   }
@@ -508,10 +505,10 @@ export class CarritoPage implements OnInit, OnDestroy {
     const sucursalId = this.sucursalId();
     const direccion = this.direccionEntrega().trim();
     if (sucursalId === null || direccion.length < 5) {
-      this.error.set('Selecciona sucursal e ingresa dirección de delivery.');
       return null;
     }
     return {
+      direccion_id:this.direccionGuardada(),
       sucursal_id: sucursalId,
       direccion_entrega: direccion,
       referencia: this.referenciaEntrega().trim() || null,
@@ -526,11 +523,12 @@ export class CarritoPage implements OnInit, OnDestroy {
     }
     const base = this.deliveryRequest();
     const cotizacion = this.cotizacionDelivery();
-    if (!base || !cotizacion?.disponible) {
+    if (!base || !cotizacion?.disponible || !cotizacion.cotizacion_id || !this.cotizacionAceptada()) {
       return null;
     }
     return {
       ...base,
+      cotizacion_id:cotizacion.cotizacion_id,
       distancia_km: cotizacion.distancia_km,
       tiempo_estimado_min: cotizacion.tiempo_estimado_min,
       costo_delivery: cotizacion.costo_delivery,
@@ -682,6 +680,7 @@ export class CarritoPage implements OnInit, OnDestroy {
 
     this.deliveryMarker = L.marker([lat, lng], {
       draggable: true,
+      title: 'Ubicación de entrega. Arrastra el marcador para ajustar el destino.',
       icon: L.divIcon({
         className: 'delivery-map-marker delivery-map-marker-client',
         html: '<span></span>',
@@ -696,7 +695,7 @@ export class CarritoPage implements OnInit, OnDestroy {
       }
       this.latitudEntrega.set(position.lat);
       this.longitudEntrega.set(position.lng);
-      this.cotizacionDelivery.set(null);
+      this.invalidarCotizacion();
       this.dibujarRutaVisual();
       if (!this.direccionEntrega().trim()) {
         this.direccionEntrega.set('Ubicación seleccionada en el mapa');
@@ -717,7 +716,7 @@ export class CarritoPage implements OnInit, OnDestroy {
   private actualizarUbicacion(latitud: number, longitud: number): void {
     this.latitudEntrega.set(latitud);
     this.longitudEntrega.set(longitud);
-    this.cotizacionDelivery.set(null);
+    this.invalidarCotizacion();
     this.sincronizarMapa(latitud, longitud);
   }
 
@@ -754,6 +753,7 @@ export class CarritoPage implements OnInit, OnDestroy {
 
     if (!this.sucursalMarker) {
       this.sucursalMarker = L.marker(sucursalPoint, {
+        title: 'Sucursal de origen',
         icon: L.divIcon({
           className: 'delivery-map-marker delivery-map-marker-branch',
           html: '<span></span>',
@@ -765,20 +765,10 @@ export class CarritoPage implements OnInit, OnDestroy {
       this.sucursalMarker.setLatLng(sucursalPoint);
     }
 
-    this.sucursalMarker.bindTooltip(`Sale desde: ${sucursal.ciudad} - ${sucursal.nombre}`, {
-      direction: 'top',
-    });
+    const etiqueta=document.createElement('span');
+    etiqueta.textContent=`Sale desde: ${sucursal.ciudad} - ${sucursal.nombre}`;
+    this.sucursalMarker.bindTooltip(etiqueta,{direction:'top'});
 
-    if (!this.deliveryLine) {
-      this.deliveryLine = L.polyline([sucursalPoint, clientePoint], {
-        color: '#111111',
-        weight: 4,
-        opacity: 0.75,
-        dashArray: '8 8',
-      }).addTo(this.deliveryMap);
-    } else {
-      this.deliveryLine.setLatLngs([sucursalPoint, clientePoint]);
-    }
   }
 
   private ajustarVistaRuta(clienteLat: number, clienteLng: number): void {
@@ -811,7 +801,6 @@ export class CarritoPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.detenerTimerQr();
     if (this.deliveryMap) {
       this.deliveryMap.remove();
       this.deliveryMap = undefined;

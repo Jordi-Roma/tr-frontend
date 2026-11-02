@@ -1,4 +1,4 @@
-:host { display: block; }
+:host { display: block; --color-muted: #53584d; --color-accent: #435832; --color-danger: #a12620; }
 
 .payment-result { max-width: 920px; margin: 0 auto; }
 .eyebrow { color: var(--color-accent); font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
@@ -21,7 +21,7 @@ h1 { margin: 0 0 10px; font-family: var(--font-display); font-size: clamp(2.5rem
 .status-pill { justify-self: start; border-radius: 999px; padding: 8px 12px; font-weight: 900; background: var(--color-accent-soft); color: var(--color-primary); }
 .pagado .status-pill { background: rgba(104, 142, 88, .16); }
 .rechazado .status-pill { color: var(--color-danger); background: rgba(178, 74, 61, .12); }
-.pendiente .status-pill { color: #9a6814; background: rgba(219, 157, 48, .16); }
+.pendiente .status-pill { color: #79500c; background: rgba(219, 157, 48, .16); }
 .status-description { margin: -8px 0 0; color: var(--color-muted); font-weight: 800; }
 
 .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }

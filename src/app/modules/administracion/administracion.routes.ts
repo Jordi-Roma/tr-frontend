@@ -1,3 +1,4 @@
+import { PreciosMayoristasPage } from './pages/precios-mayoristas/precios-mayoristas.page';
 import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { CategoriasPage } from './pages/categorias/categorias.page';
@@ -16,6 +17,7 @@ import { VariantesPage } from './pages/variantes/variantes.page';
 import { PanelProveedorPage } from './pages/proveedores/panel-proveedor.page';
 
 export const ADMINISTRACION_ROUTES: Routes = [
+  {path:'precios-mayoristas',component:PreciosMayoristasPage,canActivate:[roleGuard],data:{roles:['ADMINISTRADOR']}},
   { path: 'saas/empresas', loadComponent: () => import('./pages/saas/empresas.page').then(m => m.EmpresasPage), canActivate: [roleGuard], data: { roles: ['ADMIN_SAAS'] } },
   { path: 'saas/planes', loadComponent: () => import('./pages/saas/planes.page').then(m => m.PlanesPage), canActivate: [roleGuard], data: { roles: ['ADMIN_SAAS'] } },
   { path: 'saas/respaldos', loadComponent: () => import('./pages/saas/respaldos.page').then(m => m.RespaldosPage), canActivate: [roleGuard], data: { roles: ['ADMIN_SAAS'] } },

@@ -1,5 +1,7 @@
 :host {
   display: block;
+  --color-muted:#53584d;
+  --color-accent:#435832;
 }
 
 .page-header,

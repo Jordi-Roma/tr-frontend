@@ -35,19 +35,36 @@ export class PagoResultadoPage implements OnInit {
 
   protected confirmarPrueba(aprobar: boolean): void {
     const orden = this.orden();
-    if (orden === null) return;
+    if (orden === null || this.procesando() || !orden.confirmacion_prueba) return;
     this.procesando.set(true);
     this.error.set('');
     this.mensaje.set('');
-    this.pagoService.confirmarPrueba(orden.orden_id, { aprobar })
+    const accion = orden.proveedor === 'QR_BCP'
+      ? (aprobar ? this.pagoService.confirmarPagoQr(orden.orden_id) : this.pagoService.cancelarIntento(orden.orden_id))
+      : this.pagoService.confirmarPrueba(orden.orden_id, { aprobar });
+    accion
       .pipe(finalize(() => this.procesando.set(false)))
       .subscribe({
         next: (actualizada) => {
           this.orden.set(actualizada);
-          this.mensaje.set(aprobar ? 'Pago confirmado correctamente.' : 'Pago cancelado correctamente.');
+          this.mensaje.set(actualizada.estado === 'PAGADO' ? 'Compra de prueba completada.' : 'Estado actualizado. Revisa el resultado de la operación.');
         },
         error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
       });
+  }
+
+  protected actualizar(): void {
+    const o = this.orden();
+    if (o) this.cargarOrden(o.orden_id);
+  }
+  protected cancelar(): void {
+    const o = this.orden();
+    if (!o || this.procesando()) return;
+    this.procesando.set(true);
+    this.pagoService.cancelarIntento(o.orden_id).pipe(finalize(() => this.procesando.set(false))).subscribe({
+      next: actual => this.orden.set(actual),
+      error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+    });
   }
 
   protected formatMonto(value: number | string | null | undefined): string {

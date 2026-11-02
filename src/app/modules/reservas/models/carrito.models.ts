@@ -1,4 +1,8 @@
 export interface CarritoItemResponse {
+  paquete_id?: number|null;
+  tipo_compra?: string;
+  descuento_mayorista?: number|string|null;
+  motivo_no_disponible?: string|null;
   id: number;
   producto_variante_id: number;
   producto_id: number;

@@ -1,6 +1,7 @@
-export type DeliveryEstado = 'PENDIENTE' | 'EN_PREPARACION' | 'EN_CAMINO' | 'ENTREGADO' | 'CANCELADO';
+export type DeliveryEstado = 'PENDIENTE_PAGO' | 'PENDIENTE' | 'EN_PREPARACION' | 'EN_CAMINO' | 'ENTREGADO' | 'CANCELADO';
 
 export interface DeliveryCotizarRequest {
+  direccion_id?: number|null;
   sucursal_id: number;
   direccion_entrega: string;
   referencia?: string | null;
@@ -9,12 +10,18 @@ export interface DeliveryCotizarRequest {
 }
 
 export interface DeliveryCheckoutRequest extends DeliveryCotizarRequest {
+  cotizacion_id?: string|null;
   distancia_km?: number | string | null;
   tiempo_estimado_min?: number | null;
   costo_delivery?: number | string | null;
 }
 
 export interface DeliveryCotizacionResponse {
+  cotizacion_id?: string|null;
+  vence_en?: string|null;
+  ruta?: number[][];
+  origen_latitud?: number|string|null;
+  origen_longitud?: number|string|null;
   sucursal_id: number;
   distancia_km: number | string;
   tiempo_estimado_min: number;
@@ -38,6 +45,9 @@ export interface DeliveryFiltros {
 }
 
 export interface DeliveryItem {
+  version: number;
+  pago_confirmado: boolean;
+  incidencia_abierta: boolean;
   id: number;
   venta_id: number;
   venta_codigo?: string | null;
@@ -58,6 +68,11 @@ export interface DeliveryItem {
 }
 
 export interface DeliveryDetalle extends DeliveryItem {
+  ruta:number[][];
+  historial: {tipo:string;estado_anterior:string|null;estado_nuevo:string;observacion:string|null;version:number;fecha:string}[];
+  transiciones:string[];
+  puede_gestionar:boolean;
+  cotizacion_id?:string|null;
   sucursal_direccion?: string | null;
   sucursal_latitud?: number | string | null;
   sucursal_longitud?: number | string | null;
@@ -67,6 +82,8 @@ export interface DeliveryDetalle extends DeliveryItem {
 }
 
 export interface DeliveryEstadoRequest {
+  version:number;
+  recepcion_confirmada?:boolean;
   estado: DeliveryEstado | string;
   observacion?: string | null;
 }

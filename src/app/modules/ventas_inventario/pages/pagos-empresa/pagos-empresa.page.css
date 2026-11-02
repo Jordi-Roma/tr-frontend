@@ -1,0 +1,9 @@
+@import "../../../administracion/pages/cu06.shared.css";
+:host { display: block; color: var(--color-text); }
+section, article { margin: 1rem 0; padding: 1rem; border: 1px solid #6d7567; border-radius: .6rem; background: var(--color-surface); }
+label { display: block; margin: .8rem 0; }
+input:not([type="checkbox"]) { display: block; width: min(100%,32rem); padding: .65rem; border: 1px solid #59634e; }
+button { margin: .5rem .5rem .5rem 0; padding: .65rem .9rem; border-radius: .4rem; background: #435832; color: white; border: 1px solid #435832; cursor: pointer; }
+button:disabled { opacity: .65; cursor: default; }
+a { color: #28542b; text-decoration: underline; }
+[role="alert"] { color: #a12620; }

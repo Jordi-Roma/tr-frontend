@@ -41,7 +41,7 @@ export class HistorialDeliveryPage implements OnInit {
 
     request.pipe(finalize(() => this.cargando.set(false))).subscribe({
       next: (items) => this.deliveries.set(items),
-      error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+      error: (error: HttpErrorResponse) => {this.deliveries.set([]);this.error.set(this.obtenerMensajeError(error));},
     });
   }
 

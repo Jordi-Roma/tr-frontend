@@ -52,6 +52,10 @@ export class DeliveryService {
     return this.http.patch<DeliveryEstadoResponse>(`${this.apiUrl}/${deliveryId}/estado`, request);
   }
 
+  incidencia(id:number,datos:{version:number;resolver:boolean;observacion:string}):Observable<DeliveryEstadoResponse>{
+    return this.http.post<DeliveryEstadoResponse>(`${this.apiUrl}/${id}/incidencias`,datos);
+  }
+
   private crearParams(filtros: DeliveryFiltros): HttpParams {
     let params = new HttpParams();
     Object.entries(filtros as Record<string, string | number | null | undefined>).forEach(([key, value]) => {

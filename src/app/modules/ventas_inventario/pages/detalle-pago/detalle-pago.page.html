@@ -54,9 +54,9 @@
           </tr>
         </thead>
         <tbody>
-          @for (producto of item.productos; track producto.producto + producto.talla + producto.color) {
+          @for (producto of item.productos; track $index) {
             <tr>
-              <td>{{ producto.producto }}</td>
+              <td>{{ producto.producto }}<br />{{ producto.tipo_compra || 'UNIDAD' }} @if (producto.paquete_origen_id) { · paquete #{{ producto.paquete_origen_id }} }</td>
               <td>{{ producto.categoria || '-' }} · {{ producto.talla || '-' }} / {{ producto.color || '-' }}</td>
               <td>{{ producto.cantidad }}</td>
               <td>{{ formatMonto(producto.precio_unitario) }}</td>

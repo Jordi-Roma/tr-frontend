@@ -1,3 +1,4 @@
+import { ComprarMayoristaComponent } from '../../../reservas/pages/mayorista/comprar-mayorista.component';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
@@ -15,7 +16,7 @@ import { CatalogoPublicoService } from '../../../catalogo/services/catalogo-publ
 import { RecomendacionPrenda, RecomendacionesService } from '../../../inteligencia/services/recomendaciones.service';
 
 @Component({
-  imports: [OperacionNuevaDirective, RouterLink],
+  imports: [OperacionNuevaDirective, RouterLink, ComprarMayoristaComponent],
   selector: 'app-producto-detalle-page',
   styleUrl: './producto-detalle.page.css',
   templateUrl: './producto-detalle.page.html',

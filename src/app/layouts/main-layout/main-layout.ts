@@ -71,6 +71,8 @@ export class MainLayout {
     { label: 'Catalogo', path: '/catalogo', icon: 'pi pi-shopping-bag' },
     { label: 'Para ti', path: '/para-ti', icon: 'pi pi-sparkles' },
     { label: 'Reservas', path: '/reservas', icon: 'pi pi-calendar-check' },
+    { label: 'Notificaciones', path: '/notificaciones', icon: 'pi pi-bell', roles: ['CLIENTE'] },
+    { label: 'Mis cambios', path: '/cambios', icon: 'pi pi-sync', roles: ['CLIENTE'] },
     { label: 'Mis pagos', path: '/mis-pagos', icon: 'pi pi-credit-card', roles: ['CLIENTE'] },
     {
       label: 'Mis devoluciones',
@@ -206,6 +208,10 @@ export class MainLayout {
           icon: 'pi pi-receipt',
           roles: ADMIN_ENCARGADO_CAJERO,
         },
+        { label: 'Cambios de prendas', path: '/cambios', icon: 'pi pi-sync', roles: ADMIN_ENCARGADO_CAJERO },
+        { label: 'Políticas de posventa', path: '/politicas-posventa', icon: 'pi pi-book', roles: ['ADMINISTRADOR'] },
+      { label: 'Pagos de prueba', path: '/pagos-empresa', icon: 'pi pi-cog', roles: ADMIN },
+        { label: 'Notificaciones', path: '/notificaciones', icon: 'pi pi-bell' },
         { label: 'Pagos', path: '/pagos', icon: 'pi pi-credit-card', roles: ADMIN_O_ENCARGADO },
         {
           label: 'Devoluciones',

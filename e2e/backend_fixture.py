@@ -50,6 +50,16 @@ def personal(rol):
     return nombre
 
 datos = {'a': a, 'b': b, 'clienteA': ca[2], 'clienteB': cb[2], 'cajero': personal('CAJERO'), 'encargado': personal('ENCARGADO_SUCURSAL'), 'proveedor': personal('PROVEEDOR'), 'productoA': pa, 'productoB': pb, 'varianteA': va, 'sucursalA': sa, 'plan': plan['id'], 'as': helpers.consulta('SELECT username FROM usuario WHERE id=%s',(actor,),True)['username']}
+# CU19: prenda de reemplazo disponible solo en la base de pruebas.
+if os.environ.get('STYLEAR_E2E_CAMBIOS') == '1':
+    from datetime import date
+    from decimal import Decimal
+    pv = helpers.consulta('SELECT v.*,p.categoria_id FROM producto_variante v JOIN producto p ON p.id=v.producto_id WHERE v.id=%s',(va,),True)
+    pr = helpers.consulta("INSERT INTO producto(empresa_id,categoria_id,nombre) VALUES(%s,%s,'Prenda de reemplazo') RETURNING id",(a['id'],pv['categoria_id']),True)['id']
+    vr = helpers.variantes.crear_variante(a['id'],pr,pv['talla_id'],pv['color_id'],'REEMPLAZO-E2E')
+    helpers.variantes.asignar_precio(vr,a['id'],Decimal('70'),date(2020,1,1),None)
+    helpers.consulta('INSERT INTO inventario_sucursal(empresa_id,sucursal_id,producto_variante_id,stock_disponible) VALUES(%s,%s,%s,5)',(a['id'],sa,vr))
+    datos['reemplazoA'] = vr
 Path(__file__).with_name('.fixture.json').write_text(json.dumps(datos),encoding='utf-8')
 
 from cryptography.fernet import Fernet
@@ -76,6 +86,24 @@ def capturar_nota(destino, asunto, cuerpo, archivo, nombre, emisor):
     assert archivo.startswith(b'%PDF') and nombre.endswith('.pdf')
     assert emisor in asunto and emisor in cuerpo
 correo_comercial.enviar_correo_con_adjunto = capturar_nota
+
+# Proveedor de rutas simulado exclusivamente en la base desechable de CU18.
+if os.environ.get('STYLEAR_E2E_RUTAS') == '1':
+    helpers.consulta('UPDATE sucursal SET latitud=-17.783327,longitud=-63.182140 WHERE id=%s AND empresa_id=%s',(sa,a['id']))
+    from types import SimpleNamespace
+    from app.modules.ventas_inventario.services import delivery_service as rutas
+    os.environ['OPENROUTE_API_KEY'] = 'clave-sintetica-solo-fixture'
+    post_original, get_original = rutas.requests.post, rutas.requests.get
+    def rutas_post(url, **kwargs):
+        if url == 'https://api.openrouteservice.org/v2/directions/driving-car/geojson':
+            coords = kwargs['json']['coordinates']
+            return SimpleNamespace(status_code=200,raise_for_status=lambda:None,json=lambda:{'features':[{'properties':{'summary':{'distance':4500,'duration':720}},'geometry':{'type':'LineString','coordinates':coords}}]})
+        return post_original(url, **kwargs)
+    def rutas_get(url, **kwargs):
+        if url == 'https://nominatim.openstreetmap.org/search':
+            return SimpleNamespace(raise_for_status=lambda:None,json=lambda:[{'display_name':'Avenida prueba 123, Santa Cruz','lat':'-17.77','lon':'-63.17'}])
+        return get_original(url, **kwargs)
+    rutas.requests.post, rutas.requests.get = rutas_post, rutas_get
 
 with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
     os.environ['STYLEAR_BACKUP_DIR'] = str(Path(privado)/'copias')

@@ -1,3 +1,6 @@
+import { CambiosPage } from './pages/cambios/cambios.page';
+import { PoliticaPosventaPage } from './pages/politica-posventa/politica-posventa.page';
+import { PagosEmpresaPage, NotificacionesPage } from './pages/pagos-empresa/pagos-empresa.page';
 import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { DetallePagoPage } from './pages/detalle-pago/detalle-pago.page';
@@ -12,6 +15,10 @@ import { TransferenciasStockPage } from './pages/transferencias-stock/transferen
 import { VentaPresencialPage } from './pages/venta-presencial/venta-presencial.page';
 
 export const VENTAS_INVENTARIO_ROUTES: Routes = [
+  {path:'cambios',component:CambiosPage,canActivate:[roleGuard],data:{roles:['CLIENTE','ADMINISTRADOR','ENCARGADO_SUCURSAL','CAJERO']}},
+  {path:'politicas-posventa',component:PoliticaPosventaPage,canActivate:[roleGuard],data:{roles:['ADMINISTRADOR']}},
+  {path:'pagos-empresa',component:PagosEmpresaPage,canActivate:[roleGuard],data:{roles:['ADMINISTRADOR']}},
+  {path:'notificaciones',component:NotificacionesPage,canActivate:[roleGuard],data:{roles:['CLIENTE','ADMINISTRADOR','ENCARGADO_SUCURSAL','CAJERO','PROVEEDOR','PERSONAL_VENTAS']}},
   {
     path: 'devoluciones',
     component: DevolucionesPage,

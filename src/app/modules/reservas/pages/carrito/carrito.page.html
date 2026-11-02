@@ -1,3 +1,6 @@
+@if (intentoPendiente(); as intento) {
+  <p role="status">Tienes un intento de pago pendiente. <a [routerLink]="['/pago/resultado']" [queryParams]="{orden_id: intento.orden_id}">Consultar o cancelar intento #{{ intento.orden_id }}</a></p>
+}
 <section class="cart-header" aria-labelledby="cart-title">
   <p class="eyebrow">Carrito</p>
   <h1 id="cart-title">Tu carrito de compras</h1>
@@ -41,6 +44,7 @@
 
           <div class="item-info">
             <h2>{{ item.producto }}</h2>
+            <p>{{ item.paquete_id ? item.tipo_compra + ' · paquete #' + item.paquete_id + ' · ' + item.descuento_mayorista + '% de descuento' : 'Compra por unidad' }}</p>
             <p>{{ item.categoria }} · {{ item.talla }} / {{ item.color }}</p>
             <p>
               {{ item.sucursal ? item.ciudad + ' - ' + item.sucursal : 'Sucursal por confirmar' }}
@@ -52,7 +56,7 @@
           <div class="quantity-control">
             <button
               type="button"
-              [disabled]="guardando()"
+              [disabled]="guardando() || !!item.paquete_id"
               (click)="cambiarCantidad(item, item.cantidad - 1)"
               aria-label="Disminuir cantidad"
             >
@@ -61,7 +65,7 @@
             <span>{{ item.cantidad }}</span>
             <button
               type="button"
-              [disabled]="guardando()"
+              [disabled]="guardando() || !!item.paquete_id"
               (click)="cambiarCantidad(item, item.cantidad + 1)"
               aria-label="Aumentar cantidad"
             >
@@ -71,7 +75,7 @@
 
           @if (item.disponible_para_compra === false) {
             <p class="stock-warning" role="status">
-              Esta prenda ya no está disponible. Retírala para continuar.
+              {{ item.motivo_no_disponible || 'Esta prenda ya no está disponible. Retírala para continuar.' }}
             </p>
           }
           <strong class="line-total">{{ formatPrecio(item.subtotal) }}</strong>
@@ -81,7 +85,7 @@
             class="remove-button"
             [disabled]="guardando()"
             (click)="quitar(item)"
-            aria-label="Quitar producto"
+            [attr.aria-label]="item.paquete_id ? 'Quitar paquete completo #' + item.paquete_id : 'Quitar producto'"
           >
             <i class="pi pi-trash" aria-hidden="true"></i>
           </button>
@@ -154,6 +158,13 @@
 
       @if (tipoEntrega() === 'DELIVERY') {
         <section class="delivery-card" aria-label="Datos de delivery">
+          <label>Dirección guardada (opcional)
+            <select [value]="direccionGuardada() ?? ''" (change)="elegirDireccion($event)">
+              <option value="">Escribir otra dirección</option>
+              @for(d of direcciones();track d.id){<option [value]="d.id">{{ d.direccion }}</option>}
+            </select>
+          </label>
+          <p>El envío se paga con Stripe o QR junto con la compra. No se cobra efectivo al entregar.</p>
           <label>
             Dirección de entrega
             <input
@@ -226,6 +237,10 @@
           }
         </section>
       }
+      @if(tipoEntrega()==='DELIVERY' && cotizacionDelivery()?.cotizacion_id){
+        <label><input type="checkbox" [checked]="cotizacionAceptada()" (change)="aceptarCotizacion($event)" /> Acepto la cotización del envío mostrada</label>
+        <p>Válida hasta {{ venceCotizacion() }}. Si modificas el destino, debes cotizar otra vez.</p>
+      }
       @if (tipoEntrega() === 'RECOJO_SUCURSAL') {
         <label class="branch-control">
           Fecha para ir a probar/recoger
@@ -239,7 +254,7 @@
         </label>
 
         <div class="reservation-fee">
-          <span>Reserva gratuita</span>
+          <span>Reserva gratuita (sólo unidades)</span>
           <strong>{{ formatMonto(montoReserva()) }}</strong>
           <small
             >Sin anticipo. Apartamos tus prendas durante 7 días desde la creación de la
@@ -249,7 +264,7 @@
 
         @if (excedeMaximoReserva()) {
           <p class="stock-warning">
-            Para reservar solo puedes apartar hasta 2 unidades de la misma prenda.
+            Los paquetes son para compra directa; las reservas admiten sólo unidades y hasta 2 por variante.
           </p>
         }
       }
@@ -263,7 +278,7 @@
             [class.active]="metodoPagoDigital() === 'QR'"
             (click)="metodoPagoDigital.set('QR')"
           >
-            <i class="pi pi-qrcode"></i> QR Simple (Bolivia)
+            <i class="pi pi-qrcode"></i> QR simulado (sin transferencias)
           </button>
           <button
             type="button"
@@ -286,7 +301,7 @@
               (click)="pagarConQr()"
             >
               <i class="pi pi-qrcode" aria-hidden="true"></i>
-              Pagar con QR Simple y retirar
+              Pagar con QR de prueba y retirar
             </button>
           } @else {
             <button
@@ -302,7 +317,7 @@
           <button
             type="button"
             class="secondary-button"
-            [appOperacionNueva]="guardando() || !entregaLista()"
+            [appOperacionNueva]="guardando() || !entregaLista() || excedeMaximoReserva() || !fechaCita()"
             (click)="confirmarReserva()"
           >
             <i class="pi pi-calendar-check" aria-hidden="true"></i>
@@ -318,7 +333,7 @@
             (click)="pagarConQr()"
           >
             <i class="pi pi-qrcode" aria-hidden="true"></i>
-            Pagar delivery con QR Simple
+            Pagar delivery con QR de prueba
           </button>
         } @else {
           <button
@@ -339,13 +354,12 @@
   </section>
 
   @if (mostrandoModalQr() && checkoutQr()) {
-    <div class="qr-modal-backdrop" (click)="cerrarModalQr()">
-      <div class="qr-modal-card" (click)="$event.stopPropagation()">
+    <app-modal [open]="true" title="Pagar con QR de prueba" (close)="cerrarModalQr()">
+      <div class="qr-modal-content">
         <div class="qr-modal-header">
           <span class="qr-bank-badge"
-            ><i class="pi pi-qrcode"></i> {{ checkoutQr()!.banco }} (QR Simple)</span
+            ><i class="pi pi-qrcode"></i> {{ checkoutQr()!.banco }} (QR de prueba)</span
           >
-          <h3>Pagar con QR Simple</h3>
           <p>
             Total a pagar:
             <strong class="qr-monto-destacado">{{
@@ -353,7 +367,7 @@
             }}</strong>
           </p>
           <div class="qr-timer-pill">
-            <i class="pi pi-clock"></i> Expira en {{ tiempoRestanteQrFormateado() }}
+            Simulación sin validez bancaria
           </div>
         </div>
 
@@ -411,6 +425,8 @@
           </div>
         }
 
+        <p role="status">QR DE PRUEBA. No es un QR bancario: no transfieras dinero. La conexión BCP está pendiente.</p>
+        <a [routerLink]="['/pago/resultado']" [queryParams]="{orden_id: checkoutQr()!.orden_id}">Consultar estado o cancelar intento</a>
         <div class="qr-modal-actions">
           <button
             type="button"
@@ -418,22 +434,22 @@
             [disabled]="guardando()"
             (click)="cerrarModalQr()"
           >
-            Cancelar
+            Cerrar consulta
           </button>
           <button
             type="button"
             class="primary-button qr-confirm-btn"
-            [disabled]="guardando()"
+            [disabled]="guardando() || !checkoutQr()?.confirmacion_prueba"
             (click)="confirmarPagoQr()"
           >
             @if (guardando()) {
               <i class="pi pi-spin pi-spinner"></i> Confirmando...
             } @else {
-              <i class="pi pi-check-circle"></i> Ya realicé el pago
+              <i class="pi pi-check-circle" aria-hidden="true"></i> Simular pago aprobado
             }
           </button>
         </div>
       </div>
-    </div>
+    </app-modal>
   }
 }

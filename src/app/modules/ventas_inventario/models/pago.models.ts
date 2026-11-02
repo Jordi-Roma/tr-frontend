@@ -1,12 +1,16 @@
 import { DeliveryCheckoutRequest } from './delivery.models';
 
 export interface CrearCheckoutStripeRequest {
+  clave_operacion?: string;
+  total_esperado?: number;
   sucursal_id?: number | null;
   tipo_entrega?: 'RECOJO_SUCURSAL' | 'DELIVERY';
   delivery?: DeliveryCheckoutRequest | null;
 }
 
 export interface CheckoutStripeResponse {
+  modo_pago?: string;
+  confirmacion_prueba?: boolean;
   orden_id: number;
   venta_id: number;
   estado: string;
@@ -14,12 +18,16 @@ export interface CheckoutStripeResponse {
 }
 
 export interface CrearCheckoutQrRequest {
+  clave_operacion?: string;
+  total_esperado?: number;
   sucursal_id?: number | null;
   tipo_entrega?: 'RECOJO_SUCURSAL' | 'DELIVERY';
   delivery?: DeliveryCheckoutRequest | null;
 }
 
 export interface CheckoutQrResponse {
+  modo_pago?: string;
+  confirmacion_prueba?: boolean;
   orden_id: number;
   venta_id: number;
   monto_total: number | string;
@@ -35,6 +43,10 @@ export interface CheckoutQrResponse {
 }
 
 export interface OrdenPagoResponse {
+  pago_recibido?: boolean;
+  motivo_incidencia?: string | null;
+  modo_pago?: string;
+  confirmacion_prueba?: boolean;
   orden_id: number;
   venta_id: number;
   cliente_id?: number | null;
@@ -81,6 +93,8 @@ export interface PagoHistorialItem {
 }
 
 export interface PagoProductoDetalle {
+  tipo_compra?: string;
+  paquete_origen_id?: number|null;
   producto: string;
   categoria?: string | null;
   talla?: string | null;
@@ -95,4 +109,16 @@ export interface PagoHistorialDetalle extends PagoHistorialItem {
   proveedor_payment_intent_id?: string | null;
   checkout_url?: string | null;
   productos: PagoProductoDetalle[];
+}
+
+export interface ConfiguracionPagosEmpresa {
+  version: number; modo: string; titular: string; stripe_habilitado: boolean; qr_habilitado: boolean;
+  confirmacion_prueba: boolean; stripe_conexion: string; qr_conexion: string;
+}
+export interface ReembolsoPago {
+  id: number; orden_id: number; monto: string; moneda: string; metodo: string; motivo: string;
+  estado: string; referencia: string | null;
+}
+export interface NotificacionPropia {
+  id: number; titulo: string; mensaje: string; leida: boolean; orden_id: number | null; creado_en: string;
 }

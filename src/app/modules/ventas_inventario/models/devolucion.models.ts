@@ -28,6 +28,7 @@ export interface CrearDevolucionRequest {
 }
 
 export interface DevolucionDetalle {
+  cantidad_no_vendible?:number;
   id: number;
   venta_detalle_id: number;
   producto_variante_id: number;
@@ -46,6 +47,8 @@ export interface DevolucionDetalle {
 }
 
 export interface Devolucion {
+  aceptada_cliente_en?:string|null;
+  comprobante?:{codigo:string;monto:string;moneda:string}|null;
   id: number;
   codigo: string;
   venta_id: number;

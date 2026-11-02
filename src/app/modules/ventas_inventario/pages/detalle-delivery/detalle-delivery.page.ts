@@ -1,3 +1,4 @@
+import { mensajeApi } from '../../../../core/services/error-api';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -26,6 +27,19 @@ export class DetalleDeliveryPage implements OnInit {
   protected readonly mensaje = signal('');
   protected readonly nuevoEstado = signal('');
   protected readonly observacion = signal('');
+  protected readonly recepcion=signal(false);
+  protected aceptarRecepcion(event:Event):void {this.recepcion.set((event.target as HTMLInputElement).checked);}
+  protected readonly rutaPuntos=computed(()=>{
+    const ruta=this.delivery()?.ruta||[];if(!ruta.length)return '';
+    const xs=ruta.map(p=>p[0]),ys=ruta.map(p=>p[1]),xmin=Math.min(...xs),ymin=Math.min(...ys);
+    const escala=Math.min(560/Math.max(...xs.map(x=>x-xmin),.0000001),200/Math.max(...ys.map(y=>y-ymin),.0000001));
+    return ruta.map(p=>`${20+(p[0]-xmin)*escala},${220-(p[1]-ymin)*escala}`).join(' ');
+  });
+  protected incidencia(resolver:boolean):void {
+    const item=this.delivery(),obs=this.observacion().trim();if(!item||this.guardando()||obs.length<5)return;
+    this.guardando.set(true);this.error.set('');
+    this.deliveryService.incidencia(item.id,{version:item.version,resolver,observacion:obs}).pipe(finalize(()=>this.guardando.set(false))).subscribe({next:r=>{this.delivery.set(r.delivery);this.nuevoEstado.set(r.delivery.estado);this.observacion.set('');this.mensaje.set(r.mensaje);},error:(e:unknown)=>this.error.set(mensajeApi(e))});
+  }
   protected readonly vistaCliente = computed(() => this.authService.tieneRol('CLIENTE'));
   protected readonly mapaUrl = computed<SafeResourceUrl>(() => {
     const item = this.delivery();
@@ -48,6 +62,7 @@ export class DetalleDeliveryPage implements OnInit {
       return;
     }
     this.cargando.set(true);
+    this.delivery.set(null);
     this.error.set('');
     const request = this.vistaCliente()
       ? this.deliveryService.obtenerMiDelivery(id)
@@ -57,7 +72,7 @@ export class DetalleDeliveryPage implements OnInit {
         this.delivery.set(delivery);
         this.nuevoEstado.set(delivery.estado);
       },
-      error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+      error: (error: HttpErrorResponse) => this.error.set(mensajeApi(error)),
     });
   }
 
@@ -77,16 +92,18 @@ export class DetalleDeliveryPage implements OnInit {
     this.mensaje.set('');
     this.deliveryService
       .actualizarEstado(item.id, {
+        version:item.version,
+        recepcion_confirmada:this.recepcion(),
         estado: this.nuevoEstado(),
         observacion: this.observacion().trim() || null,
       })
       .pipe(finalize(() => this.guardando.set(false)))
       .subscribe({
         next: (response) => {
-          this.delivery.set(response.delivery);
+          this.delivery.set(response.delivery);this.nuevoEstado.set(response.delivery.estado);this.recepcion.set(false);this.observacion.set('');
           this.mensaje.set(response.mensaje);
         },
-        error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
+        error: (error: HttpErrorResponse) => this.error.set(mensajeApi(error)),
       });
   }
 
