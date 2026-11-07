@@ -20,7 +20,8 @@ export const ADMINISTRACION_ROUTES: Routes = [
   {path:'precios-mayoristas',component:PreciosMayoristasPage,canActivate:[roleGuard],data:{roles:['ADMINISTRADOR']}},
   { path: 'saas/empresas', loadComponent: () => import('./pages/saas/empresas.page').then(m => m.EmpresasPage), canActivate: [roleGuard], data: { roles: ['ADMIN_SAAS'] } },
   { path: 'saas/planes', loadComponent: () => import('./pages/saas/planes.page').then(m => m.PlanesPage), canActivate: [roleGuard], data: { roles: ['ADMIN_SAAS'] } },
-  { path: 'saas/respaldos', loadComponent: () => import('./pages/saas/respaldos.page').then(m => m.RespaldosPage), canActivate: [roleGuard], data: { roles: ['ADMIN_SAAS'] } },
+  { path: 'saas/respaldos', loadComponent: () => import('./pages/saas/respaldos.page').then(m => m.RespaldosPage), canActivate: [roleGuard], data: { roles: ['ADMIN_SAAS'], ambito: 'PLATAFORMA' } },
+  { path: 'respaldos', loadComponent: () => import('./pages/saas/respaldos.page').then(m => m.RespaldosPage), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'], ambito: 'EMPRESA' } },
   { path: 'saas/eventos', loadComponent: () => import('./pages/saas/eventos.page').then(m => m.EventosPage), canActivate: [roleGuard], data: { roles: ['ADMIN_SAAS'] } },
   { path: 'mi-plan', loadComponent: () => import('./pages/saas/mi-plan.page').then(m => m.MiPlanPage), canActivate: [roleGuard], data: { roles: ['ADMINISTRADOR'] } },
   {

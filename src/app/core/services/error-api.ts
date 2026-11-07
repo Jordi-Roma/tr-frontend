@@ -6,6 +6,7 @@ function registro(valor: unknown): valor is Record<string, unknown> {
 
 export function detalleApi(error: unknown): unknown {
   const cuerpo: unknown = error instanceof HttpErrorResponse ? error.error : error;
+  if (registro(cuerpo) && 'detalleOriginal' in cuerpo) return cuerpo['detalleOriginal'];
   return registro(cuerpo) && 'detail' in cuerpo ? cuerpo['detail'] : cuerpo;
 }
 
@@ -39,11 +40,25 @@ export function esErrorVigencia(error: unknown): boolean {
 export function esOperacionNueva(metodo: string, ruta: string): boolean {
   if (['GET', 'HEAD', 'OPTIONS'].includes(metodo.toUpperCase())) return false;
   ruta = ruta.replace(/\/$/, '');
+  if (ruta === '/api/v1/asistente/chat' || ruta === '/api/v1/catalogo/vestidor/pausar-realtime')
+    return false;
+  if (/^\/api\/v1\/respaldos\/[0-9a-fA-F-]+\/(previsualizar|restaurar)$/.test(ruta)) return false;
+  if (
+    metodo.toUpperCase() === 'PATCH' &&
+    /^\/api\/v1\/reportes\/programados\/\d+\/estado$/.test(ruta)
+  )
+    return false;
   if (ruta === '/api/v1/usuarios' || ruta.startsWith('/api/v1/usuarios/')) return false;
   if (
-    ['/api/v1/pagos-empresa', '/api/v1/notificaciones', '/api/v1/saas/', '/api/v1/perfil', '/api/v1/autenticacion/', '/api/v1/devoluciones', '/api/v1/posventa'].some(
-      (prefijo) => ruta.startsWith(prefijo),
-    )
+    [
+      '/api/v1/pagos-empresa',
+      '/api/v1/notificaciones',
+      '/api/v1/saas/',
+      '/api/v1/perfil',
+      '/api/v1/autenticacion/',
+      '/api/v1/devoluciones',
+      '/api/v1/posventa',
+    ].some((prefijo) => ruta.startsWith(prefijo))
   )
     return false;
   if (/^\/api\/v1\/delivery\/\d+\/(estado|incidencias)$/.test(ruta)) return false;
@@ -58,6 +73,8 @@ export function esOperacionNueva(metodo: string, ruta: string): boolean {
   if (
     [
       '/api/v1/reportes/interpretar',
+      '/api/v1/reportes/dashboard',
+      '/api/v1/reportes/detalle',
       '/api/v1/reportes/generar',
       '/api/v1/reportes/exportar/pdf',
       '/api/v1/reportes/exportar/excel',

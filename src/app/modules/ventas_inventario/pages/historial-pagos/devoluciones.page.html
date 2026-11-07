@@ -79,7 +79,8 @@
     @if (!devoluciones().length && !cargando()) { <p class="empty-state">Todavía no hay solicitudes para mostrar.</p> }
     <div class="return-list">
       @for (item of devoluciones(); track item.id) {
-        <article class="return-card">
+        <article class="return-card" [class.desde-notificacion]="item.id===seleccionNotificacion()">
+          @if(item.id===seleccionNotificacion()){<p role="status">Solicitud seleccionada desde tu notificación</p>}
           <div class="return-main">
             <div><strong>{{ item.codigo }} · {{ item.venta_codigo }}</strong>
               @if (!esCliente()) { <span>{{ item.cliente_nombre || item.cliente_correo || 'Cliente' }} · {{ item.sucursal }}</span> }

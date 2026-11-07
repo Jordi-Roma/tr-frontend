@@ -101,3 +101,44 @@ npm run test:e2e -- e2e/registro-empresa.spec.ts
 Requiere la migración `2026_10_28_registro_empresa_01` en la base desechable de la
 fixture. Se publica únicamente el plan sintético de esa base; no se crean planes
 ni empresas de muestra en la aplicación real.
+
+## CU25 — Respaldos por empresa y plataforma
+
+`cu25-respaldos.spec.ts` usa las pantallas reales, PostgreSQL y cifrado reales, y un R2 en memoria. El modo requiere `STYLEAR_E2E_RESPALDOS=1`; desactiva los ejecutores automáticos de respaldos, reportes y push de la fixture, de modo que solo corran las operaciones explícitas del recorrido.
+
+Antes de iniciar `backend_fixture.py`, crear una segunda base **vacía**, local y desechable para la restauración global. Por ejemplo, con el clúster de pruebas de esta guía:
+
+```powershell
+& "$pgBin\createdb.exe" -h 127.0.0.1 -p 55441 -U stylear_test stylear_test_frontend_ensayo
+$env:STYLEAR_E2E_RESPALDOS = '1'
+$env:STYLEAR_E2E_RESTORE_DATABASE_URL = 'postgresql://stylear_test@127.0.0.1:55441/stylear_test_frontend_ensayo'
+```
+
+La fixture exige destinos `127.0.0.1`, nombres `stylear_test_*` y bases distintas. Configura una carpeta de ensayo temporal separada. No utiliza credenciales ni buckets reales. Iniciar la fixture como se indica arriba y después ejecutar:
+
+```powershell
+npm run test:e2e -- e2e/cu25-respaldos.spec.ts
+```
+
+El recorrido prueba cuota móvil, eliminación sin liberar cupo, horario fijo, separación A/B, restauración de empresa suspendida, frase explícita (Enter no restaura), cierre de sesiones, conservación de la suscripción actual, copia preventiva, restauración global al ensayo vacío y conservación de la sesión SaaS. Incluye AXE y pantalla estrecha. Una restauración global deja el ensayo poblado: para repetir todo el recorrido, crear otro destino vacío o volver a preparar únicamente ese entorno desechable. Al terminar, detener la fixture y retirar ambas bases de pruebas y sus variables; nunca usar la base local de trabajo como destino.
+
+
+## CU22 — Dashboard y reportes paginados
+
+Sobre una base local **desechable**, preparada con las migraciones de esta guía, iniciar la fixture con `STYLEAR_E2E_REPORTES=1` y ejecutar `npm run test:e2e -- e2e/cu22-reportes.spec.ts`.
+El modo agrega 5.200 ventas sintéticas, desactiva ejecutores automáticos de reportes/respaldos/push, usa interpretación local y captura los adjuntos PDF/Excel sin SMTP. No consulta proveedores externos. Mantiene los controles de destino `127.0.0.1` y base `stylear_test_*`.
+Los recorridos verifican totales completos, páginas remotas de 20 filas, filtros conservados al paginar/exportar, límite de exportación, comparación sin porcentaje con base cero, edición con revisión/409 y conservación de pausa, activación/envío/historial y alcance del encargado. Incluyen AXE y vista estrecha. Retirar la base desechable y los JSON de fixture al terminar.
+
+
+## CU23–CU24 — Recomendaciones y asistente
+
+Preparar una base local desechable siguiendo esta guía e iniciar `backend_fixture.py` con `STYLEAR_E2E_INTELIGENCIA=1`. Ejecutar `npm run test:e2e -- e2e/cu23-cu24.spec.ts`.
+La fixture agrega dos reservas del cliente A y una promoción del 20 %, usa RULES para el asistente y prohíbe generar embeddings externos. Los ejecutores de reportes/respaldos/push quedan desactivados exclusivamente en este modo. No indexa ni envía mensajes reales.
+El recorrido verifica desactivar personalización conservando favoritos, precio final, contexto entre turnos, elección explícita de reserva, vencimiento y aislamiento de producto/cliente entre empresas; incluye AXE y vista estrecha. Detener la fixture y retirar la base y los JSON de prueba al finalizar.
+
+
+## CU27 — Bandeja, preferencias y destinos
+
+En una base local desechable con las migraciones vigentes, iniciar la fixture con `STYLEAR_E2E_INTELIGENCIA=1` y `STYLEAR_E2E_NOTIFICACIONES=1`; ejecutar `npm run test:e2e -- e2e/cu27-notificaciones.spec.ts`.
+La fixture agrega más de 40 avisos, una compra y reservas propias de A y un aviso de B. Mantiene los ejecutores automáticos desactivados. El recorrido prueba páginas de 20, contador no leído global, marcado de todas fuera del filtro/página, preferencias parciales que conservan cambios concurrentes, trazabilidad, compra sin confundirla con pago, destino de reserva autorizado y 404 sobre avisos de B; incluye AXE y vista estrecha.
+Para pruebas de interfaz no se necesitan claves Firebase reales. Las pruebas físicas son separadas y deliberadas: registrar solo el teléfono del responsable en la cuenta sintética, verificar un único dispositivo activo y procesar solo un aviso controlado. No habilitar trabajadores automáticos ni enviar a otras cuentas para probar la UI. Retirar el dispositivo de ensayo, la base y los JSON al terminar.

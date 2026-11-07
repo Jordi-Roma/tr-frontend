@@ -1,11 +1,15 @@
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CapacidadesPlan } from '../../../../core/models/capacidades-plan.models';
+import { CambioContextoService } from '../../../../core/services/cambio-contexto.service';
+import { CapacidadesPlanComponent } from './capacidades-plan.component';
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 import { mensajeApi } from '../../../../core/services/error-api';
 import { FocoService } from '../../../../core/services/foco.service';
-import { Empresa, Plan } from '../../models/saas.models';
+import { Empresa, Plan, Suscripcion } from '../../models/saas.models';
 import { SaasService } from '../../services/saas.service';
 
 function hoy(): string {
@@ -24,7 +28,7 @@ const texto = (min = 1, max = 150) =>
 
 @Component({
   selector: 'app-saas-empresas',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, CapacidadesPlanComponent],
   styleUrl: './saas.css',
   template: `
     <header class="encabezado">
@@ -44,6 +48,34 @@ const texto = (min = 1, max = 150) =>
     @if (cargando()) {
       <p role="status">Cargando empresas y planes…</p>
     }
+    <section class="panel">
+      <h2>Buscar empresas</h2>
+      <form [formGroup]="filtros" (ngSubmit)="buscar()">
+        <div class="grid">
+          <label for="filtro-plan"
+            >Plan<select id="filtro-plan" formControlName="plan_id">
+              <option value="">Todos</option>
+              @for (p of planes(); track p.id) {
+                <option [value]="p.id">{{ p.nombre }}</option>
+              }
+            </select></label
+          >
+          <label for="filtro-estado"
+            >Estado<select id="filtro-estado" formControlName="estado">
+              <option value="">Todos</option>
+              <option value="ACTIVA">Activa</option>
+              <option value="SUSPENDIDA">Suspendida</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="CANCELADA">Cancelada</option>
+            </select></label
+          >
+          <label for="filtro-buscar"
+            >Nombre o código<input id="filtro-buscar" formControlName="buscar" maxlength="150"
+          /></label>
+        </div>
+        <button [disabled]="cargando() || ocupado()">Buscar empresas</button>
+      </form>
+    </section>
     <section class="panel tabla">
       <table>
         <caption>
@@ -105,6 +137,23 @@ const texto = (min = 1, max = 150) =>
       </table>
     </section>
 
+    <nav class="acciones" aria-label="Páginas de empresas">
+      <button
+        class="secundario"
+        [disabled]="pagina() <= 1 || cargando() || ocupado()"
+        (click)="irPagina(pagina() - 1)"
+      >
+        Anterior
+      </button>
+      <p role="status">Página {{ pagina() }} · {{ total() }} empresas</p>
+      <button
+        class="secundario"
+        [disabled]="pagina() * 20 >= total() || cargando() || ocupado()"
+        (click)="irPagina(pagina() + 1)"
+      >
+        Siguiente
+      </button>
+    </nav>
     @if (seleccionada(); as empresa) {
       <section class="panel" aria-labelledby="config-title">
         <h2 id="config-title">Configurar {{ empresa.nombre }}</h2>
@@ -124,6 +173,41 @@ const texto = (min = 1, max = 150) =>
             </button>
           </div>
         </form>
+        @if (empresa.correo_contacto) {
+          <p>
+            Responsable: {{ empresa.responsable }} · {{ empresa.correo_contacto }} (correo sin
+            verificar)
+          </p>
+        }
+        <h3>Plan y política actuales</h3>
+        @if (detalleCargando()) {
+          <p role="status">Consultando historial y política…</p>
+        }
+        @if (detalleError()) {
+          <p class="error" role="alert">{{ detalleError() }}</p>
+          <button class="secundario" (click)="seleccionar(empresa)" [disabled]="ocupado()">
+            Reintentar detalle
+          </button>
+        }
+        @if (capacidades(); as c) {
+          <app-capacidades-plan [datos]="c" />
+        }
+        <h3>Historial de suscripciones</h3>
+        <ul>
+          @for (s of historial(); track s.id) {
+            <li>
+              {{ s.plan_nombre }} · {{ s.estado }} ·
+              {{ s.fecha_inicio | date: 'dd/MM/yyyy' : 'UTC' }} →
+              {{
+                s.fecha_vencimiento
+                  ? (s.fecha_vencimiento | date: 'dd/MM/yyyy' : 'UTC')
+                  : 'Sin vencimiento'
+              }}
+            </li>
+          } @empty {
+            <li>Sin suscripciones registradas.</li>
+          }
+        </ul>
         <h3>Estado de acceso</h3>
         @if (empresa.estado === 'PENDIENTE') {
           <p class="aviso">
@@ -288,6 +372,20 @@ const texto = (min = 1, max = 150) =>
 export class EmpresasPage {
   private readonly api = inject(SaasService);
   private readonly foco = inject(FocoService);
+  private readonly destroy = inject(DestroyRef);
+  protected readonly pagina = signal(1);
+  protected readonly total = signal(0);
+  protected readonly historial = signal<Suscripcion[]>([]);
+  protected readonly capacidades = signal<CapacidadesPlan | null>(null);
+  protected readonly detalleCargando = signal(false);
+  protected readonly detalleError = signal('');
+  private detalleRevision = 0;
+  private listaRevision = 0;
+  protected readonly filtros = new FormGroup({
+    plan_id: new FormControl('', { nonNullable: true }),
+    estado: new FormControl('', { nonNullable: true }),
+    buscar: new FormControl('', { nonNullable: true }),
+  });
   protected readonly empresas = signal<Empresa[]>([]);
   protected readonly planes = signal<Plan[]>([]);
   protected readonly activos = computed(() => this.planes().filter((p) => p.activo));
@@ -327,23 +425,103 @@ export class EmpresasPage {
     fecha_vencimiento: new FormControl('', { nonNullable: true }),
   });
   constructor() {
+    inject(CambioContextoService)
+      .cambio$.pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        this.empresas.set([]);
+        this.planes.set([]);
+        this.seleccionada.set(null);
+        this.capacidades.set(null);
+        this.historial.set([]);
+        this.alta.reset();
+        this.suscripcion.reset();
+        this.detalleRevision++;
+        this.listaRevision++;
+        this.edicion.reset();
+        this.estadoForm.reset();
+        this.filtros.reset();
+        this.total.set(0);
+        this.error.set('');
+        this.mensaje.set('');
+      });
+    inject(ActivatedRoute)
+      .queryParamMap.pipe(takeUntilDestroyed())
+      .subscribe((params) => {
+        this.filtros.controls.plan_id.setValue(params.get('plan_id') ?? '');
+        this.pagina.set(1);
+        this.cargar();
+      });
+  }
+  protected buscar(): void {
+    this.pagina.set(1);
+    this.cargar();
+  }
+  protected irPagina(pagina: number): void {
+    this.pagina.set(pagina);
     this.cargar();
   }
   protected cargar(): void {
+    const revision = ++this.listaRevision;
     this.cargando.set(true);
     this.error.set('');
-    forkJoin({ empresas: this.api.empresas(), planes: this.api.planes() })
-      .pipe(finalize(() => this.cargando.set(false)))
+    forkJoin({
+      empresas: this.api.empresasPorPlan({
+        pagina: this.pagina(),
+        tamano: 20,
+        ...Object.fromEntries(
+          Object.entries(this.filtros.getRawValue()).filter(([, v]) => v !== ''),
+        ),
+      }),
+      planes: this.api.planes(),
+    })
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => {
+          if (revision === this.listaRevision) this.cargando.set(false);
+        }),
+      )
       .subscribe({
         next: (r) => {
-          this.empresas.set(r.empresas);
+          if (revision !== this.listaRevision) return;
+          this.empresas.set(r.empresas.empresas);
+          this.total.set(r.empresas.total);
           this.planes.set(r.planes);
         },
-        error: (e) => this.error.set(mensajeApi(e)),
+        error: (e) => {
+          if (revision === this.listaRevision) this.error.set(mensajeApi(e));
+        },
       });
   }
   protected seleccionar(empresa: Empresa): void {
     this.seleccionada.set(empresa);
+    this.capacidades.set(null);
+    this.historial.set([]);
+    this.detalleError.set('');
+    this.detalleCargando.set(true);
+    const revision = ++this.detalleRevision;
+    forkJoin({
+      politica: this.api.capacidadesEmpresa(empresa.id),
+      historial: this.api.suscripciones(empresa.id),
+      contactos: this.api.empresas(),
+    })
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => {
+          if (revision === this.detalleRevision) this.detalleCargando.set(false);
+        }),
+      )
+      .subscribe({
+        next: (r) => {
+          if (revision !== this.detalleRevision || this.seleccionada()?.id !== empresa.id) return;
+          this.capacidades.set(r.politica);
+          this.historial.set(r.historial);
+          const contacto = r.contactos.find((e) => e.id === empresa.id);
+          if (contacto) this.seleccionada.set(contacto);
+        },
+        error: (e) => {
+          if (revision === this.detalleRevision) this.detalleError.set(mensajeApi(e));
+        },
+      });
     this.edicion.reset({ nombre: empresa.nombre });
     this.estadoForm.reset({ estado: empresa.estado });
     this.suscripcion.reset({
@@ -377,7 +555,10 @@ export class EmpresasPage {
           password: f.password,
         },
       })
-      .pipe(finalize(() => this.ocupado.set(false)))
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.ocupado.set(false)),
+      )
       .subscribe({
         next: () => {
           this.alta.reset({ fecha_inicio: hoy() });
@@ -427,14 +608,19 @@ export class EmpresasPage {
     this.ocupado.set(true);
     this.error.set('');
     this.mensaje.set('');
-    operacion.pipe(finalize(() => this.ocupado.set(false))).subscribe({
-      next: () => {
-        this.seleccionada.set(null);
-        this.mensaje.set(mensaje);
-        this.cargar();
-      },
-      error: (e) => this.error.set(mensajeApi(e)),
-    });
+    operacion
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.ocupado.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.seleccionada.set(null);
+          this.mensaje.set(mensaje);
+          this.cargar();
+        },
+        error: (e) => this.error.set(mensajeApi(e)),
+      });
   }
   private fechas(inicio: string, fin: string): boolean {
     if (!inicio || (fin && fin < inicio)) {

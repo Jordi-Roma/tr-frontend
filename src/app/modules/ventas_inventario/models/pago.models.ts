@@ -94,7 +94,7 @@ export interface PagoHistorialItem {
 
 export interface PagoProductoDetalle {
   tipo_compra?: string;
-  paquete_origen_id?: number|null;
+  paquete_origen_id?: number | null;
   producto: string;
   categoria?: string | null;
   talla?: string | null;
@@ -112,13 +112,93 @@ export interface PagoHistorialDetalle extends PagoHistorialItem {
 }
 
 export interface ConfiguracionPagosEmpresa {
-  version: number; modo: string; titular: string; stripe_habilitado: boolean; qr_habilitado: boolean;
-  confirmacion_prueba: boolean; stripe_conexion: string; qr_conexion: string;
+  version: number;
+  modo: string;
+  titular: string;
+  stripe_habilitado: boolean;
+  qr_habilitado: boolean;
+  confirmacion_prueba: boolean;
+  stripe_conexion: string;
+  qr_conexion: string;
 }
 export interface ReembolsoPago {
-  id: number; orden_id: number; monto: string; moneda: string; metodo: string; motivo: string;
-  estado: string; referencia: string | null;
+  id: number;
+  orden_id: number;
+  monto: string;
+  moneda: string;
+  metodo: string;
+  motivo: string;
+  estado: string;
+  referencia: string | null;
 }
 export interface NotificacionPropia {
-  id: number; titulo: string; mensaje: string; leida: boolean; orden_id: number | null; creado_en: string;
+  id: number;
+  titulo: string;
+  mensaje: string;
+  leida: boolean;
+  orden_id: number | null;
+  creado_en: string;
+  categoria: CategoriaNotificacion;
+  recurso_tipo?: string | null;
+  recurso_id?: number | null;
+}
+
+export const CATEGORIAS_NOTIFICACION = [
+  'GENERAL',
+  'COMPRA',
+  'PAGO',
+  'RESERVA',
+  'ENTREGA',
+  'CAMBIO',
+  'DEVOLUCION',
+  'REEMBOLSO',
+] as const;
+export type CategoriaNotificacion = (typeof CATEGORIAS_NOTIFICACION)[number];
+export interface BandejaNotificaciones {
+  avisos: NotificacionPropia[];
+  total: number;
+  no_leidas: number;
+  pagina: number;
+  tamano: number;
+}
+export interface PreferenciasNotificaciones {
+  categorias: Record<CategoriaNotificacion, boolean>;
+  bandeja_transaccional: boolean;
+}
+export interface DestinoNotificacion {
+  disponible: boolean;
+  accion: string;
+  recurso_tipo?: string;
+  recurso_id?: number;
+}
+export interface EstadoNotificacion {
+  leida: boolean;
+  creado_en: string;
+  leida_en: string | null;
+  aceptadas_fcm: number;
+  pendientes: number;
+  fallidas: number;
+  omitidas: number;
+  ultima_aceptacion: string | null;
+}
+export function rutaNotificacion(d: DestinoNotificacion): string | null {
+  if (
+    !d.disponible ||
+    d.accion !== 'VER_DETALLE' ||
+    !Number.isSafeInteger(d.recurso_id) ||
+    d.recurso_id! <= 0
+  )
+    return null;
+  const base: Record<string, string> = {
+    RESERVA: '/reservas/',
+    ORDEN_PAGO: '/mis-pagos/',
+    DELIVERY: '/mis-deliveries/',
+  };
+  return base[d.recurso_tipo ?? '']
+    ? base[d.recurso_tipo!] + d.recurso_id
+    : d.recurso_tipo === 'CAMBIO'
+      ? '/cambios'
+      : d.recurso_tipo === 'DEVOLUCION'
+        ? '/mis-devoluciones'
+        : null;
 }

@@ -1,188 +1,54 @@
-import { Component, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { DatePipe, KeyValuePipe } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  FormControl,
+  FormGroup,
+  FormRecord,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { finalize, forkJoin } from 'rxjs';
 import { mensajeApi } from '../../../../core/services/error-api';
 import { FocoService } from '../../../../core/services/foco.service';
-import { CUOTAS, FUNCIONES, Funciones, Limites, Plan } from '../../models/saas.models';
+import { CambioContextoService } from '../../../../core/services/cambio-contexto.service';
+import { CatalogoPlan } from '../../../../core/models/capacidades-plan.models';
+import {
+  HistorialPlan,
+  Plan,
+  PlanAlta,
+  PlanCambio,
+  PreviaPlan,
+  ResumenPlan,
+} from '../../models/saas.models';
 import { SaasService } from '../../services/saas.service';
 
-const cupo = () =>
-  new FormControl<number | null>(null, [Validators.min(0), Validators.pattern(/^\d+$/)]);
-const funcion = () => new FormControl<boolean | null>(null);
 @Component({
   selector: 'app-saas-planes',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, KeyValuePipe],
   styleUrl: './saas.css',
-  template: `
-    <header class="encabezado">
-      <div>
-        <p class="ceja">Plataforma</p>
-        <h1>Planes</h1>
-        <p>Configura cuotas y funciones sin fijar precios comerciales.</p>
-      </div>
-      <button class="secundario" (click)="cargar()" [disabled]="ocupado()">Actualizar</button>
-    </header>
-    @if (error()) {
-      <p role="alert" class="error">{{ error() }}</p>
-    }
-    @if (mensaje()) {
-      <p role="status" class="exito">{{ mensaje() }}</p>
-    }
-    @if (cargando()) {
-      <p role="status">Cargando planes…</p>
-    }
-    <section class="panel tabla">
-      <table>
-        <caption>
-          Planes de la plataforma
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Plan</th>
-            <th scope="col">Estado</th>
-            <th scope="col">Cuotas</th>
-            <th scope="col">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (plan of planes(); track plan.id) {
-            <tr>
-              <td>
-                <strong>{{ plan.nombre }}</strong
-                ><small>{{ plan.codigo }}</small>
-              </td>
-              <td>
-                {{ plan.activo ? 'Activo' : 'Inactivo'
-                }}<small>{{ plan.publico ? 'Disponible para registro' : 'Privado' }}</small>
-              </td>
-              <td>
-                @for (clave of cuotas; track clave) {
-                  <small>{{ etiquetas[clave] }}: {{ plan.limites[clave] ?? 'Sin límite' }}</small>
-                }
-              </td>
-              <td>
-                <button
-                  class="secundario"
-                  (click)="editar(plan)"
-                  [disabled]="ocupado()"
-                  [attr.aria-label]="'Editar plan ' + plan.nombre"
-                >
-                  Editar
-                </button>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="4">No hay planes disponibles.</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </section>
-    <section class="panel" aria-labelledby="plan-title">
-      <h2 id="plan-title">{{ editando() ? 'Editar plan' : 'Crear plan' }}</h2>
-      @if (editando()) {
-        <p class="aviso">
-          Los cambios afectan a todas las empresas suscritas a este plan. Desactivarlo bloquea sus
-          operaciones nuevas.
-        </p>
-      }
-      <form [formGroup]="form" (ngSubmit)="guardar()">
-        <div class="grid">
-          <label for="plan-codigo"
-            >Código<input
-              id="plan-codigo"
-              formControlName="codigo"
-              required
-              [readOnly]="legado()"
-              maxlength="50"
-            /><small>De 2 a 50 letras mayúsculas, números o guion bajo.</small></label
-          ><label for="plan-nombre"
-            >Nombre<input
-              id="plan-nombre"
-              formControlName="nombre"
-              required
-              maxlength="120" /></label
-          ><label class="check" for="plan-activo"
-            ><input id="plan-activo" type="checkbox" formControlName="activo" />Plan activo</label
-          >
-          <label class="check" for="plan-publico"
-            ><input id="plan-publico" type="checkbox" formControlName="publico" />Disponible en el
-            registro de empresas</label
-          >
-        </div>
-        <fieldset>
-          <legend>Cuotas de registros activos</legend>
-          <p>
-            Dejar vacío significa sin límite. Cero impide nuevas altas de ese tipo. Las cuentas
-            incluyen clientes y personal.
-          </p>
-          <div class="grid">
-            @for (clave of cuotas; track clave) {
-              <label [for]="'cupo-' + clave"
-                >{{ etiquetas[clave]
-                }}<input
-                  [id]="'cupo-' + clave"
-                  type="number"
-                  [formControlName]="clave"
-                  min="0"
-                  step="1"
-              /></label>
-            }
-          </div>
-        </fieldset>
-        <fieldset>
-          <legend>Funciones</legend>
-          <p>
-            En un plan normal, Predeterminado significa deshabilitada. El plan de transición
-            conserva las funciones predeterminadas.
-          </p>
-          <div class="grid">
-            @for (clave of funciones; track clave) {
-              <label [for]="'funcion-' + clave"
-                >{{ etiquetas[clave]
-                }}<select [id]="'funcion-' + clave" [formControlName]="clave">
-                  <option [ngValue]="null">Predeterminado</option>
-                  <option [ngValue]="true">Habilitada</option>
-                  <option [ngValue]="false">Deshabilitada</option>
-                </select></label
-              >
-            }
-          </div>
-        </fieldset>
-        <div class="acciones">
-          <button [disabled]="form.invalid || ocupado()">
-            {{ ocupado() ? 'Guardando…' : 'Guardar plan' }}</button
-          ><button type="button" class="secundario" (click)="nuevo()" [disabled]="ocupado()">
-            {{ editando() ? 'Cancelar edición' : 'Limpiar formulario' }}
-          </button>
-        </div>
-      </form>
-    </section>
-  `,
+  templateUrl: './planes.page.html',
 })
 export class PlanesPage {
   private readonly api = inject(SaasService);
   private readonly foco = inject(FocoService);
-  protected readonly cuotas = CUOTAS;
-  protected readonly funciones = FUNCIONES;
-  protected readonly etiquetas = {
-    usuarios: 'Cuentas',
-    empleados: 'Empleados',
-    productos: 'Productos',
-    sucursales: 'Sucursales',
-    recomendaciones: 'Recomendaciones',
-    asistente: 'Asistente',
-    reportes: 'Reportes',
-    vestidor: 'Vestidor',
-  };
+  private readonly destroy = inject(DestroyRef);
+  protected readonly catalogo = signal<CatalogoPlan | null>(null);
   protected readonly planes = signal<Plan[]>([]);
-  protected readonly editando = signal<number | null>(null);
-  protected readonly legado = signal(false);
+  protected readonly resumen = signal<ResumenPlan[]>([]);
+  protected readonly comparacion = signal<Plan[]>([]);
+  protected readonly historial = signal<HistorialPlan[] | null>(null);
+  protected readonly nombreHistorial = signal('');
+  protected readonly previa = signal<PreviaPlan | null>(null);
+  protected readonly editando = signal<Plan | null>(null);
   protected readonly cargando = signal(false);
   protected readonly ocupado = signal(false);
   protected readonly error = signal('');
   protected readonly mensaje = signal('');
+  private cambiosConfirmados: PlanCambio | null = null;
+  protected readonly limites = new FormRecord<FormControl<number | null>>({});
+  protected readonly funciones = new FormRecord<FormControl<boolean>>({});
   protected readonly form = new FormGroup({
     codigo: new FormControl('', {
       nonNullable: true,
@@ -197,89 +63,293 @@ export class PlanesPage {
         Validators.pattern(/\S/),
       ],
     }),
+    descripcion: new FormControl('', { nonNullable: true, validators: Validators.maxLength(4000) }),
+    condiciones: new FormControl('', {
+      nonNullable: true,
+      validators: Validators.maxLength(10000),
+    }),
+    precio: new FormControl(0, {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+        Validators.min(0),
+        Validators.max(9999999999.99),
+        Validators.pattern(/^\d+(\.\d{1,2})?$/),
+      ],
+    }),
+    moneda: new FormControl('BOB', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^[A-Z]{3}$/)],
+    }),
     activo: new FormControl(true, { nonNullable: true }),
     publico: new FormControl(false, { nonNullable: true }),
-    usuarios: cupo(),
-    empleados: cupo(),
-    productos: cupo(),
-    sucursales: cupo(),
-    recomendaciones: funcion(),
-    asistente: funcion(),
-    reportes: funcion(),
-    vestidor: funcion(),
+    limites: this.limites,
+    funciones: this.funciones,
   });
   constructor() {
+    this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.invalidarPrevia());
+    inject(CambioContextoService)
+      .cambio$.pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        this.planes.set([]);
+        this.comparacion.set([]);
+        this.resumen.set([]);
+        this.historial.set(null);
+        this.catalogo.set(null);
+        this.editando.set(null);
+        this.invalidarPrevia();
+        this.form.reset();
+      });
     this.cargar();
   }
   protected cargar(): void {
+    if (this.ocupado() || this.cargando()) return;
     this.cargando.set(true);
-    this.api
-      .planes()
-      .pipe(finalize(() => this.cargando.set(false)))
+    this.error.set('');
+    forkJoin({
+      planes: this.api.planes(),
+      catalogo: this.api.catalogoPlanes(),
+      resumen: this.api.resumenPlanes(),
+      comparacion: this.api.comparacionPlanes(),
+    })
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.cargando.set(false)),
+      )
       .subscribe({
-        next: (planes) => this.planes.set(planes),
+        next: (r) => {
+          this.planes.set(r.planes);
+          this.resumen.set(r.resumen);
+          this.comparacion.set(r.comparacion.planes);
+          if (!this.catalogo()) {
+            this.catalogo.set(r.catalogo);
+            for (const l of r.catalogo.limites)
+              this.limites.addControl(
+                l.clave,
+                new FormControl<number | null>(null, [
+                  Validators.min(l.minimo),
+                  Validators.max(
+                    ['retencion_respaldos_dias', 'frecuencia_respaldo_dias'].includes(l.clave)
+                      ? 3650
+                      : 2147483647,
+                  ),
+                  Validators.pattern(/^\d+$/),
+                ]),
+              );
+            for (const f of r.catalogo.funciones)
+              this.funciones.addControl(f.clave, new FormControl(false, { nonNullable: true }));
+            this.nuevo(false);
+          }
+        },
         error: (e) => this.error.set(mensajeApi(e)),
       });
   }
-  protected editar(plan: Plan): void {
-    this.editando.set(plan.id);
-    this.legado.set(plan.codigo === 'STYLEAR_LEGADO');
+  protected editar(p: Plan): void {
+    this.editando.set(p);
+    this.invalidarPrevia();
     this.form.reset({
-      codigo: plan.codigo,
-      nombre: plan.nombre,
-      activo: plan.activo,
-      publico: plan.publico,
-      usuarios: plan.limites.usuarios ?? null,
-      empleados: plan.limites.empleados ?? null,
-      productos: plan.limites.productos ?? null,
-      sucursales: plan.limites.sucursales ?? null,
-      recomendaciones: plan.funciones.recomendaciones ?? null,
-      asistente: plan.funciones.asistente ?? null,
-      reportes: plan.funciones.reportes ?? null,
-      vestidor: plan.funciones.vestidor ?? null,
+      codigo: p.codigo,
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      condiciones: p.condiciones,
+      precio: Number(p.precio),
+      moneda: p.moneda,
+      activo: p.activo,
+      publico: p.publico,
     });
+    for (const l of this.catalogo()?.limites ?? [])
+      this.limites.controls[l.clave].setValue(p.limites[l.clave] ?? null);
+    for (const f of this.catalogo()?.funciones ?? [])
+      this.funciones.controls[f.clave].setValue(p.funciones[f.clave] ?? true);
     this.foco.llevar('plan-codigo');
   }
-  protected nuevo(): void {
+  protected nuevo(enfocar = true): void {
     this.editando.set(null);
-    this.legado.set(false);
-    this.form.reset({ activo: true });
+    this.invalidarPrevia();
+    this.form.reset({
+      codigo: '',
+      nombre: '',
+      precio: 0,
+      moneda: 'BOB',
+      activo: true,
+      publico: false,
+    });
+    // Valores de creación explícitos; no infieren capacidades a partir del nombre de un plan.
+    for (const l of this.catalogo()?.limites ?? [])
+      this.limites.controls[l.clave].setValue(
+        (
+          {
+            respaldos_manuales_semana: 5,
+            retencion_respaldos_dias: 30,
+            frecuencia_respaldo_dias: 1,
+          } as Record<string, number>
+        )[l.clave] ?? null,
+      );
+    if (enfocar) this.foco.llevar('plan-codigo');
+  }
+  private invalidarPrevia(): void {
+    this.previa.set(null);
+    this.cambiosConfirmados = null;
+  }
+  protected volver(): void {
+    this.invalidarPrevia();
     this.foco.llevar('plan-codigo');
   }
-  protected guardar(): void {
-    if (this.form.invalid || this.ocupado()) {
+  private datos(): PlanAlta & { activo: boolean } {
+    const f = this.form.getRawValue();
+    const limites: Record<string, number> = {};
+    for (const [k, v] of Object.entries(f.limites)) if (v !== null) limites[k] = v;
+    return {
+      codigo: f.codigo.trim(),
+      nombre: f.nombre.trim(),
+      descripcion: f.descripcion.trim(),
+      condiciones: f.condiciones.trim(),
+      precio: f.precio,
+      moneda: f.moneda,
+      activo: f.activo,
+      publico: f.publico,
+      limites,
+      funciones: f.funciones,
+    };
+  }
+  private validar(): boolean {
+    if (this.form.invalid) {
       this.form.markAllAsTouched();
-      return;
+      this.error.set('Revisa el código, nombre, precio y los límites indicados.');
+      return false;
+    }
+    const f = this.funciones.getRawValue(),
+      l = this.limites.getRawValue();
+    for (const c of this.catalogo()?.funciones ?? []) {
+      if (
+        f[c.clave] &&
+        (c.dependencias.some((k) => !f[k]) ||
+          (c.requiere_alguna.length > 0 && !c.requiere_alguna.some((k) => f[k])))
+      ) {
+        this.error.set('Revisa las dependencias de ' + c.nombre + '.');
+        return false;
+      }
+    }
+    if (
+      (f['reportes_programacion'] && l['reportes_programados'] === 0) ||
+      (f['respaldos_manuales'] && (l['respaldos_manuales_semana'] ?? 0) < 1)
+    ) {
+      this.error.set('La función habilitada necesita un cupo mayor que cero.');
+      return false;
     }
     if (
       this.editando() &&
-      !globalThis.confirm('¿Aplicar estos cambios a todas las empresas suscritas al plan?')
-    )
-      return;
-    const f = this.form.getRawValue();
-    const limites: Limites = {};
-    const funciones: Funciones = {};
-    for (const clave of CUOTAS) if (f[clave] !== null) limites[clave] = f[clave];
-    for (const clave of FUNCIONES) if (f[clave] !== null) funciones[clave] = f[clave];
-    const datos = {
-      codigo: f.codigo.trim(),
-      nombre: f.nombre.trim(),
-      limites,
-      funciones,
-      activo: f.activo,
-      publico: f.publico,
-    };
-    const id = this.editando();
-    this.ocupado.set(true);
+      Object.entries(this.editando()!.limites).some(([k]) => k in l && l[k] === null)
+    ) {
+      this.error.set(
+        'Un límite existente no puede eliminarse dejando el campo vacío. Conserva un número válido.',
+      );
+      return false;
+    }
+    return true;
+  }
+  private cambios(completos: PlanAlta & { activo: boolean }): PlanCambio {
+    const datos: PlanCambio = {};
+    for (const clave of [
+      'codigo',
+      'nombre',
+      'descripcion',
+      'condiciones',
+      'precio',
+      'moneda',
+      'activo',
+      'publico',
+    ] as const) {
+      if (this.form.controls[clave].dirty) Object.assign(datos, { [clave]: completos[clave] });
+    }
+    const limites = Object.fromEntries(
+      Object.entries(completos.limites).filter(([k]) => this.limites.controls[k]?.dirty),
+    );
+    const funciones = Object.fromEntries(
+      Object.entries(completos.funciones).filter(([k]) => this.funciones.controls[k]?.dirty),
+    );
+    if (Object.keys(limites).length) datos.limites = limites;
+    if (Object.keys(funciones).length) datos.funciones = funciones;
+    return datos;
+  }
+  protected guardar(): void {
+    if (this.ocupado() || this.cargando() || !this.catalogo() || !this.validar()) return;
     this.error.set('');
     this.mensaje.set('');
-    (id === null ? this.api.crearPlan(datos) : this.api.editarPlan(id, datos))
-      .pipe(finalize(() => this.ocupado.set(false)))
+    this.ocupado.set(true);
+    const completos = this.datos(),
+      datos = this.editando() ? this.cambios(completos) : completos,
+      id = this.editando()?.id;
+    if (id !== undefined) {
+      this.api
+        .previsualizarPlan(id, datos)
+        .pipe(
+          takeUntilDestroyed(this.destroy),
+          finalize(() => this.ocupado.set(false)),
+        )
+        .subscribe({
+          next: (p) => {
+            this.cambiosConfirmados = datos;
+            this.previa.set(p);
+            this.foco.llevar('impacto-plan');
+          },
+          error: (e) => this.error.set(mensajeApi(e)),
+        });
+    } else {
+      const { activo: _, ...alta } = completos;
+      this.api
+        .crearPlan(alta)
+        .pipe(
+          takeUntilDestroyed(this.destroy),
+          finalize(() => this.ocupado.set(false)),
+        )
+        .subscribe({ next: () => this.guardado(), error: (e) => this.error.set(mensajeApi(e)) });
+    }
+  }
+  protected confirmar(): void {
+    const id = this.editando()?.id,
+      p = this.previa(),
+      datos = this.cambiosConfirmados;
+    if (id === undefined || !p || !datos || this.ocupado()) return;
+    this.ocupado.set(true);
+    this.error.set('');
+    this.api
+      .editarPlan(id, { ...datos, token_previsualizacion: p.token_previsualizacion })
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.ocupado.set(false)),
+      )
       .subscribe({
-        next: () => {
-          this.nuevo();
-          this.mensaje.set('Plan guardado.');
-          this.cargar();
+        next: () => this.guardado(),
+        error: (e) => {
+          this.invalidarPrevia();
+          this.error.set(mensajeApi(e) + ' Vuelve a revisar el impacto antes de confirmar.');
+          this.foco.llevar('plan-codigo');
+        },
+      });
+  }
+  private guardado(): void {
+    this.nuevo();
+    this.mensaje.set('Plan guardado. Las programaciones pausadas no se reactivan automáticamente.');
+    // Finalize mantiene ocupado hasta terminar la notificación de éxito.
+    this.ocupado.set(false);
+    this.cargar();
+  }
+  protected verHistorial(p: Plan): void {
+    if (this.ocupado()) return;
+    this.historial.set(null);
+    this.nombreHistorial.set(p.nombre);
+    this.ocupado.set(true);
+    this.api
+      .historialPlan(p.id)
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.ocupado.set(false)),
+      )
+      .subscribe({
+        next: (h) => {
+          this.historial.set(h);
+          this.foco.llevar('historial-plan');
         },
         error: (e) => this.error.set(mensajeApi(e)),
       });

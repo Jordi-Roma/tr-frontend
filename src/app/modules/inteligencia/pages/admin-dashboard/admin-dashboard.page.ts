@@ -1,3 +1,5 @@
+import { DashboardComercialComponent } from './dashboard-comercial.component';
+import { AuthService } from '../../../autenticacion/services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { finalize } from 'rxjs';
@@ -14,10 +16,12 @@ interface DashboardCard {
 
 @Component({
   selector: 'app-admin-dashboard-page',
+  imports:[DashboardComercialComponent],
   styleUrl: './admin-dashboard.page.css',
   templateUrl: './admin-dashboard.page.html',
 })
 export class AdminDashboardPage implements OnInit {
+  protected readonly esAdmin=inject(AuthService).tieneRol("ADMINISTRADOR");
   private readonly productoService = inject(ProductoService);
   private readonly catalogoService = inject(CatalogoService);
   private readonly usuarioService = inject(UsuarioAdminService);
@@ -61,7 +65,7 @@ export class AdminDashboardPage implements OnInit {
   );
 
   ngOnInit(): void {
-    this.cargarResumen();
+    if(this.esAdmin)this.cargarResumen();
   }
 
   protected cargarResumen(): void {

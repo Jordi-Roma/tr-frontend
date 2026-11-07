@@ -201,3 +201,33 @@ legend {
     flex-direction: column;
   }
 }
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 11px 12px;
+  border: 1px solid #777e6e;
+  border-radius: 5px;
+  font: inherit;
+  color: #20231c;
+  background: white;
+}
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex='-1']:focus-visible {
+  outline: 3px solid #426621;
+  outline-offset: 3px;
+}
+summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-weight: 600;
+}
+details {
+  border-bottom: 1px solid #d9dcd3;
+  padding: 8px 0;
+}
+.tabla:focus-visible {
+  outline: 3px solid #426621;
+  outline-offset: 3px;
+}

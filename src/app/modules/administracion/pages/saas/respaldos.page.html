@@ -1,0 +1,270 @@
+<header class="encabezado">
+  <div>
+    <p class="ceja">{{ plataforma ? 'Plataforma' : 'Mi empresa' }}</p>
+    <h1>{{ plataforma ? 'Respaldos de plataforma' : 'Respaldos de mi empresa' }}</h1>
+    <p>Copias cifradas en almacenamiento privado, con operaciones auditadas.</p>
+  </div>
+  <button class="secundario" (click)="cargar()" [disabled]="ocupado()">Actualizar</button>
+</header>
+@if (error()) {
+  <p role="alert" class="error" id="error-respaldos" tabindex="-1">{{ error() }}</p>
+}
+@if (mensaje()) {
+  <p role="status" class="exito">{{ mensaje() }}</p>
+}
+@if (ocupado()) {
+  <p role="status">
+    {{ proceso() || 'Procesando…' }} No cierres esta página hasta recibir el resultado.
+  </p>
+}
+<section class="panel">
+  <h2>Crear respaldo</h2>
+  <form [formGroup]="form" (ngSubmit)="crear()">
+    @if (plataforma) {
+      <label for="respaldo-empresa"
+        >Alcance<select id="respaldo-empresa" formControlName="empresa_id">
+          <option [ngValue]="null">Global: todas las empresas</option>
+          @for (empresa of empresas(); track empresa.id) {
+            <option [ngValue]="empresa.id">{{ empresa.nombre }} ({{ empresa.codigo }})</option>
+          }
+        </select></label
+      >
+      <p>
+        La copia global incluye toda la base. La copia de empresa conserva sus registros y archivos
+        locales referenciados.
+      </p>
+    } @else {
+      @if (plan.capacidades(); as c) {
+        <p>
+          Copias manuales en los últimos siete días:
+          {{ c.cupos['respaldos_manuales_semana']?.uso ?? 0 }} /
+          {{ c.cupos['respaldos_manuales_semana']?.limite ?? 'Sin límite' }}. Disponibles:
+          {{ c.cupos['respaldos_manuales_semana']?.disponibles ?? 'Sin límite' }}.
+        </p>
+        <p>
+          Retención para nuevas copias: {{ c.limites['retencion_respaldos_dias'] }} días. Eliminar
+          una copia no devuelve el cupo consumido. Las automáticas y preventivas no consumen el cupo
+          manual.
+        </p>
+      }
+      @if (!puedeCrear()) {
+        <p class="aviso">{{ motivoManual() }}</p>
+      }
+    }
+    <div class="acciones">
+      <button [disabled]="ocupado() || incierto() || !puedeCrear()">Crear copia cifrada</button>
+      @if (plataforma) {
+        <button
+          type="button"
+          class="secundario"
+          (click)="purgar()"
+          [disabled]="ocupado() || incierto()"
+        >
+          Eliminar copias vencidas
+        </button>
+      }
+    </div>
+  </form>
+</section>
+<section class="panel tabla">
+  <table>
+    <caption>
+      Últimos respaldos registrados
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Copia</th>
+        <th scope="col">Fecha y conservación</th>
+        <th scope="col">Tamaño</th>
+        <th scope="col">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of copias(); track r.id) {
+        <tr>
+          <td>
+            {{
+              r.tipo === 'GLOBAL'
+                ? 'Global'
+                : plataforma
+                  ? nombreEmpresa(r.empresa_id)
+                  : 'Mi empresa'
+            }}<small class="codigo">{{ r.id }}</small
+            ><small>{{ origen(r.origen) }} · {{ r.estado }}</small>
+          </td>
+          <td>
+            {{ r.fecha | date: 'dd/MM/yyyy HH:mm' : '-0400'
+            }}<small>Vence: {{ r.vence_en | date: 'dd/MM/yyyy HH:mm' : '-0400' }}</small>
+          </td>
+          <td>{{ r.bytes / 1024 | number: '1.0-1' }} KB</td>
+          <td>
+            <div class="acciones">
+              <button
+                class="secundario"
+                (click)="previsualizar(r)"
+                [disabled]="ocupado() || incierto() || r.estado !== 'DISPONIBLE'"
+                [attr.aria-label]="'Previsualizar respaldo ' + r.id"
+              >
+                Previsualizar</button
+              ><button
+                class="peligro"
+                (click)="eliminar(r)"
+                [disabled]="ocupado() || incierto() || r.estado !== 'DISPONIBLE'"
+                [attr.aria-label]="'Eliminar respaldo ' + r.id"
+              >
+                Eliminar
+              </button>
+            </div>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="4">No hay respaldos disponibles.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>
+@if (previa(); as p) {
+  <section class="panel" aria-labelledby="previa-title">
+    <h2 id="previa-title" tabindex="-1">Revisar restauración</h2>
+    <p class="codigo">Copia: {{ p.id }}</p>
+    <p class="aviso">{{ p.destino }}</p>
+    @if (p.tipo === 'GLOBAL') {
+      <p>
+        Esta acción restaura una copia global en un destino de ensayo vacío configurado por el
+        operador. No reemplaza la base activa de producción.
+      </p>
+    } @else {
+      <p>
+        La empresa original debe estar suspendida. Se crea una copia preventiva antes de reemplazar
+        sus datos y se cierran sus sesiones. Se conserva la suscripción actual y las otras empresas
+        no se modifican.
+      </p>
+    }
+    @if (!puedeRestaurar(p)) {
+      <p class="aviso">
+        La empresa todavía no está suspendida. Solicita la suspensión a la administración de
+        plataforma y vuelve a revisar la copia.
+      </p>
+    }
+    <p>Archivos incluidos: {{ p.archivos }}.</p>
+    @if (p.conteos) {
+      <div class="tabla" role="region" aria-label="Detalle de la copia" tabindex="0">
+        <table>
+          <caption>
+            Impacto por tabla
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Tabla</th>
+              <th scope="col">En la copia</th>
+              <th scope="col">Actuales</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of p.conteos | keyvalue; track fila.key) {
+              <tr>
+                <th scope="row">{{ fila.key }}</th>
+                <td>{{ fila.value }}</td>
+                <td>{{ p.conteos_actuales?.[fila.key] ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <form [formGroup]="restauracion" (ngSubmit)="$event.preventDefault()">
+      <label for="confirmar-restauracion"
+        >Confirmación explícita<input
+          id="confirmar-restauracion"
+          [formControl]="confirmacion"
+          autocomplete="off"
+          aria-describedby="frase-confirmacion"
+      /></label>
+      <p id="frase-confirmacion" class="codigo">
+        Escribe exactamente: <strong>{{ p.confirmacion }}</strong>
+      </p>
+      <div class="acciones">
+        <button
+          type="button"
+          (click)="restaurar()"
+          class="peligro"
+          [disabled]="
+            ocupado() || incierto() || !puedeRestaurar(p) || confirmacion.value !== p.confirmacion
+          "
+        >
+          Restaurar copia revisada</button
+        ><button type="button" class="secundario" (click)="cerrarPrevia()" [disabled]="ocupado()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (!plataforma && configuracion(); as config) {
+  <section class="panel">
+    <h2>Programación automática</h2>
+    <p>
+      Frecuencia establecida por el plan:
+      {{
+        automaticosIncluidos()
+          ? 'cada ' +
+            (plan.capacidades()?.limites?.['frecuencia_respaldo_dias'] ??
+              config.politica.frecuencia_dias) +
+            ' días'
+          : 'No incluida'
+      }}. La retención nueva aplica a copias nuevas.
+    </p>
+    <p>
+      Último respaldo automático:
+      {{
+        config.programacion.ultimo_respaldo
+          ? (config.programacion.ultimo_respaldo | date: 'dd/MM/yyyy HH:mm' : '-0400')
+          : 'Sin ejecución registrada'
+      }}.
+    </p>
+    <form [formGroup]="programacion" (ngSubmit)="guardarProgramacion()">
+      <fieldset
+        [disabled]="ocupado() || incierto() || !plan.capacidades()?.operaciones_habilitadas"
+      >
+        <legend>Calendario de mi empresa</legend>
+        <label class="check"
+          ><input type="checkbox" formControlName="activa" />Activar respaldos automáticos</label
+        >
+        <label for="backup-inicio"
+          >Fecha de inicio<input
+            id="backup-inicio"
+            type="date"
+            formControlName="fecha_inicio"
+            required
+        /></label>
+        @if (horarioEditable()) {
+          <label for="backup-hora"
+            >Hora local<input
+              id="backup-hora"
+              type="time"
+              formControlName="hora_local"
+              required /></label
+          ><label for="backup-zona"
+            >Zona horaria<input
+              id="backup-zona"
+              formControlName="zona_horaria"
+              required
+              maxlength="80"
+            /><small>Por ejemplo, America/La_Paz.</small></label
+          >
+        } @else {
+          <p>Horario fijo: 02:00 · America/La_Paz.</p>
+        }
+        <button [disabled]="ocupado() || incierto()">Guardar programación</button>
+      </fieldset>
+    </form>
+    @if (!plan.capacidades()?.operaciones_habilitadas) {
+      <p class="aviso">
+        Puedes consultar esta programación. Para modificarla, la suscripción debe estar vigente.
+      </p>
+    }
+  </section>
+}

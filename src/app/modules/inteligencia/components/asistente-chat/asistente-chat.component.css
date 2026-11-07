@@ -13,7 +13,9 @@
   place-items: center;
   box-shadow: 0 18px 35px rgba(15, 23, 42, 0.25);
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .chat-fab:hover,
@@ -227,4 +229,51 @@
     bottom: 5rem;
     height: min(600px, calc(100vh - 6rem));
   }
+}
+
+.selection {
+  padding: 0.5rem 1rem;
+  margin: 0;
+  color: #263020;
+  font-size: 0.85rem;
+}
+.structured {
+  border: 1px solid #899581;
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+}
+.structured dt {
+  font-weight: 600;
+}
+.structured dd {
+  margin: 0 0 0.5rem;
+  overflow-wrap: anywhere;
+}
+.message small {
+  display: block;
+  color: #35432f;
+}
+.chat-panel button:focus-visible,
+.chat-panel a:focus-visible {
+  outline: 3px solid #35432f;
+  outline-offset: 2px;
+}
+.chat-panel button {
+  min-height: 32px;
+}
+.product-results {
+  overflow-wrap: anywhere;
+}
+
+.chat-messages {
+  min-height: 0;
+}
+.quick-actions,
+.chat-header,
+.chat-input,
+.selection {
+  flex-shrink: 0;
+}
+.chat-messages .message {
+  overflow-wrap: anywhere;
 }

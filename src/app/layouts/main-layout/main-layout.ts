@@ -131,7 +131,7 @@ export class MainLayout {
       icon: 'pi pi-th-large',
       items: [
         { label: 'Mi plan', path: '/mi-plan', icon: 'pi pi-list', roles: ADMIN },
-        { label: 'Dashboard', path: '/dashboard', icon: 'pi pi-chart-line', roles: ADMIN },
+        { label: 'Dashboard', path: '/dashboard', icon: 'pi pi-chart-line', roles: ADMIN_O_ENCARGADO },
         { label: 'Perfil', path: '/perfil', icon: 'pi pi-user' },
         {
           label: 'Panel proveedor',
@@ -159,6 +159,7 @@ export class MainLayout {
       title: 'ADMINISTRACION',
       icon: 'pi pi-briefcase',
       items: [
+        { label: 'Respaldos de mi empresa', path: '/respaldos', icon: 'pi pi-database', roles: ADMIN },
         { label: 'Productos', path: '/productos', icon: 'pi pi-shopping-bag', roles: ADMIN },
         { label: 'Categorias', path: '/categorias', icon: 'pi pi-tags', roles: ADMIN },
         { label: 'Tallas', path: '/tallas', icon: 'pi pi-sliders-h', roles: ADMIN },
@@ -230,7 +231,7 @@ export class MainLayout {
     {
       title: 'REPORTES',
       icon: 'pi pi-chart-bar',
-      items: [{ label: 'Reportes', path: '/reportes', icon: 'pi pi-file-chart', roles: ADMIN }],
+      items: [{ label: 'Reportes', path: '/reportes', icon: 'pi pi-file-chart', roles: ADMIN_O_ENCARGADO }],
     },
   ];
 

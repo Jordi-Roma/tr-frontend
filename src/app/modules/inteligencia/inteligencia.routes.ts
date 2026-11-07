@@ -11,7 +11,7 @@ export const INTELIGENCIA_ROUTES: Routes = [
     component: AdminDashboardPage,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMINISTRADOR'],
+      roles: ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL'],
     },
   },
   {
@@ -27,7 +27,7 @@ export const INTELIGENCIA_ROUTES: Routes = [
     component: ReportesPage,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMINISTRADOR'],
+      roles: ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL'],
     },
   },
 ];

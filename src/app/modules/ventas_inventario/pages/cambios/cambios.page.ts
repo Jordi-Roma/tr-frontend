@@ -1,3 +1,4 @@
+import { ActivatedRoute } from '@angular/router';
 import {
   afterNextRender,
   Component,
@@ -84,6 +85,8 @@ export class CambiosPage {
   protected readonly recepcion = signal(false);
   protected readonly entrega = signal(false);
   protected readonly referencia = signal('');
+  private readonly route = inject(ActivatedRoute);
+  private seleccionAplicada = false;
   constructor() {
     this.cargar();
   }
@@ -105,8 +108,15 @@ export class CambiosPage {
     this.http.get<Cambio[]>(this.base + '?gestion=' + this.gestion()).subscribe({
       next: (items) => {
         this.lista.set(items);
-        const id = this.elegido()?.id;
-        this.elegido.set(items.find((c) => c.id === id) || null);
+        const id =
+          this.elegido()?.id ||
+          (!this.seleccionAplicada
+            ? Number(this.route.snapshot.queryParamMap.get('seleccion'))
+            : 0);
+        this.seleccionAplicada = true;
+        const seleccionado = items.find((c) => c.id === id);
+        this.elegido.set(seleccionado || null);
+        if (seleccionado) this.enfocar();
       },
       error: (e: unknown) => {
         this.lista.set([]);

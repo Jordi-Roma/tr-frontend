@@ -21,6 +21,7 @@ export class DevolucionesPage implements OnInit {
   protected readonly guardando = signal(false);
   protected readonly mensaje = signal('');
   protected readonly error = signal('');
+  protected readonly seleccionNotificacion=signal(0);
   protected readonly politica=signal<{devoluciones_habilitadas:boolean;plazo_devoluciones:number|null;condiciones_devoluciones:string}|null>(null);
   protected readonly noVendibles=signal<Record<number,number>>({});
   protected aceptar(item:Devolucion):void {if(window.confirm('¿Aceptas la devolución y el importe mostrado? El dinero permanecerá pendiente hasta confirmar el reintegro.'))this.ejecutar(this.service.aceptar(item.id,item.monto_aprobado),'Devolución confirmada. Reintegro pendiente.');}
@@ -41,6 +42,7 @@ export class DevolucionesPage implements OnInit {
   protected readonly metodoManual = signal('EFECTIVO');
 
   ngOnInit(): void {
+    this.seleccionNotificacion.set(Number(this.route.snapshot.queryParamMap.get('seleccion'))||0);
     this.esCliente.set(this.route.snapshot.data['vista'] === 'cliente');
     const autorizado = this.auth.tieneRol('ADMINISTRADOR') || this.auth.tieneRol('ENCARGADO_SUCURSAL') || this.auth.tieneRol('CAJERO');
     this.puedeRevisar.set(autorizado);

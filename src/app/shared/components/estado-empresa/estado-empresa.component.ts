@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { timer } from 'rxjs';
+import { merge, timer, filter } from 'rxjs';
+import { NavigationEnd, Router } from '@angular/router';
 import { EmpresaContextoService } from '../../../core/services/empresa-contexto.service';
 import { EstadoPlanService } from '../../../core/services/estado-plan.service';
 import { AuthService } from '../../../modules/autenticacion/services/auth.service';
-import { SaasService } from '../../../modules/administracion/services/saas.service';
 
 @Component({
   selector: 'app-estado-empresa',
@@ -82,18 +82,17 @@ export class EstadoEmpresaComponent {
   protected readonly auth = inject(AuthService);
   protected readonly empresa = inject(EmpresaContextoService).empresa;
   protected readonly estado = inject(EstadoPlanService);
-  private readonly api = inject(SaasService);
+  private readonly router = inject(Router);
   constructor() {
-    if (this.auth.tieneRol('ADMINISTRADOR'))
-      timer(0, 60000)
-        .pipe(takeUntilDestroyed())
-        .subscribe(() => {
-          this.api.miPlan().subscribe({
-            next: (p) => this.estado.aplicar(p.operaciones_habilitadas),
-            error: () => {
-              /* API interceptor displays permission/plan errors. */
-            },
-          });
+    merge(timer(0, 60000), this.router.events.pipe(filter((e) => e instanceof NavigationEnd)))
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        if (!this.auth.estaAutenticado() || this.auth.tieneRol('ADMIN_SAAS')) return;
+        this.estado.refrescar().subscribe({
+          error: () => {
+            /* API interceptor displays permission/plan errors. */
+          },
         });
+      });
   }
 }

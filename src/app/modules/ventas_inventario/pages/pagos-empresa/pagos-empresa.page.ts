@@ -88,38 +88,4 @@ export class PagosEmpresaPage {
   }
 }
 
-@Component({
-  selector: 'app-notificaciones',
-  imports: [RouterLink],
-  styleUrl: './pagos-empresa.page.css',
-  template: `
-    <h1>Mis notificaciones</h1>
-    <p>Consulta las actualizaciones de tu cuenta en esta empresa, aunque el aviso push no haya llegado.</p>
-    <button type="button" (click)="cargar()" [disabled]="cargando()">Actualizar notificaciones</button>
-    @if (error()) { <p role="alert">{{ error() }}</p> }
-    @for (n of notas(); track n.id) {
-      <article>
-        <h2>{{ n.titulo }}</h2><p>{{ n.mensaje }}</p>
-        <p>{{ n.leida ? 'Leída' : 'Sin leer' }}</p>
-        @if (n.orden_id) { <a [routerLink]="['/pago/resultado']" [queryParams]="{orden_id:n.orden_id}">Consultar orden #{{ n.orden_id }}</a> }
-        @if (!n.leida) { <button type="button" (click)="leer(n)" [disabled]="cargando()">Marcar como leída #{{ n.id }}</button> }
-      </article>
-    } @empty { @if (!cargando() && !error()) { <p>No tienes notificaciones en esta empresa.</p> } }
-  `,
-})
-export class NotificacionesPage {
-  private readonly api = inject(PagoService);
-  protected readonly notas = signal<NotificacionPropia[]>([]);
-  protected readonly cargando = signal(false);
-  protected readonly error = signal('');
-  constructor() { this.cargar(); }
-  protected cargar(): void {
-    this.cargando.set(true); this.error.set('');
-    this.api.notificaciones().pipe(finalize(() => this.cargando.set(false))).subscribe({next: datos => this.notas.set(datos),error:(error:unknown) => {this.notas.set([]);this.error.set(mensajeApi(error));}});
-  }
-  protected leer(n: NotificacionPropia): void {
-    if (this.cargando()) return;
-    this.cargando.set(true);
-    this.api.leerNotificacion(n.id).pipe(finalize(() => this.cargando.set(false))).subscribe({next:() => this.notas.update(ns => ns.map(x => x.id === n.id ? {...x,leida:true} : x)),error:(error:unknown) => this.error.set(mensajeApi(error))});
-  }
-}
+export {NotificacionesPage} from './notificaciones.page';

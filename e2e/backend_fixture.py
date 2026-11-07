@@ -50,6 +50,30 @@ def personal(rol):
     return nombre
 
 datos = {'a': a, 'b': b, 'clienteA': ca[2], 'clienteB': cb[2], 'cajero': personal('CAJERO'), 'encargado': personal('ENCARGADO_SUCURSAL'), 'proveedor': personal('PROVEEDOR'), 'productoA': pa, 'productoB': pb, 'varianteA': va, 'sucursalA': sa, 'plan': plan['id'], 'as': helpers.consulta('SELECT username FROM usuario WHERE id=%s',(actor,),True)['username']}
+if os.environ.get('STYLEAR_E2E_REPORTES') == '1':
+    helpers.consulta("INSERT INTO venta(empresa_id,sucursal_id,codigo,subtotal,total) SELECT %s,%s,'CU22-'||n,2,2 FROM generate_series(1,5200)n",(a['id'],sa))
+    datos['sucursalB'] = sb
+
+if os.environ.get('STYLEAR_E2E_INTELIGENCIA') == '1':
+    from datetime import date,timedelta
+    from app.modules.reservas.repositories.carrito_repository import agregar_item_carrito
+    from app.modules.reservas.repositories.reserva_repository import crear_reserva_desde_carrito
+    for i in range(2):
+        agregar_item_carrito(ca[1],va,sa,1)
+        reserva=crear_reserva_desde_carrito(ca[0],a['id'],sa,date.today()+timedelta(days=1),None)
+        datos['reservaA']=reserva['id']
+    helpers.consulta("UPDATE producto SET descripcion='Prenda suave',material='Algodón' WHERE id=%s",(pa,))
+    promo=helpers.consulta("INSERT INTO promocion(empresa_id,nombre,tipo_descuento,valor,fecha_inicio,fecha_fin) VALUES(%s,'Oferta','PORCENTAJE',20,CURRENT_DATE,CURRENT_DATE+1) RETURNING id",(a['id'],),True)['id']
+    helpers.consulta('INSERT INTO promocion_producto(empresa_id,promocion_id,producto_id) VALUES(%s,%s,%s)',(a['id'],promo,pa))
+    helpers.consulta('INSERT INTO promocion_sucursal(empresa_id,promocion_id,sucursal_id) VALUES(%s,%s,%s)',(a['id'],promo,sa))
+
+if os.environ.get('STYLEAR_E2E_NOTIFICACIONES') == '1':
+    venta=helpers.consulta("INSERT INTO venta(empresa_id,sucursal_id,cliente_id,codigo,subtotal,total) VALUES(%s,%s,%s,'CU27-COMPRA',10,10) RETURNING id",(a['id'],sa,ca[1]),True)['id']
+    for n in range(45):
+        helpers.consulta("INSERT INTO notificacion_usuario(empresa_id,usuario_id,clave,titulo,mensaje,categoria,recurso_tipo,recurso_id,accion) VALUES(%s,%s,%s,%s,'Actualización sintética de ensayo',%s,'RESERVA',%s,'VER_DETALLE')",(a['id'],ca[0],'cu27-'+str(n),'Aviso de ensayo '+str(n),'RESERVA' if n%2 else 'GENERAL',datos['reservaA']))
+    datos['notaVenta']=helpers.consulta("INSERT INTO notificacion_usuario(empresa_id,usuario_id,clave,titulo,mensaje,categoria,recurso_tipo,recurso_id,accion) VALUES(%s,%s,'cu27-venta','Compra de ensayo','Compra registrada','COMPRA','VENTA',%s,'VER_DETALLE') RETURNING id",(a['id'],ca[0],venta),True)['id']
+    datos['notaB']=helpers.consulta("INSERT INTO notificacion_usuario(empresa_id,usuario_id,clave,titulo,mensaje,categoria) VALUES(%s,%s,'cu27-b','Aviso privado B','Solo cliente B','GENERAL') RETURNING id",(b['id'],cb[0]),True)['id']
+
 # CU19: prenda de reemplazo disponible solo en la base de pruebas.
 if os.environ.get('STYLEAR_E2E_CAMBIOS') == '1':
     from datetime import date
@@ -86,6 +110,18 @@ def capturar_nota(destino, asunto, cuerpo, archivo, nombre, emisor):
     assert archivo.startswith(b'%PDF') and nombre.endswith('.pdf')
     assert emisor in asunto and emisor in cuerpo
 correo_comercial.enviar_correo_con_adjunto = capturar_nota
+if os.environ.get('STYLEAR_E2E_REPORTES') == '1':
+    from app.modules.inteligencia.services import reporte_service
+    from app.modules.administracion.services import respaldo_service as copias
+    from app.modules.ventas_inventario.services import push_worker
+    reporte_service.ejecutar_reportes_programados = lambda: 0
+    copias.ejecutar_respaldos_programados = lambda: 0
+    push_worker.procesar = lambda: 0
+    reporte_service.AI_REPORTS_PROVIDER = 'LOCAL'
+    def capturar_reporte(destino, asunto, cuerpo, archivo, nombre, *args):
+        assert destino.endswith('@example.invalid')
+        assert (nombre.endswith('.pdf') and archivo.startswith(b'%PDF')) or (nombre.endswith('.xlsx') and archivo.startswith(b'PK'))
+    correo_comercial.enviar_correo_con_adjunto = capturar_reporte
 
 # Proveedor de rutas simulado exclusivamente en la base desechable de CU18.
 if os.environ.get('STYLEAR_E2E_RUTAS') == '1':
@@ -105,6 +141,18 @@ if os.environ.get('STYLEAR_E2E_RUTAS') == '1':
         return get_original(url, **kwargs)
     rutas.requests.post, rutas.requests.get = rutas_post, rutas_get
 
+if os.environ.get('STYLEAR_E2E_INTELIGENCIA') == '1':
+    from app.modules.inteligencia.services import asistente_service,recomendacion_service,reporte_service
+    from app.modules.administracion.services import respaldo_service
+    from app.modules.ventas_inventario.services import push_worker
+    asistente_service.AI_ASSISTANT_PROVIDER = 'RULES'
+    def embedding_no_permitido(*args,**kwargs):
+        raise AssertionError('La prueba no permite indexación externa.')
+    recomendacion_service._crear_embedding = embedding_no_permitido
+    reporte_service.ejecutar_reportes_programados = lambda: 0
+    respaldo_service.ejecutar_respaldos_programados = lambda: 0
+    push_worker.procesar = lambda: 0
+
 with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
     os.environ['STYLEAR_BACKUP_DIR'] = str(Path(privado)/'copias')
     os.environ['STYLEAR_BACKUP_KEY'] = Fernet.generate_key().decode()
@@ -114,6 +162,37 @@ with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
     os.environ['STRIPE_SECRET_KEY'] = 'MODO_PRUEBA'
     from app.modules.administracion.services import respaldo_service
     respaldo_service.STATIC = Path(privado)/'static'
+    if os.environ.get('STYLEAR_E2E_RESPALDOS') == '1':
+        # CU25: cifrado y PostgreSQL reales; R2 exclusivamente en memoria.
+        from io import BytesIO
+        class R2Memoria:
+            def __init__(self):
+                self.archivos = {}
+                self.lock = Lock()
+            def put_object(self, **args):
+                with self.lock:
+                    self.archivos[args['Key']] = args['Body']
+            def get_object(self, **args):
+                with self.lock:
+                    return {'Body': BytesIO(self.archivos[args['Key']])}
+            def delete_object(self, **args):
+                with self.lock:
+                    self.archivos.pop(args['Key'], None)
+        r2 = R2Memoria()
+        cifrador = Fernet(os.environ['STYLEAR_BACKUP_KEY'].encode())
+        respaldo_service.configuracion = lambda: (r2, 'bucket-simulado', cifrador, 30)
+        # Los recorridos disparan únicamente las operaciones explícitas de la UI.
+        respaldo_service.ejecutar_respaldos_programados = lambda: 0
+        from app.modules.inteligencia.services import reporte_service
+        from app.modules.ventas_inventario.services import push_worker
+        reporte_service.ejecutar_reportes_programados = lambda: 0
+        push_worker.procesar = lambda: 0
+        restaurar_dsn = os.environ.get('STYLEAR_E2E_RESTORE_DATABASE_URL', '')
+        destino = parse_dsn(restaurar_dsn)
+        assert destino.get('host') == '127.0.0.1' and destino.get('dbname', '').startswith('stylear_test_')
+        assert destino['dbname'] != param['dbname']
+        os.environ['STYLEAR_RESTORE_DATABASE_URL'] = restaurar_dsn
+        os.environ['STYLEAR_RESTORE_ASSETS_DIR'] = str(Path(privado)/'ensayo')
     from app.modules.ventas_inventario.services import nota_venta_service
     nota_venta_service.DIRECTORIO_LOGOS = Path(privado)/'static'/'empresas'
     uvicorn.run('app.main:app',host='127.0.0.1',port=58127,log_level='warning')

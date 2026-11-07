@@ -10,7 +10,14 @@ import {
   PlanAlta,
   PreviaRespaldo,
   Respaldo,
+  PlanCambio,
+  PreviaPlan,
+  HistorialPlan,
+  ResumenPlan,
+  Suscripcion,
+  EmpresasPagina,
 } from '../models/saas.models';
+import { CapacidadesPlan, CatalogoPlan } from '../../../core/models/capacidades-plan.models';
 
 @Service()
 export class SaasService {
@@ -41,8 +48,34 @@ export class SaasService {
   crearPlan(datos: PlanAlta) {
     return this.http.post<Plan>(`${this.base}/saas/planes`, datos);
   }
-  editarPlan(id: number, datos: Omit<Plan, 'id'>) {
+  editarPlan(id: number, datos: PlanCambio & { token_previsualizacion: string }) {
     return this.http.put<Plan>(`${this.base}/saas/planes/${id}`, datos);
+  }
+  catalogoPlanes() {
+    return this.http.get<CatalogoPlan>(`${this.base}/saas/planes/catalogo`);
+  }
+  previsualizarPlan(id: number, datos: PlanCambio) {
+    return this.http.post<PreviaPlan>(`${this.base}/saas/planes/${id}/previsualizar`, datos);
+  }
+  historialPlan(id: number) {
+    return this.http.get<HistorialPlan[]>(`${this.base}/saas/planes/${id}/historial`);
+  }
+  resumenPlanes() {
+    return this.http.get<ResumenPlan[]>(`${this.base}/saas/planes/resumen`);
+  }
+  comparacionPlanes() {
+    return this.http.get<{ catalogo: CatalogoPlan; planes: Plan[] }>(
+      `${this.base}/saas/planes/comparacion`,
+    );
+  }
+  empresasPorPlan(params: Record<string, string | number>) {
+    return this.http.get<EmpresasPagina>(`${this.base}/saas/planes/empresas`, { params });
+  }
+  suscripciones(id: number) {
+    return this.http.get<Suscripcion[]>(`${this.base}/saas/empresas/${id}/suscripciones`);
+  }
+  capacidadesEmpresa(id: number) {
+    return this.http.get<CapacidadesPlan>(`${this.base}/saas/empresas/${id}/plan`);
   }
   miPlan() {
     return this.http.get<MiPlan>(`${this.base}/mi-empresa/plan`);

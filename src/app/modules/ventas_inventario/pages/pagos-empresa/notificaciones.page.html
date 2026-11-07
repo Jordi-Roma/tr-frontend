@@ -1,0 +1,126 @@
+<h1>Mis notificaciones</h1>
+<p>Consulta las actualizaciones de tu cuenta en esta empresa, aunque no recibas avisos push.</p>
+<p role="status">
+  {{ noLeidas() }} sin leer en toda tu bandeja · {{ total() }} resultados del filtro
+</p>
+<div class="grid">
+  <label for="notas-lectura"
+    >Lectura<select
+      id="notas-lectura"
+      [value]="leida() === null ? '' : leida() ? 'true' : 'false'"
+      (change)="filtrar('leida', $event)"
+    >
+      <option value="">Todas</option>
+      <option value="false">Sin leer</option>
+      <option value="true">Leídas</option>
+    </select></label
+  >
+  <label for="notas-categoria"
+    >Categoría<select
+      id="notas-categoria"
+      [value]="categoria() ?? ''"
+      (change)="filtrar('categoria', $event)"
+    >
+      <option value="">Todas</option>
+      @for (c of categorias; track c) {
+        <option [value]="c">{{ c }}</option>
+      }
+    </select></label
+  >
+</div>
+<button type="button" (click)="cargar()" [disabled]="cargando() || ocupado()">
+  Actualizar notificaciones
+</button>
+<button type="button" (click)="todas()" [disabled]="ocupado() || noLeidas() === 0">
+  Marcar todas como leídas
+</button>
+<button type="button" (click)="verPreferencias()" [disabled]="ocupado()">
+  Preferencias de avisos
+</button>
+@if (cargando()) {
+  <p role="status">Consultando bandeja…</p>
+}
+@if (error()) {
+  <p role="alert">{{ error() }}</p>
+}
+@if (aviso()) {
+  <p role="status">{{ aviso() }}</p>
+}
+@if (preferencias(); as p) {
+  <section aria-labelledby="notas-preferencias">
+    <h2 id="notas-preferencias">Preferencias de avisos push</h2>
+    <p>
+      Desactivar una categoría silencia sus avisos push; no borra ni evita las actualizaciones de
+      esta bandeja.
+    </p>
+    <fieldset [disabled]="ocupado()">
+      <legend>Categorías con avisos push</legend>
+      @for (c of categorias; track c) {
+        <label
+          ><input type="checkbox" [checked]="p[c]" (change)="cambiarPreferencia(c, $event)" />{{
+            c
+          }}</label
+        >
+      }
+    </fieldset>
+    <button type="button" (click)="guardarPreferencias()" [disabled]="ocupado()">
+      Guardar preferencias</button
+    ><button type="button" (click)="preferencias.set(null)" [disabled]="ocupado()">
+      Cerrar preferencias
+    </button>
+  </section>
+}
+@for (n of notas(); track n.id) {
+  <article>
+    <h2>{{ n.titulo }}</h2>
+    <p>{{ n.mensaje }}</p>
+    <p>
+      {{ n.categoria }} · {{ n.creado_en | date: 'dd/MM/yyyy HH:mm' }} ·
+      {{ n.leida ? 'Leída' : 'Sin leer' }}
+    </p>
+    <button type="button" (click)="abrir(n)" [disabled]="ocupado()">
+      Abrir actualización #{{ n.id }}
+    </button>
+    @if (!n.leida) {
+      <button type="button" (click)="leer(n)" [disabled]="ocupado()">
+        Marcar como leída #{{ n.id }}
+      </button>
+    }
+    <button type="button" (click)="trazabilidad(n)" [disabled]="ocupado()">
+      Estado del aviso #{{ n.id }}
+    </button>
+  </article>
+} @empty {
+  @if (!cargando() && !error()) {
+    <p>No hay notificaciones con estos filtros.</p>
+  }
+}
+<nav aria-label="Páginas de notificaciones">
+  <button type="button" (click)="cargar(pagina() - 1)" [disabled]="cargando() || pagina() <= 1">
+    Anterior</button
+  ><span>Página {{ pagina() }} de {{ paginas() }}</span
+  ><button
+    type="button"
+    (click)="cargar(pagina() + 1)"
+    [disabled]="cargando() || pagina() >= paginas()"
+  >
+    Siguiente
+  </button>
+</nav>
+@if (estado(); as e) {
+  <section aria-labelledby="notas-estado">
+    <h2 id="notas-estado">Estado del aviso</h2>
+    <p>
+      {{ e.leida ? 'Leído en la bandeja' : 'Sin leer en la bandeja' }} ·
+      {{ e.leida_en | date: 'dd/MM/yyyy HH:mm' }}
+    </p>
+    <p>
+      {{ e.aceptadas_fcm }} aceptadas por Firebase · {{ e.pendientes }} pendientes ·
+      {{ e.fallidas }} fallidas · {{ e.omitidas }} omitidas
+    </p>
+    <p>
+      Firebase puede aceptar un envío sin que el aviso aparezca en pantalla. Este estado no confirma
+      que lo hayas visto.
+    </p>
+  </section>
+}

@@ -1,13 +1,13 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, takeUntil, throwError } from 'rxjs';
+import { catchError, takeUntil, tap, throwError } from 'rxjs';
 import { AuthService } from '../../modules/autenticacion/services/auth.service';
 import { API_BASE_URL } from '../config/api.config';
 import { EmpresaContextoService } from '../services/empresa-contexto.service';
 import { CambioContextoService } from '../services/cambio-contexto.service';
 import { EstadoPlanService } from '../services/estado-plan.service';
-import { esErrorVigencia, esOperacionNueva, mensajeApi } from '../services/error-api';
+import { detalleApi, esErrorVigencia, esOperacionNueva, mensajeApi } from '../services/error-api';
 
 export function esPeticionApi(url: string): boolean {
   try {
@@ -61,10 +61,40 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   if (empresa && !plataforma) headers['X-Empresa-Codigo'] = empresa.codigo;
   return next(request.clone({ setHeaders: headers })).pipe(
     takeUntil(cambios.cambio$),
+    tap((evento) => {
+      if (
+        evento instanceof HttpResponse &&
+        usuario &&
+        !plataforma &&
+        !['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase()) &&
+        /^\/api\/v1\/(usuarios|empleados|sucursales|respaldos|reportes\/programados)(\/|$)/.test(
+          ruta,
+        )
+      ) {
+        estado.refrescar().subscribe({ error: () => {} });
+      }
+    }),
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse)) return throwError(() => error);
       const mensaje = mensajeApi(error);
       if (esErrorVigencia(error)) estado.restringir();
+      const detalle = detalleApi(error);
+      if (
+        usuario &&
+        !plataforma &&
+        !ruta.endsWith('/mi-empresa/capacidades') &&
+        typeof detalle === 'object' &&
+        detalle !== null &&
+        'codigo' in detalle &&
+        [
+          'SUSCRIPCION_NO_VIGENTE',
+          'FUNCION_NO_INCLUIDA',
+          'CUPO_AGOTADO',
+          'LIMITE_USUARIOS',
+        ].includes(String(detalle.codigo))
+      ) {
+        estado.refrescar().subscribe({ error: () => {} });
+      }
       if (error.status === 403 || error.status === 409 || error.status === 503)
         estado.notificar(mensaje);
       if (
@@ -87,7 +117,11 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
             statusText: error.statusText,
             url: error.url ?? undefined,
             headers: error.headers,
-            error: { detail: mensaje },
+            error: {
+              detail: mensaje,
+              detalleOriginal: detalleApi(error),
+              cuerpoOriginal: error.error as unknown,
+            },
           }),
       );
     }),

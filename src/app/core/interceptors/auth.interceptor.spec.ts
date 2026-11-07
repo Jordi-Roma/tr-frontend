@@ -110,6 +110,9 @@ describe('Contexto y sesión multitenant', () => {
         { detail: { codigo: 'SUSCRIPCION_NO_VIGENTE', mensaje: 'Operaciones restringidas.' } },
         { status: 403, statusText: 'Forbidden' },
       );
+    backend
+      .expectOne(`${API_BASE_URL}/api/v1/mi-empresa/capacidades`)
+      .flush({ empresa_id: 1, operaciones_habilitadas: false, funciones: {}, cupos: {} });
     expect(auth.estaAutenticado()).toBe(true);
     expect(TestBed.inject(EstadoPlanService).operacionesPermitidas()).toBe(false);
     http.post(`${API_BASE_URL}/api/v1/pagos/qr/confirmar/10`, {}).subscribe();

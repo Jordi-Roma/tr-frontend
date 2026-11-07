@@ -30,6 +30,7 @@ export class LoginPage {
         clave_actualizada: 'Contraseña actualizada. Inicia sesión nuevamente.',
         acceso_actualizado: 'Datos de acceso actualizados. Inicia sesión nuevamente.',
         cuenta_desactivada: 'Cuenta desactivada. Tu historial se conserva.',
+        empresa_restaurada: 'Empresa restaurada. Se cerraron sus sesiones; inicia sesión nuevamente. La empresa permanece suspendida para revisión.',
       } as Record<string, string>
     )[this.route.snapshot.queryParamMap.get('motivo') ?? ''] ?? '';
   protected readonly passwordVisible = signal(false);

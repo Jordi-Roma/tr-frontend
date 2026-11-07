@@ -1,0 +1,322 @@
+<header class="encabezado">
+  <div>
+    <p class="ceja">Plataforma</p>
+    <h1>Planes</h1>
+    <p>
+      Configura condiciones, cupos y funciones. El precio de referencia no genera cobros
+      automáticos.
+    </p>
+  </div>
+  <button class="secundario" (click)="cargar()" [disabled]="ocupado() || cargando()">
+    Actualizar
+  </button>
+</header>
+@if (error()) {
+  <p role="alert" class="error">{{ error() }}</p>
+}
+@if (mensaje()) {
+  <p role="status" class="exito">{{ mensaje() }}</p>
+}
+@if (cargando()) {
+  <p role="status">Cargando planes…</p>
+}
+<section class="panel tabla">
+  <table>
+    <caption>
+      Planes de la plataforma
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Plan</th>
+        <th scope="col">Estado</th>
+        <th scope="col">Precio de referencia</th>
+        <th scope="col">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (p of planes(); track p.id) {
+        <tr>
+          <th scope="row">
+            {{ p.nombre }}<small>{{ p.codigo }}</small>
+          </th>
+          <td>
+            {{ p.activo ? 'Activo' : 'Inactivo'
+            }}<small>{{ p.publico ? 'Público' : 'Oculto en registro' }}</small>
+          </td>
+          <td>{{ p.precio }} {{ p.moneda }}</td>
+          <td>
+            <button
+              class="secundario"
+              (click)="editar(p)"
+              [disabled]="ocupado() || cargando()"
+              [attr.aria-label]="'Editar plan ' + p.nombre"
+            >
+              Editar
+            </button>
+            <button
+              class="secundario"
+              (click)="verHistorial(p)"
+              [disabled]="ocupado() || cargando()"
+              [attr.aria-label]="'Historial de ' + p.nombre"
+            >
+              Historial
+            </button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="4">No hay planes disponibles.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>
+@if (catalogo(); as c) {
+  <section class="panel">
+    <h2>Empresas por plan</h2>
+    <div class="tabla" tabindex="0" role="region" aria-label="Conteos de empresas por plan">
+      <table>
+        <caption>
+          Cada empresa se cuenta una vez según su última suscripción
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Plan</th>
+            <th scope="col">Empresas</th>
+            <th scope="col">Vigentes</th>
+            <th scope="col">No vigentes</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of resumen(); track r.id) {
+            <tr>
+              <th scope="row">
+                <a routerLink="/saas/empresas" [queryParams]="{ plan_id: r.id }">{{ r.nombre }}</a>
+              </th>
+              <td>{{ r.empresas }}</td>
+              <td>{{ r.vigentes }}</td>
+              <td>{{ r.no_vigentes }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Comparar planes</h2>
+    <div class="tabla" tabindex="0" role="region" aria-label="Comparación de planes">
+      <table>
+        <caption>
+          Configuración comercial vigente
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Opción</th>
+            @for (p of comparacion(); track p.id) {
+              <th scope="col">{{ p.nombre }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of c.limites; track l.clave) {
+            <tr>
+              <th scope="row">{{ l.nombre }} ({{ l.unidad }})</th>
+              @for (p of comparacion(); track p.id) {
+                <td>{{ p.limites[l.clave] ?? 'Sin límite' }}</td>
+              }
+            </tr>
+          }
+          @for (f of c.funciones; track f.clave) {
+            <tr>
+              <th scope="row">{{ f.nombre }}</th>
+              @for (p of comparacion(); track p.id) {
+                <td>{{ (p.funciones[f.clave] ?? true) ? 'Incluida' : 'No incluida' }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="panel" aria-labelledby="plan-title">
+    <h2 id="plan-title">{{ editando() ? 'Editar plan' : 'Crear plan' }}</h2>
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <fieldset [disabled]="ocupado() || previa() !== null">
+        <legend>Datos del plan</legend>
+        <div class="grid">
+          <label for="plan-codigo"
+            >Código<input
+              id="plan-codigo"
+              formControlName="codigo"
+              required
+              maxlength="50"
+              [readOnly]="editando()?.codigo === 'STYLEAR_LEGADO'"
+          /></label>
+          <label for="plan-nombre"
+            >Nombre<input id="plan-nombre" formControlName="nombre" required maxlength="120"
+          /></label>
+          <label for="plan-precio"
+            >Precio de referencia<input
+              id="plan-precio"
+              formControlName="precio"
+              type="number"
+              min="0"
+              max="9999999999.99"
+              step="0.01"
+              required
+          /></label>
+          <label for="plan-moneda"
+            >Moneda<input
+              id="plan-moneda"
+              formControlName="moneda"
+              minlength="3"
+              maxlength="3"
+              required
+          /></label>
+          <label for="plan-descripcion"
+            >Descripción<textarea
+              id="plan-descripcion"
+              formControlName="descripcion"
+              maxlength="4000"
+            ></textarea>
+          </label>
+          <label for="plan-condiciones"
+            >Condiciones<textarea
+              id="plan-condiciones"
+              formControlName="condiciones"
+              maxlength="10000"
+            ></textarea>
+          </label>
+          @if (editando()) {
+            <label class="check"
+              ><input type="checkbox" formControlName="activo" />Plan activo</label
+            >
+          }
+          <label class="check"
+            ><input type="checkbox" formControlName="publico" />Disponible en el registro
+            público</label
+          >
+        </div>
+        <fieldset formGroupName="limites">
+          <legend>Cupos y políticas</legend>
+          <p>
+            Un empleado con cuenta consume también un usuario. Cero impide nuevas altas cuando está
+            permitido. En edición, dejar vacío conserva un límite ausente; no elimina un límite
+            existente.
+          </p>
+          <div class="grid">
+            @for (l of c.limites; track l.clave) {
+              <label [for]="'cupo-' + l.clave"
+                >{{ l.nombre }} ({{ l.unidad }})<input
+                  [id]="'cupo-' + l.clave"
+                  type="number"
+                  [min]="l.minimo"
+                  step="1"
+                  [formControlName]="l.clave"
+              /></label>
+            }
+          </div>
+        </fieldset>
+        <fieldset formGroupName="funciones">
+          <legend>Funciones editables</legend>
+          <p>
+            Las funciones esenciales se conservan. La voz requiere interpretación; la programación
+            necesita PDF o Excel y cupo disponible.
+          </p>
+          @for (f of c.funciones; track f.clave) {
+            <label class="check"
+              ><input type="checkbox" [formControlName]="f.clave" />{{ f.nombre }}</label
+            >
+            <p>{{ f.descripcion }}</p>
+          }
+        </fieldset>
+        <button [disabled]="form.invalid || ocupado() || cargando()">
+          {{ editando() ? 'Revisar impacto' : 'Crear plan' }}
+        </button>
+      </fieldset>
+      <button
+        type="button"
+        class="secundario"
+        (click)="nuevo()"
+        [disabled]="ocupado() || cargando()"
+      >
+        {{ editando() ? 'Cancelar edición' : 'Limpiar formulario' }}
+      </button>
+    </form>
+  </section>
+}
+@if (previa(); as p) {
+  <section class="panel" aria-labelledby="impacto-plan">
+    <h2 id="impacto-plan" tabindex="-1">Revisar impacto antes de guardar</h2>
+    <p>{{ p.impacto.total_empresas }} empresas afectadas por {{ p.propuesta.nombre }}.</p>
+    @for (e of p.impacto.empresas; track e.id) {
+      <article>
+        <h3>{{ e.nombre }}</h3>
+        @if (e.operaciones_bloqueadas_por_desactivar_plan) {
+          <p class="aviso">
+            Desactivar este plan bloqueará las operaciones nuevas de esta empresa.
+          </p>
+        }
+        @for (x of e.excesos | keyvalue; track x.key) {
+          <p>
+            {{ x.key }}: uso {{ x.value.uso }}, nuevo límite {{ x.value.limite }}. No se eliminan
+            registros.
+          </p>
+        }
+        <p>Reportes que se pausarán: {{ e.reportes_a_pausar.length }}.</p>
+        @if (e.restablecer_horario_respaldo) {
+          <p>El horario del respaldo volverá a 02:00, America/La_Paz.</p>
+        }
+      </article>
+    }
+    <p>Mejorar un plan no reactiva automáticamente programaciones pausadas.</p>
+    <div class="acciones">
+      <button type="button" (click)="confirmar()" [disabled]="ocupado() || cargando()">
+        Confirmar cambios del plan</button
+      ><button
+        type="button"
+        class="secundario"
+        (click)="volver()"
+        [disabled]="ocupado() || cargando()"
+      >
+        Volver a editar
+      </button>
+    </div>
+  </section>
+}
+@if (historial(); as entradas) {
+  <section class="panel">
+    <h2 id="historial-plan" tabindex="-1">Historial de {{ nombreHistorial() }}</h2>
+    @for (h of entradas; track h.id) {
+      <details>
+        <summary>
+          {{ h.fecha | date: 'dd/MM/yyyy HH:mm' }} · {{ h.antes ? 'Edición' : 'Creación' }} · Actor
+          {{ h.actor_id }}
+        </summary>
+        <p>
+          {{ h.antes?.nombre || 'Nuevo plan' }} → {{ h.despues.nombre }} · Precio
+          {{ h.antes?.precio ?? '—' }} → {{ h.despues.precio }} {{ h.despues.moneda }}
+        </p>
+        <p>
+          Activo: {{ h.antes?.activo ?? '—' }} → {{ h.despues.activo }} · Público:
+          {{ h.antes?.publico ?? '—' }} → {{ h.despues.publico }}
+        </p>
+        <p>Descripción: {{ h.despues.descripcion }}</p>
+        <p>Condiciones: {{ h.despues.condiciones }}</p>
+        <ul>
+          @for (l of h.despues.limites | keyvalue; track l.key) {
+            <li>{{ l.key }}: {{ h.antes?.limites?.[l.key] ?? 'Sin límite' }} → {{ l.value }}</li>
+          }
+          @for (f of h.despues.funciones | keyvalue; track f.key) {
+            <li>
+              {{ f.key }}: {{ h.antes?.funciones?.[f.key] ?? 'Predeterminado' }} → {{ f.value }}
+            </li>
+          }
+        </ul>
+        <p>Empresas afectadas: {{ h.impacto.total_empresas ?? 0 }}</p>
+      </details>
+    } @empty {
+      <p>Sin cambios registrados.</p>
+    }
+  </section>
+}
