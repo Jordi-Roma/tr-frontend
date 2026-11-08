@@ -7,12 +7,12 @@ const f = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8')) as {
   sucursalA: number;
   sucursalB: number;
 };
-const API = 'http://127.0.0.1:58127/api/v1';
+const API = 'http://127.0.0.1:18127/api/v1';
 async function login(page: Page, encargado = false) {
   await page.route('**/*', (r) => {
     const u = new URL(r.request().url());
     return u.hostname === '127.0.0.1' && u.port === '8000'
-      ? r.continue({ url: r.request().url().replace(':8000', ':58127') })
+      ? r.continue({ url: r.request().url().replace(':8000', ':18127') })
       : ['127.0.0.1', 'localhost'].includes(u.hostname)
         ? r.continue()
         : r.abort();

@@ -9,7 +9,7 @@ const d = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8')) as {
   plan: number;
   clienteA: string;
 };
-const API = 'http://127.0.0.1:58127/api/v1';
+const API = 'http://127.0.0.1:18127/api/v1';
 const PASSWORD = 'Empresa-prueba-123';
 test.setTimeout(120000);
 
@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/*', (route) => {
     const u = new URL(route.request().url());
     if (u.hostname === '127.0.0.1' && u.port === '8000')
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     return ['127.0.0.1', 'localhost'].includes(u.hostname) ? route.continue() : route.abort();
   });
 });
@@ -49,11 +49,16 @@ async function publicar(request: APIRequestContext, publico: boolean) {
       funciones: object;
     }[]
   ).find((p) => p.id === d.plan)!;
-  const r = await request.put(API + '/saas/planes/' + d.plan, {
+  const url = API + '/saas/planes/' + d.plan;
+  const cambios = { activo: true, publico };
+  const revision = await request.post(url + '/previsualizar', { headers, data: cambios });
+  expect(revision.ok(), await revision.text()).toBeTruthy();
+  const { token_previsualizacion } = await revision.json();
+  const r = await request.put(url, {
     headers,
-    data: { ...plan, activo: true, publico },
+    data: { ...cambios, token_previsualizacion },
   });
-  expect(r.ok()).toBeTruthy();
+  expect(r.ok(), await r.text()).toBeTruthy();
   return plan;
 }
 async function completar(page: Page) {
@@ -85,10 +90,10 @@ test('AS publica un plan para el registro sin publicar el plan de transición', 
     .filter({ hasText: plan.codigo })
     .getByRole('button', { name: 'Editar plan Prueba', exact: true })
     .click();
-  await page.getByLabel('Disponible en el registro de empresas', { exact: true }).check();
+  await page.getByLabel('Disponible en el registro público', { exact: true }).check();
   await axe(page);
-  page.once('dialog', (dialog) => dialog.accept());
-  await page.getByRole('button', { name: 'Guardar plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Revisar impacto', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar cambios del plan', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Plan guardado.' })).toBeVisible();
   const planes = await request.get(API + '/empresas/registro/planes');
   expect(((await planes.json()) as { id: number }[]).some((p) => p.id === d.plan)).toBeTruthy();
@@ -98,6 +103,7 @@ test('registro sin correo verificado queda oculto; AS aprueba y habilita su admi
   page,
   request,
 }) => {
+  await publicar(request, true);
   await page.goto('/empresa');
   await page.getByRole('link', { name: 'Crear mi empresa', exact: true }).click();
   await expect(page).toHaveURL(/\/crear-empresa$/);
@@ -182,7 +188,7 @@ test('respuesta perdida se reintenta sin duplicar ni cambiar la sesión de otra 
     expect(request.headers()['authorization']).toBeUndefined();
     expect(request.headers()['x-empresa-codigo']).toBeUndefined();
     claves.push((request.postDataJSON() as { clave_solicitud: string }).clave_solicitud);
-    const r = await route.fetch({ url: request.url().replace(':8000', ':58127') });
+    const r = await route.fetch({ url: request.url().replace(':8000', ':18127') });
     expect(r.ok()).toBeTruthy();
     const cuerpo = await r.json();
     if (claves.length === 1) {

@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' && url.port === '8000')
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     if (['localhost', '127.0.0.1'].includes(url.hostname)) return route.continue();
     return route.abort();
   });

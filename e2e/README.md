@@ -2,9 +2,25 @@
 
 Estas pruebas usan Angular, FastAPI y PostgreSQL reales con datos ficticios. No utilizan Railway ni simulan las respuestas del backend. Playwright cambia únicamente el puerto de la API local y bloquea dominios externos; el QR usa el modo de prueba existente.
 
+Para correr todos los archivos sin compartir carritos, ventas, reservas ni planes
+entre ellos, usa `run_isolated.py` desde `tr-frontend`. Prepara el clúster
+desechable de abajo y ejecuta el inicializador sobre la base vacía. Usa esa base
+migrada como plantilla antes de iniciar `backend_fixture.py`.
+
+```powershell
+$env:PATH = "$pgBin;$env:PATH"
+$env:STYLEAR_E2E_TEMPLATE_DATABASE_URL = 'postgresql://stylear_test@127.0.0.1:55441/stylear_test_frontend'
+& '..\tr-backend\venv\Scripts\python.exe' e2e/run_isolated.py
+```
+
+El ejecutor arranca Angular una vez, clona la plantilla por archivo y activa el
+modo de datos que ese archivo requiere. Elimina sus clones al terminar y deja
+las trazas en carpetas separadas dentro de `test-results`. Para ejecutar solo
+algunos grupos, pasa sus nombres, por ejemplo `cu22-reportes.spec.ts`.
+
 ## Preparación
 
-Requisitos: dependencias de `tr-frontend` instaladas con `npm ci`, entorno Python de `tr-backend` con sus dependencias de desarrollo, PostgreSQL 16 y Microsoft Edge instalado. Los puertos 55441, 58127 y 48123 deben estar libres.
+Requisitos: dependencias de `tr-frontend` instaladas con `npm ci`, entorno Python de `tr-backend` con sus dependencias de desarrollo, PostgreSQL 16 y Microsoft Edge instalado. Los puertos 55441, 18127 y 48123 deben estar libres.
 
 Crear un clúster **nuevo y desechable**, en PowerShell desde `TiendaAR`:
 

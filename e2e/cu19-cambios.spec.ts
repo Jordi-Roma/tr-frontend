@@ -9,13 +9,13 @@ const d = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8')) as {
   varianteA: number;
   reemplazoA: number;
 };
-const api = 'http://127.0.0.1:58127/api/v1';
+const api = 'http://127.0.0.1:18127/api/v1';
 test.use({ actionTimeout: 10000 });
 test.beforeEach(async ({ page }) => {
   await page.route('**/*', async (r) => {
     const u = new URL(r.request().url());
     if (u.hostname === '127.0.0.1' && u.port === '8000')
-      return r.continue({ url: r.request().url().replace(':8000', ':58127') });
+      return r.continue({ url: r.request().url().replace(':8000', ':18127') });
     if (['127.0.0.1', 'localhost'].includes(u.hostname)) return r.continue();
     return r.abort();
   });

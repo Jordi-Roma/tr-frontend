@@ -15,6 +15,7 @@ import {
   HistorialPlan,
   ResumenPlan,
   Suscripcion,
+  SuscripcionStripe,
   EmpresasPagina,
 } from '../models/saas.models';
 import { CapacidadesPlan, CatalogoPlan } from '../../../core/models/capacidades-plan.models';
@@ -23,6 +24,12 @@ import { CapacidadesPlan, CatalogoPlan } from '../../../core/models/capacidades-
 export class SaasService {
   private readonly http = inject(HttpClient);
   private readonly base = `${API_BASE_URL}/api/v1`;
+  estadoSuscripcionStripe() {
+    return this.http.get<SuscripcionStripe>(`${this.base}/mi-empresa/suscripcion/stripe`);
+  }
+  abrirSuscripcionStripe(accion: 'checkout' | 'portal') {
+    return this.http.post<{ url: string }>(`${this.base}/mi-empresa/suscripcion/stripe/${accion}`, {});
+  }
   empresas() {
     return this.http.get<Empresa[]>(`${this.base}/saas/empresas`);
   }

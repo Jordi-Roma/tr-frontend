@@ -7,14 +7,14 @@ const datos = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8')) as {
   b: { id: number; codigo: string; nombre: string };
   as: string;
 };
-const API = 'http://127.0.0.1:58127/api/v1';
+const API = 'http://127.0.0.1:18127/api/v1';
 const PASSWORD = 'Prueba-aislada-123';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' && url.port === '8000') {
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     }
     if (['127.0.0.1', 'localhost'].includes(url.hostname)) return route.continue();
     return route.abort();
@@ -56,7 +56,7 @@ async function crear(page: Page, rol = 'CLIENTE') {
   await accesible(page, 'formulario-' + rol.toLowerCase());
   await page.getByRole('button', { name: 'Guardar cuenta', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('status')).toContainText('Cuenta guardada');
+  await expect(page.getByRole('status').filter({ hasText: 'Cuenta guardada' })).toBeVisible();
   return username;
 }
 
@@ -100,7 +100,7 @@ test('AS descarta respuestas antiguas al seleccionar otra empresa', async ({ pag
   await page.route('**/api/v1/saas/usuarios?**', async (route) => {
     if (new URL(route.request().url()).searchParams.get('empresa_id') !== String(datos.a.id))
       return route.fallback();
-    const response = await route.fetch({ url: route.request().url().replace(':8000', ':58127') });
+    const response = await route.fetch({ url: route.request().url().replace(':8000', ':18127') });
     recibida();
     await espera;
     await route.fulfill({ response }).catch(() => {});
@@ -249,7 +249,7 @@ test('AS cambia permiso global, AD pierde operación y recupera acceso al repone
   await ad.route('**/*', (route) => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' && url.port === '8000')
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     return ['127.0.0.1', 'localhost'].includes(url.hostname) ? route.continue() : route.abort();
   });
   try {

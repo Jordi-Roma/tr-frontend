@@ -1,7 +1,7 @@
 """Starts the API on an explicitly supplied disposable localhost test database.
 
 Never reads a production destination from .env. The frontend tests rewrite only
-the API port to 58127; their payloads are served by the real FastAPI backend.
+the API port to 18127; their payloads are served by the real FastAPI backend.
 """
 import importlib.util
 import json
@@ -11,6 +11,8 @@ import sys
 import tempfile
 from uuid import uuid4
 import re
+import socket
+import time
 from threading import Lock
 
 import psycopg2
@@ -20,6 +22,18 @@ dsn = os.environ.get('STYLEAR_TEST_DATABASE_URL', '')
 param = parse_dsn(dsn)
 assert param.get('host') == '127.0.0.1' and param.get('dbname', '').startswith('stylear_test_')
 assert dsn == os.environ.get('DATABASE_URL')
+# Windows can briefly retain the port when the previous fixture closes.
+api_socket = socket.socket()
+limite_puerto = time.monotonic() + 45
+while True:
+    try:
+        api_socket.bind(('127.0.0.1', 18127))
+        break
+    except OSError as error:
+        if getattr(error, 'winerror', None) not in (10013, 10048) or time.monotonic() >= limite_puerto:
+            raise
+        time.sleep(1)
+
 backend = Path(__file__).resolve().parents[2] / 'tr-backend'
 sys.path.insert(0, str(backend))
 os.chdir(backend)
@@ -74,6 +88,20 @@ if os.environ.get('STYLEAR_E2E_NOTIFICACIONES') == '1':
     datos['notaVenta']=helpers.consulta("INSERT INTO notificacion_usuario(empresa_id,usuario_id,clave,titulo,mensaje,categoria,recurso_tipo,recurso_id,accion) VALUES(%s,%s,'cu27-venta','Compra de ensayo','Compra registrada','COMPRA','VENTA',%s,'VER_DETALLE') RETURNING id",(a['id'],ca[0],venta),True)['id']
     datos['notaB']=helpers.consulta("INSERT INTO notificacion_usuario(empresa_id,usuario_id,clave,titulo,mensaje,categoria) VALUES(%s,%s,'cu27-b','Aviso privado B','Solo cliente B','GENERAL') RETURNING id",(b['id'],cb[0]),True)['id']
 
+if os.environ.get('STYLEAR_E2E_MAYORISTA') == '1':
+    from datetime import date
+    from decimal import Decimal
+
+    talla = helpers.catalogo.crear_talla('L', None, empresa_id=a['id'])
+    color = helpers.catalogo.crear_color('Verde', None, empresa_id=a['id'])
+    variante = helpers.variantes.crear_variante(a['id'], pa, talla['id'], color['id'], 'MAYORISTA-E2E')
+    helpers.variantes.asignar_precio(variante, a['id'], Decimal('50'), date(2020, 1, 1), None)
+    helpers.consulta(
+        'INSERT INTO inventario_sucursal(empresa_id,sucursal_id,producto_variante_id,stock_disponible) VALUES(%s,%s,%s,%s)',
+        (a['id'], sa, variante, 4),
+    )
+    datos['variantesMayorista'] = [va, variante]
+
 # CU19: prenda de reemplazo disponible solo en la base de pruebas.
 if os.environ.get('STYLEAR_E2E_CAMBIOS') == '1':
     from datetime import date
@@ -105,18 +133,20 @@ password_reset_service.enviar_correo = capturar_correo
 
 # Notas de venta: comprobar el adjunto sin enviar correo fuera de la fixture.
 from app.core import email as correo_comercial
+from app.modules.administracion.services import respaldo_service
+from app.modules.inteligencia.services import reporte_service
+from app.modules.ventas_inventario.services import push_worker
+
+respaldo_service.ejecutar_respaldos_programados = lambda: 0
+reporte_service.ejecutar_reportes_programados = lambda: 0
+push_worker.procesar = lambda: 0
+
 def capturar_nota(destino, asunto, cuerpo, archivo, nombre, emisor):
     assert destino.endswith('@example.invalid')
     assert archivo.startswith(b'%PDF') and nombre.endswith('.pdf')
     assert emisor in asunto and emisor in cuerpo
 correo_comercial.enviar_correo_con_adjunto = capturar_nota
 if os.environ.get('STYLEAR_E2E_REPORTES') == '1':
-    from app.modules.inteligencia.services import reporte_service
-    from app.modules.administracion.services import respaldo_service as copias
-    from app.modules.ventas_inventario.services import push_worker
-    reporte_service.ejecutar_reportes_programados = lambda: 0
-    copias.ejecutar_respaldos_programados = lambda: 0
-    push_worker.procesar = lambda: 0
     reporte_service.AI_REPORTS_PROVIDER = 'LOCAL'
     def capturar_reporte(destino, asunto, cuerpo, archivo, nombre, *args):
         assert destino.endswith('@example.invalid')
@@ -142,16 +172,11 @@ if os.environ.get('STYLEAR_E2E_RUTAS') == '1':
     rutas.requests.post, rutas.requests.get = rutas_post, rutas_get
 
 if os.environ.get('STYLEAR_E2E_INTELIGENCIA') == '1':
-    from app.modules.inteligencia.services import asistente_service,recomendacion_service,reporte_service
-    from app.modules.administracion.services import respaldo_service
-    from app.modules.ventas_inventario.services import push_worker
+    from app.modules.inteligencia.services import asistente_service,recomendacion_service
     asistente_service.AI_ASSISTANT_PROVIDER = 'RULES'
     def embedding_no_permitido(*args,**kwargs):
         raise AssertionError('La prueba no permite indexación externa.')
     recomendacion_service._crear_embedding = embedding_no_permitido
-    reporte_service.ejecutar_reportes_programados = lambda: 0
-    respaldo_service.ejecutar_respaldos_programados = lambda: 0
-    push_worker.procesar = lambda: 0
 
 with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
     os.environ['STYLEAR_BACKUP_DIR'] = str(Path(privado)/'copias')
@@ -160,7 +185,7 @@ with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
     os.environ.pop('STYLEAR_RESTORE_DATABASE_URL', None)
     os.environ.pop('STYLEAR_RESTORE_ASSETS_DIR', None)
     os.environ['STRIPE_SECRET_KEY'] = 'MODO_PRUEBA'
-    from app.modules.administracion.services import respaldo_service
+    os.environ['STYLEAR_PAGOS_PRUEBA'] = '1'
     respaldo_service.STATIC = Path(privado)/'static'
     if os.environ.get('STYLEAR_E2E_RESPALDOS') == '1':
         # CU25: cifrado y PostgreSQL reales; R2 exclusivamente en memoria.
@@ -181,12 +206,6 @@ with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
         r2 = R2Memoria()
         cifrador = Fernet(os.environ['STYLEAR_BACKUP_KEY'].encode())
         respaldo_service.configuracion = lambda: (r2, 'bucket-simulado', cifrador, 30)
-        # Los recorridos disparan únicamente las operaciones explícitas de la UI.
-        respaldo_service.ejecutar_respaldos_programados = lambda: 0
-        from app.modules.inteligencia.services import reporte_service
-        from app.modules.ventas_inventario.services import push_worker
-        reporte_service.ejecutar_reportes_programados = lambda: 0
-        push_worker.procesar = lambda: 0
         restaurar_dsn = os.environ.get('STYLEAR_E2E_RESTORE_DATABASE_URL', '')
         destino = parse_dsn(restaurar_dsn)
         assert destino.get('host') == '127.0.0.1' and destino.get('dbname', '').startswith('stylear_test_')
@@ -195,4 +214,5 @@ with tempfile.TemporaryDirectory(prefix='stylear_frontend_e2e_') as privado:
         os.environ['STYLEAR_RESTORE_ASSETS_DIR'] = str(Path(privado)/'ensayo')
     from app.modules.ventas_inventario.services import nota_venta_service
     nota_venta_service.DIRECTORIO_LOGOS = Path(privado)/'static'/'empresas'
-    uvicorn.run('app.main:app',host='127.0.0.1',port=58127,log_level='warning')
+    with api_socket:
+        uvicorn.Server(uvicorn.Config('app.main:app', log_level='warning')).run(sockets=[api_socket])

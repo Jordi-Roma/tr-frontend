@@ -6,12 +6,12 @@ const f = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8')) as {
   plan: number;
   a: { id: number; codigo: string; nombre: string };
 };
-const API = 'http://127.0.0.1:58127/api/v1';
+const API = 'http://127.0.0.1:18127/api/v1';
 async function transporte(page: Page) {
   await page.route('**/*', async (route) => {
     const u = new URL(route.request().url());
     if (u.hostname === '127.0.0.1' && u.port === '8000')
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     if (['localhost', '127.0.0.1'].includes(u.hostname)) return route.continue();
     return route.abort();
   });
@@ -55,6 +55,7 @@ test('plan: creación, impacto, conflicto, conservación de claves e historial',
   await page.getByLabel('Código', { exact: true }).fill(codigo);
   await page.getByLabel('Nombre', { exact: true }).fill(nombre);
   await page.getByLabel('Precio de referencia', { exact: true }).fill('25.50');
+  await page.getByLabel('ID del precio mensual en Stripe', { exact: true }).fill('price_E2E25');
   await page.getByLabel('Descripción', { exact: true }).fill('Configuración inicial');
   await page.getByRole('button', { name: 'Crear plan', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Plan guardado' })).toBeVisible();
@@ -105,6 +106,7 @@ test('plan: creación, impacto, conflicto, conservación de claves e historial',
   await page.getByRole('button', { name: 'Revisar impacto', exact: true }).click();
   await page.getByRole('button', { name: 'Volver a editar' }).click();
   await page.getByLabel('Precio de referencia', { exact: true }).fill('30');
+  await page.getByLabel('ID del precio mensual en Stripe', { exact: true }).fill('price_E2E30');
   await expect(page.getByRole('button', { name: 'Confirmar cambios del plan' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Revisar impacto', exact: true }).click();
   await page.getByRole('button', { name: 'Confirmar cambios del plan' }).click();
@@ -113,6 +115,7 @@ test('plan: creación, impacto, conflicto, conservación de claves e historial',
   const guardado = planes.find((p: { id: number }) => p.id === id);
   expect(guardado.limites.productos).toBe(777);
   expect(Number(guardado.precio)).toBe(30);
+  expect(guardado.stripe_price_id).toBe('price_E2E30');
   expect(guardado.descripcion).toBe('Edición confirmada');
   expect(guardado.condiciones).toBe('Actualización simultánea');
   await page.getByRole('button', { name: 'Historial de ' + nombre }).click();

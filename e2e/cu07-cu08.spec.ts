@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/*', async route => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' && url.port === '8000')
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     if (['localhost', '127.0.0.1'].includes(url.hostname)) return route.continue();
     return route.abort();
   });
@@ -109,7 +109,7 @@ test('CU08: AD crea proveedor, cuenta y vínculo comercial desde la web', async 
 });
 
 test('CU08: proveedor consulta panel propio y la web rechaza gestionar empleados', async ({ page, request }) => {
-  const base = 'http://127.0.0.1:58127/api/v1';
+  const base = 'http://127.0.0.1:18127/api/v1';
   const inicio = await request.post(base+'/autenticacion/login', { data: { identificador: datos.a.codigo, password: 'Prueba-aislada-123', empresa_codigo: datos.a.codigo } });
   const headers = { Authorization: 'Bearer '+(await inicio.json()).access_token, 'X-Empresa-Codigo': datos.a.codigo };
   const p = await request.post(base+'/proveedores', { headers, data: { nombre: 'Panel web '+sello } });

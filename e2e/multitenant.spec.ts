@@ -18,14 +18,14 @@ interface Fixture {
   plan: number;
 }
 const datos: Fixture = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8'));
-const API = 'http://127.0.0.1:58127/api/v1';
+const API = 'http://127.0.0.1:18127/api/v1';
 
 test.beforeEach(async ({ page }) => {
   // Transport only: payloads are handled by the real temporary FastAPI/PostgreSQL fixture.
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' && url.port === '8000')
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     if (['127.0.0.1', 'localhost'].includes(url.hostname)) return route.continue();
     return route.abort();
   });
@@ -208,7 +208,7 @@ test('suspensión conserva consultas, plan y pagos pendientes y bloquea nuevas a
     ).toBeTruthy();
     await page.goto('/mi-plan');
     await expect(
-      page.getByText('Las operaciones nuevas están restringidas.', { exact: false }),
+      page.getByText('Operaciones nuevas restringidas. Puedes consultar tus datos y resolver pendientes.', { exact: true }),
     ).toBeVisible();
     await accesible(page);
     await page.goto('/usuarios');
@@ -251,9 +251,9 @@ test('AS tiene pantallas accesibles y crea/edita planes sin entrar al negocio', 
   const codigo = 'E2E_' + Date.now();
   await page.getByLabel(/^Código/).fill(codigo);
   await page.getByLabel('Nombre', { exact: true }).fill('Plan navegador');
-  await page.getByLabel('Cuentas', { exact: true }).fill('5');
-  await page.getByRole('button', { name: 'Guardar plan', exact: true }).click();
-  await expect(page.getByText('Plan guardado.', { exact: true })).toBeVisible();
+  await page.getByLabel(/Usuarios activos, incluidos clientes y personal/).fill('5');
+  await page.getByRole('button', { name: 'Crear plan', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Plan guardado.' })).toBeVisible();
   await expect(page.getByText(codigo, { exact: true })).toBeVisible();
   await page
     .getByRole('row')
@@ -261,17 +261,17 @@ test('AS tiene pantallas accesibles y crea/edita planes sin entrar al negocio', 
     .getByRole('button', { name: /Editar plan/ })
     .click();
   await page.getByLabel('Nombre', { exact: true }).fill('Plan navegador editado');
-  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Revisar impacto', exact: true }).click();
   const guardado = page.waitForResponse(
     (r) => r.url().includes('/saas/planes/') && r.request().method() === 'PUT',
   );
-  await page.getByRole('button', { name: 'Guardar plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar cambios del plan', exact: true }).click();
   expect((await guardado).ok()).toBeTruthy();
   await expect(
     page
       .getByRole('row')
       .filter({ hasText: codigo })
-      .getByText('Plan navegador editado', { exact: true }),
+      .getByRole('button', { name: 'Editar plan Plan navegador editado', exact: true }),
   ).toBeVisible();
   await page.goto('/saas/empresas');
   const codigoEmpresa = 'e2e-' + Date.now();
@@ -299,7 +299,7 @@ test('AS crea y restaura una copia de A sin cambiar el catálogo de B', async ({
 }) => {
   await plataforma(page);
   await page.goto('/saas/respaldos');
-  await expect(page.getByRole('heading', { name: 'Respaldos', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Respaldos de plataforma', exact: true })).toBeVisible();
   await accesible(page);
   const antes = await (
     await request.get(`${API}/catalogo/prendas`, {
@@ -317,7 +317,6 @@ test('AS crea y restaura una copia de A sin cambiar el catálogo de B', async ({
     .click();
   await expect(page.getByRole('heading', { name: 'Revisar restauración' })).toBeVisible();
   await accesible(page);
-  const p = await page.locator('#frase-confirmacion strong').innerText();
   await expect(page.getByRole('button', { name: 'Restaurar copia revisada' })).toBeDisabled();
   const token = await tokenAS(request);
   const h = { Authorization: `Bearer ${token}` };
@@ -326,10 +325,13 @@ test('AS crea y restaura una copia de A sin cambiar el catálogo de B', async ({
     data: { estado: 'SUSPENDIDA' },
   });
   try {
+    await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+    await page.getByRole('button', { name: /Previsualizar respaldo/ }).first().click();
+    const p = await page.locator('#frase-confirmacion strong').innerText();
     await page.getByLabel('Confirmación explícita').fill(p);
     await page.getByRole('button', { name: 'Restaurar copia revisada' }).click();
     await expect(
-      page.getByText('Empresa restaurada; permanece suspendida para su revisión.', { exact: true }),
+      page.getByText('Empresa restaurada; permanece suspendida para revisión.', { exact: true }),
     ).toBeVisible();
     expect(
       await (
@@ -365,7 +367,7 @@ test('vencimiento conserva la sesión y muestra el límite en Mi plan', async ({
     ).toBeTruthy();
     await page.goto('/mi-plan');
     await expect(
-      page.getByText('Las operaciones nuevas están restringidas.', { exact: false }),
+      page.getByText('Operaciones nuevas restringidas. Puedes consultar tus datos y resolver pendientes.', { exact: true }),
     ).toBeVisible();
     await page.goto('/usuarios');
     await expect(page.getByRole('button', { name: 'Crear usuario', exact: true })).toBeDisabled();
@@ -378,7 +380,24 @@ test('vencimiento conserva la sesión y muestra el límite en Mi plan', async ({
   }
 });
 
-test('QR conserva el modal y la confirmación de pago anteriores', async ({ page, request }) => {
+test('QR conserva la confirmación de un pago pendiente después de suspender la empresa', async ({ page, request }) => {
+  const sesion = await request.post(`${API}/autenticacion/login`, {
+    data: {
+      identificador: datos.a.codigo,
+      password: 'Prueba-aislada-123',
+      empresa_codigo: datos.a.codigo,
+    },
+  });
+  expect(sesion.ok(), await sesion.text()).toBeTruthy();
+  const admin = { Authorization: 'Bearer ' + (await sesion.json()).access_token };
+  const configuracion = await request.get(`${API}/pagos-empresa/configuracion`, { headers: admin });
+  expect(configuracion.ok(), await configuracion.text()).toBeTruthy();
+  const { version } = await configuracion.json();
+  const habilitado = await request.put(`${API}/pagos-empresa/configuracion`, {
+    headers: admin,
+    data: { version, qr_habilitado: true },
+  });
+  expect(habilitado.ok(), await habilitado.text()).toBeTruthy();
   await entrar(page, datos.a.codigo, datos.clienteA);
   const token = await page.evaluate(() => localStorage.getItem('backend_tr_token'));
   const h = { Authorization: `Bearer ${token}` };
@@ -393,8 +412,8 @@ test('QR conserva el modal y la confirmación de pago anteriores', async ({ page
   ).toBeTruthy();
   await page.goto('/carrito');
   await expect(page.getByText('Prenda Empresa A', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Pagar con QR Simple y retirar', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Ya realicé el pago' })).toBeVisible();
+  await page.getByRole('button', { name: 'Pagar con QR de prueba y retirar', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Simular pago aprobado', exact: true })).toBeEnabled();
   const as = { Authorization: `Bearer ${await tokenAS(request)}` };
   try {
     expect(
@@ -405,7 +424,7 @@ test('QR conserva el modal y la confirmación de pago anteriores', async ({ page
         })
       ).ok(),
     ).toBeTruthy();
-    await page.getByRole('button', { name: 'Ya realicé el pago' }).click();
+    await page.getByRole('button', { name: 'Simular pago aprobado', exact: true }).click();
     await expect(page).toHaveURL(/\/mis-pagos\/\d+$/);
   } finally {
     await request.patch(`${API}/saas/empresas/${datos.a.id}/estado`, {
@@ -424,7 +443,7 @@ test('una respuesta lenta de A no repuebla el catálogo al entrar a B', async ({
   const recibio = new Promise<void>((resolve) => (recibida = resolve));
   await page.route('**/api/v1/catalogo/prendas**', async (route) => {
     if (route.request().headers()['x-empresa-codigo'] !== datos.a.codigo) return route.fallback();
-    const response = await route.fetch({ url: route.request().url().replace(':8000', ':58127') });
+    const response = await route.fetch({ url: route.request().url().replace(':8000', ':18127') });
     recibida();
     await espera;
     await route.fulfill({ response }).catch(() => {});
@@ -456,14 +475,21 @@ test('un cupo consumido por otra alta se informa sin duplicar y Mi plan actualiz
   const as = { Authorization: `Bearer ${await tokenAS(request)}` };
   const planes = await (await request.get(`${API}/saas/planes`, { headers: as })).json();
   const original = planes.find((p: { id: number }) => p.id === datos.plan);
-  expect(
-    (
-      await request.put(`${API}/saas/planes/${datos.plan}`, {
-        headers: as,
-        data: { ...original, limites: { ...original.limites, usuarios: antes.uso.usuarios + 1 } },
-      })
-    ).ok(),
-  ).toBeTruthy();
+  const planUrl = `${API}/saas/planes/${datos.plan}`;
+  async function actualizarLimite(limites: Record<string, number>) {
+    const revision = await request.post(planUrl + '/previsualizar', {
+      headers: as,
+      data: { limites },
+    });
+    expect(revision.ok(), await revision.text()).toBeTruthy();
+    const { token_previsualizacion } = await revision.json();
+    const guardado = await request.put(planUrl, {
+      headers: as,
+      data: { limites, token_previsualizacion },
+    });
+    expect(guardado.ok(), await guardado.text()).toBeTruthy();
+  }
+  await actualizarLimite({ ...original.limites, usuarios: antes.uso.usuarios + 1 });
   try {
     await page.goto('/usuarios');
     await page.getByRole('button', { name: 'Crear usuario', exact: true }).click();
@@ -498,10 +524,10 @@ test('un cupo consumido por otra alta se informa sin duplicar y Mi plan actualiz
     await expect(
       page
         .getByRole('row')
-        .filter({ has: page.getByRole('rowheader', { name: 'Cuentas', exact: true }) }),
+        .filter({ has: page.getByRole('rowheader', { name: /Usuarios activos/ }) }),
     ).toContainText(String(antes.uso.usuarios + 1));
   } finally {
-    await request.put(`${API}/saas/planes/${datos.plan}`, { headers: as, data: original });
+    await actualizarLimite(original.limites);
   }
 });
 

@@ -226,7 +226,7 @@
               <button
                 type="button"
                 (click)="descargar(venta.id)"
-                [attr.aria-label]="'Descargar nota de ' + venta.codigo"
+                [attr.aria-label]="'Descargar PDF de la nota ' + venta.codigo"
               >
                 Descargar PDF
               </button>
@@ -234,7 +234,7 @@
                 type="button"
                 [disabled]="guardando()"
                 (click)="enviar(venta.id)"
-                [attr.aria-label]="'Enviar nota de ' + venta.codigo + ' por correo'"
+                [attr.aria-label]="'Enviar al correo la nota ' + venta.codigo"
               >
                 Enviar al correo
               </button>

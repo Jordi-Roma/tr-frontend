@@ -12,13 +12,13 @@ const d = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8')) as {
   varianteA: number;
   sucursalA: number;
 };
-const API = 'http://127.0.0.1:58127/api/v1';
+const API = 'http://127.0.0.1:18127/api/v1';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/*', async (route) => {
     const u = new URL(route.request().url());
     if (u.hostname === '127.0.0.1' && u.port === '8000')
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     return ['127.0.0.1', 'localhost'].includes(u.hostname) ? route.continue() : route.abort();
   });
 });
@@ -72,7 +72,7 @@ test('CU12–CU13 cliente reserva gratis y cancela sin anticipo', async ({ page,
   await prepararCarrito(request);
   await entrar(page, d.clienteA);
   await page.goto('/carrito');
-  await expect(page.getByText('Reserva gratuita', { exact: true })).toBeVisible();
+  await expect(page.getByText('Reserva gratuita (sólo unidades)', { exact: true })).toBeVisible();
   const fecha = page.locator('input[type=date]');
   expect(await fecha.getAttribute('max')).toBeTruthy();
   await axe(page);
@@ -135,7 +135,7 @@ test('CU14 encargado registra entrada y consulta inventario sin permisos de cat�
   await page.getByLabel('Motivo', { exact: true }).fill('Entrada de prueba CU14');
   await axe(page);
   await page.getByRole('button', { name: 'Registrar movimiento', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Movimiento registrado');
+  await expect(page.getByRole('status').filter({ hasText: 'Movimiento registrado' })).toBeVisible();
   await page.goto('/inventario');
   await expect(page.getByText('Prenda Empresa A', { exact: true })).toBeVisible();
   await axe(page);
@@ -147,7 +147,9 @@ test('CU15 cajero registra compra identificada y descarga/envía nota de la empr
   await entrar(page, d.cajero);
   await page.goto('/venta-presencial');
   await page.getByText('Registrar venta presencial', { exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Sucursal', exact: true })).toBeDisabled();
+  const sucursal = page.getByRole('combobox', { name: 'Sucursal', exact: true });
+  await expect(sucursal).toHaveValue(String(d.sucursalA));
+  await expect(sucursal).toBeDisabled();
   await expect(page.getByLabel('Descuento de esta línea (Bs)')).toHaveCount(0);
   await page
     .getByRole('combobox', { name: 'Prenda', exact: true })
@@ -160,13 +162,13 @@ test('CU15 cajero registra compra identificada y descarga/envía nota de la empr
   );
   await page.getByRole('button', { name: 'Registrar venta', exact: true }).click();
   const ventaCreada = (await (await respuestaVenta).json()) as { codigo: string };
-  await expect(page.getByRole('status')).toContainText('registrada');
+  await expect(page.getByRole('status').filter({ hasText: 'registrada' })).toBeVisible();
   const fila = page.getByRole('row').filter({ hasText: ventaCreada.codigo });
   const descarga = page.waitForEvent('download');
-  await fila.getByRole('button', { name: /Descargar nota de/ }).click();
+  await fila.getByRole('button', { name: /Descargar PDF de la nota/ }).click();
   expect((await descarga).suggestedFilename()).toMatch(/\.pdf$/);
-  await fila.getByRole('button', { name: /Enviar nota de/ }).click();
-  await expect(page.getByRole('status')).toContainText('enviada');
+  await fila.getByRole('button', { name: /Enviar al correo la nota/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'enviada' })).toBeVisible();
 });
 
 test('CU14 administrador transfiere unidades entre sucursales con trazabilidad', async ({
@@ -201,7 +203,7 @@ test('CU14 administrador transfiere unidades entre sucursales con trazabilidad',
     .selectOption(String(d.varianteA));
   await axe(page);
   await page.getByRole('button', { name: 'Registrar transferencia', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('stock actualizado');
+  await expect(page.getByRole('status').filter({ hasText: 'stock actualizado' })).toBeVisible();
   await expect(page.getByRole('row').filter({ hasText: nombre })).toBeVisible();
 });
 
@@ -216,5 +218,5 @@ test('CU15 administrador configura condiciones de futuras notas de su empresa', 
     .fill('Conserve esta nota y consulte las condiciones de Atelier Norte.');
   await axe(page);
   await page.getByRole('button', { name: 'Guardar condiciones', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('futuras notas');
+  await expect(page.getByRole('status').filter({ hasText: 'futuras notas' })).toBeVisible();
 });

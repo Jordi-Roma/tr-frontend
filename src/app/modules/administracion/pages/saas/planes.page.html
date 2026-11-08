@@ -180,6 +180,18 @@
               maxlength="4000"
             ></textarea>
           </label>
+          <div>
+            <label for="plan-stripe-price"
+              >ID del precio mensual en Stripe<input
+                id="plan-stripe-price"
+                formControlName="stripe_price_id"
+                maxlength="255"
+                placeholder="price_…"
+                aria-describedby="plan-stripe-ayuda"
+              />
+            </label>
+            <small id="plan-stripe-ayuda">Opcional. El precio de prueba debe coincidir con el importe y la moneda del plan.</small>
+          </div>
           <label for="plan-condiciones"
             >Condiciones<textarea
               id="plan-condiciones"

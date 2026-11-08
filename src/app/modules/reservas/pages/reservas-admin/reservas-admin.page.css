@@ -9,7 +9,7 @@
   display: grid;
   gap: 8px;
   min-width: 220px;
-  color: var(--color-muted);
+  color: var(--color-primary);
   font-size: 0.82rem;
   font-weight: 900;
 }
@@ -98,7 +98,7 @@ td:nth-child(9) {
   min-width: 300px;
 }
 
-.estado-pill {
+td .estado-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -112,29 +112,29 @@ td:nth-child(9) {
   white-space: nowrap;
 }
 
-.estado-pendiente-anticipo {
+td .estado-pill.estado-pendiente-anticipo {
   color: #5b3600;
   background: #ffe2a8;
 }
 
-.estado-pendiente {
+td .estado-pill.estado-pendiente {
   color: #233011;
   background: var(--color-accent-soft);
 }
 
-.estado-preparada,
-.estado-en-atencion {
+td .estado-pill.estado-preparada,
+td .estado-pill.estado-en-atencion {
   color: #123763;
   background: #d8ebff;
 }
 
-.estado-cancelada,
-.estado-vencida {
+td .estado-pill.estado-cancelada,
+td .estado-pill.estado-vencida {
   color: var(--color-surface);
   background: var(--color-danger);
 }
 
-.estado-completada {
+td .estado-pill.estado-completada {
   color: var(--color-surface);
   background: var(--color-accent);
 }
@@ -159,6 +159,12 @@ td:nth-child(9) {
   background: var(--color-surface);
   cursor: pointer;
   font-weight: 900;
+}
+
+.ghost-button:hover,
+.ghost-button:focus-visible {
+  color: var(--color-surface);
+  background: var(--color-primary-hover);
 }
 
 .empty-state {

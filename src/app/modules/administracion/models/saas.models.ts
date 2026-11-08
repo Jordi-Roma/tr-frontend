@@ -16,10 +16,18 @@ export interface Plan {
   condiciones: string;
   precio: string | number;
   moneda: string;
+  stripe_price_id?: string | null;
   revision: number;
 }
 export type PlanAlta = Omit<Plan, 'id' | 'activo' | 'revision'>;
 export type PlanCambio = Partial<PlanAlta> & { activo?: boolean };
+export interface SuscripcionStripe {
+  estado: 'PENDIENTE' | 'ACTIVA' | null;
+  importe: string | null;
+  moneda: string | null;
+  puede_pagar: boolean;
+  puede_gestionar: boolean;
+}
 export interface ImpactoPlan {
   total_empresas: number;
   empresas: {

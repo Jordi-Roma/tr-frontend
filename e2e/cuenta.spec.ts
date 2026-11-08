@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const datos = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8')) as {
   a: { id: number; codigo: string; nombre: string };
 };
-const API = 'http://127.0.0.1:58127/api/v1';
+const API = 'http://127.0.0.1:18127/api/v1';
 const PASSWORD = 'Prueba-aislada-123';
 const NUEVA = 'Cuenta-nueva-segura-456';
 
@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' && url.port === '8000') {
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     }
     if (['127.0.0.1', 'localhost'].includes(url.hostname)) return route.continue();
     return route.abort();

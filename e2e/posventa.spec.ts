@@ -2,9 +2,9 @@ import { test, expect, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 const d = JSON.parse(readFileSync('e2e/.fixture.json', 'utf8')) as { a: { codigo: string }; clienteA: string; encargado: string; sucursalA: number; varianteA: number };
-const api = 'http://127.0.0.1:58127/api/v1';
+const api = 'http://127.0.0.1:18127/api/v1';
 test.beforeEach(async ({ page }) => {
-  await page.route('**/*', async r => { const u = new URL(r.request().url()); if (u.hostname === '127.0.0.1' && u.port === '8000') return r.continue({ url: r.request().url().replace(':8000', ':58127') }); if (['127.0.0.1', 'localhost'].includes(u.hostname)) return r.continue(); return r.abort(); });
+  await page.route('**/*', async r => { const u = new URL(r.request().url()); if (u.hostname === '127.0.0.1' && u.port === '8000') return r.continue({ url: r.request().url().replace(':8000', ':18127') }); if (['127.0.0.1', 'localhost'].includes(u.hostname)) return r.continue(); return r.abort(); });
   page.on('dialog', r => r.accept());
 });
 async function entrar(page: Page, usuario: string) {

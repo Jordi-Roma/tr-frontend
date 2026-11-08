@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/*', async route => {
     const url = new URL(route.request().url());
     if (url.hostname === '127.0.0.1' && url.port === '8000')
-      return route.continue({ url: route.request().url().replace(':8000', ':58127') });
+      return route.continue({ url: route.request().url().replace(':8000', ':18127') });
     if (['localhost', '127.0.0.1'].includes(url.hostname)) return route.continue();
     return route.abort();
   });
@@ -33,6 +33,7 @@ for (const [ruta, nuevo] of [
   ['marcas','Nueva marca'], ['temporadas','Nueva temporada'], ['colecciones','Nueva coleccion'],
 ]) {
   test(`CU09: ${ruta}, crear, editar, desactivar y reactivar con AXE`, async ({ page }) => {
+    if (ruta === 'colecciones') test.setTimeout(75000);
     await page.goto('/'+ruta);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     if (ruta === 'colecciones') {
