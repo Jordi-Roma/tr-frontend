@@ -18,7 +18,7 @@ export interface PoliticaPosventa {
   imports: [ReactiveFormsModule],
   styleUrl: '../../../reservas/pages/mayorista/mayorista.css',
   template: ` <h1>Políticas de cambios y devoluciones</h1>
-    <p>Define los plazos y las condiciones de tu empresa. No se habilitan políticas incompletas.</p>
+    <p>Los plazos cuentan desde la compra en tienda o la entrega a domicilio.</p>
     @if (error()) {
       <p role="alert">{{ error() }}</p>
     }
@@ -34,7 +34,7 @@ export interface PoliticaPosventa {
             ><input type="checkbox" formControlName="cambios_habilitados" /> Habilitar política de
             cambios</label
           >
-          <label for="plazo-cambios">Plazo de cambios (días desde la compra)</label
+          <label for="plazo-cambios">Plazo de cambios (días)</label
           ><input
             id="plazo-cambios"
             type="number"
@@ -55,7 +55,7 @@ export interface PoliticaPosventa {
             ><input type="checkbox" formControlName="devoluciones_habilitadas" /> Habilitar
             devoluciones</label
           >
-          <label for="plazo-devoluciones">Plazo de devoluciones (días desde la compra)</label
+          <label for="plazo-devoluciones">Plazo de devoluciones (días)</label
           ><input
             id="plazo-devoluciones"
             type="number"

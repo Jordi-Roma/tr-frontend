@@ -24,7 +24,9 @@
         <p>
           {{
             p.cambios_habilitados
-              ? 'Plazo: ' + p.plazo_cambios + ' días desde la compra.'
+              ? 'Plazo: ' +
+                p.plazo_cambios +
+                ' días desde la compra en tienda o la entrega a domicilio.'
               : 'La empresa no habilitó cambios de prendas.'
           }}
         </p>
@@ -165,22 +167,34 @@
         >
           Consultar reemplazos disponibles
         </button>
-        @if (opciones().length) {
+        @if (reemplazos().length) {
           <label class="field"
-            >Prenda de reemplazo<select [value]="opcion()" (change)="opcion.set(+texto($event))">
-              @for (o of opciones(); track o.id) {
+            >Prenda de reemplazo<select
+              [value]="opcion()"
+              (change)="seleccionarReemplazo(+texto($event))"
+            >
+              @for (o of reemplazos(); track o.id) {
                 <option [value]="o.id">
                   {{ o.producto }} · {{ o.talla }} / {{ o.color }} · {{ monto(o.precio) }} por
                   prenda
                 </option>
               }
             </select></label
-          ><button
-            type="button"
-            class="button secondary"
-            [disabled]="ocupado()"
-            (click)="cotizar()"
           >
+          @if (adicionales().length) {
+            <label class="field">
+              Usar el saldo en una prenda adicional
+              <select [value]="adicional()" (change)="adicional.set(+texto($event))">
+                <option [value]="0">Recibir el reintegro de la diferencia</option>
+                @for (o of adicionales(); track o.id) {
+                  <option [value]="o.id">
+                    {{ o.producto }} · {{ o.talla }} / {{ o.color }} · {{ monto(o.precio) }}
+                  </option>
+                }
+              </select>
+            </label>
+          }
+          <button type="button" class="button secondary" [disabled]="ocupado()" (click)="cotizar()">
             Cotizar reemplazo
           </button>
         }
@@ -193,13 +207,24 @@
           Reemplazo: {{ c.reemplazo.producto }} · {{ c.reemplazo.talla }} /
           {{ c.reemplazo.color }} · {{ monto(c.precio_reemplazo) }} por prenda
         </p>
+        @if (c.adicional; as adicionalCotizada) {
+          <p>
+            Prenda adicional: {{ adicionalCotizada.producto }} · {{ adicionalCotizada.talla }} /
+            {{ adicionalCotizada.color }} · {{ monto(c.precio_adicional) }}
+          </p>
+        }
         <p>
           Diferencia (positivo: pagar; negativo: reintegro):
           <strong>{{ monto(c.diferencia) }}</strong>
         </p>
       }
       @if (!gestion() && c.estado === 'COTIZADO') {
-        <button class="button primary" type="button" [disabled]="ocupado()" (click)="aceptar()">
+        <button
+          class="button primary"
+          type="button"
+          [disabled]="ocupado() || cotizacionEditada()"
+          (click)="aceptar()"
+        >
           Aceptar reemplazo y diferencia
         </button>
       }
@@ -275,6 +300,19 @@
         </button>
       }
       @if (
+        gestion() &&
+        (c.estado === 'LISTO' || c.estado === 'ESPERA_PAGO' || c.estado === 'ESPERA_REINTEGRO')
+      ) {
+        <button
+          class="button secondary"
+          type="button"
+          [disabled]="ocupado()"
+          (click)="sinReemplazo()"
+        >
+          Registrar falta de reemplazo y continuar por devolución
+        </button>
+      }
+      @if (
         !gestion() &&
         (c.estado === 'SOLICITADO' ||
           c.estado === 'APROBADO' ||
@@ -296,6 +334,10 @@
       }
       @if (c.comprobante; as p) {
         <h3>Comprobante {{ p.codigo }}</h3>
+        <p>
+          Venta original {{ c.original.venta_codigo }}
+          @if (p.nota_venta_numero) { · Nota de venta N.º {{ p.nota_venta_numero }} }
+        </p>
         <p>
           Crédito: {{ monto(p.credito) }} · Reemplazo por prenda: {{ monto(p.precio_reemplazo) }} ·
           Diferencia liquidada: {{ monto(p.diferencia) }}

@@ -151,7 +151,9 @@
             <td>{{ movimiento.ciudad }} - {{ movimiento.sucursal }}</td>
             <td>{{ movimiento.producto }} · {{ movimiento.talla }} / {{ movimiento.color }}</td>
             <td>
-              <span class="pill">{{ movimiento.tipo }}</span>
+              <span class="pill">
+                {{ movimiento.tipo === 'DEVOLUCION_NO_VENDIBLE' ? 'Reingreso no vendible' : movimiento.tipo }}
+              </span>
             </td>
             <td>{{ movimiento.cantidad }}</td>
             <td>{{ movimiento.stock_anterior }}</td>

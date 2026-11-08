@@ -40,7 +40,7 @@ async function cambiar(page: Page, u: string) {
 async function axe(page: Page) {
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 }
-test('CU19 inspecciona, cotiza, reserva, paga diferencia y entrega con comprobante', async ({
+test('CU19 aplica el saldo a otra prenda y completa el cambio con comprobante', async ({
   page,
   request,
 }) => {
@@ -63,7 +63,7 @@ test('CU19 inspecciona, cotiza, reserva, paga diferencia y entrega con comproban
     page.getByRole('button', { name: 'Actualizar política', exact: true }),
   ).toBeEnabled();
   await page.getByLabel('Habilitar política de cambios').check();
-  await page.getByLabel('Plazo de cambios (días desde la compra)').fill('15');
+  await page.getByLabel('Plazo de cambios (días)').fill('15');
   await page
     .getByLabel('Condiciones de cambios', { exact: true })
     .fill('Con recepción e inspección en sucursal.');
@@ -146,7 +146,13 @@ test('CU19 inspecciona, cotiza, reserva, paga diferencia y entrega con comproban
     .selectOption(String(d.reemplazoA));
   await page.getByRole('button', { name: 'Cotizar reemplazo', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('COTIZADO');
-  await expect(page.getByRole('region', { name: 'Detalle del cambio' })).toContainText('Bs 20.00');
+  const detalle = page.getByRole('region', { name: 'Detalle del cambio' });
+  await expect(detalle).toContainText('Bs -20.00');
+  await page.getByLabel('Usar el saldo en una prenda adicional').selectOption(String(d.varianteA));
+  await expect(page.getByRole('button', { name: 'Aceptar reemplazo y diferencia', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Cotizar reemplazo', exact: true }).click();
+  await expect(detalle).toContainText('Prenda adicional: Prenda Empresa A');
+  await expect(detalle).toContainText('Bs 30.00');
   await axe(page);
   await page.getByRole('button', { name: 'Aceptar reemplazo y diferencia', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('ESPERA_PAGO');
@@ -172,6 +178,7 @@ test('CU19 inspecciona, cotiza, reserva, paga diferencia y entrega con comproban
   await expect(
     page.getByRole('heading', { name: 'Comprobante CAM-' + cid, exact: true }),
   ).toBeVisible();
+  await expect(detalle).toContainText('Diferencia liquidada: Bs 30.00');
   await axe(page);
   await cambiar(page, d.clienteA);
   await page.goto('/cambios');

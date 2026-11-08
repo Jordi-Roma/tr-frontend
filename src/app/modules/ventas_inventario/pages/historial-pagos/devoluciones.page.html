@@ -1,4 +1,4 @@
-@if(politica();as p){<section class="panel"><h2>Política de devoluciones</h2><p>{{ p.devoluciones_habilitadas ? 'Plazo: '+p.plazo_devoluciones+' días desde la compra.' : 'La empresa todavía no habilitó devoluciones voluntarias.' }}</p><p>{{ p.condiciones_devoluciones }}</p></section>}
+@if(politica();as p){<section class="panel"><h2>Política de devoluciones</h2><p>{{ p.devoluciones_habilitadas ? 'Plazo: '+p.plazo_devoluciones+' días desde la compra en tienda o la entrega a domicilio.' : 'La empresa todavía no habilitó devoluciones voluntarias.' }}</p><p>{{ p.condiciones_devoluciones }}</p></section>}
 <div class="returns-page">
   <header class="page-heading">
     <div>
@@ -122,7 +122,10 @@
           <p>Revisa el resultado de la inspección. Importe a reintegrar: {{ monto(item.monto_aprobado) }}.</p>
           <button type="button" class="button primary" [disabled]="guardando()" (click)="aceptar(item)">Aceptar devolución e importe</button>
         }
-        @if(item.comprobante){<p>Comprobante {{ item.comprobante.codigo }} · {{ item.comprobante.monto }} {{ item.comprobante.moneda }}. El estado del dinero se muestra por separado.</p>}
+        @if(item.comprobante; as comprobante){
+          <p>Comprobante {{ comprobante.codigo }} · {{ comprobante.monto }} {{ comprobante.moneda }}. El estado del dinero se muestra por separado.</p>
+          @if(comprobante.nota_venta_numero){<p>Nota de venta original N.º {{ comprobante.nota_venta_numero }}</p>}
+        }
         @if (item.estado === 'REEMBOLSO_PENDIENTE') { <p class="hint">La tienda registró la recepción. El reembolso aún está pendiente.</p> }
         @if (item.estado === 'REEMBOLSADA') { <p class="notice success">Reembolso confirmado: {{ item.metodo_reembolso }} · {{ item.referencia_reembolso || item.proveedor_refund_estado || 'Registrado' }}</p> }
         @if (item.estado === 'RECHAZADA' || item.estado === 'ERROR_REEMBOLSO') { <p class="notice error">{{ item.error_reembolso || item.observacion || 'Consulta con la tienda para más información.' }}</p> }

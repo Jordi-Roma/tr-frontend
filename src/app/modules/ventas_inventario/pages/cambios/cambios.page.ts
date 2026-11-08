@@ -2,6 +2,7 @@ import { ActivatedRoute } from '@angular/router';
 import {
   afterNextRender,
   Component,
+  computed,
   ElementRef,
   Injector,
   inject,
@@ -30,11 +31,21 @@ interface Cambio {
   estado: string;
   cantidad: number;
   credito: string | null;
+  reemplazo_id: number | null;
   precio_reemplazo: string | null;
+  adicional_id?: number | null;
+  precio_adicional?: string | null;
   diferencia: string | null;
   original: Devolucion;
   reemplazo?: { producto: string; talla: string; color: string };
-  comprobante?: { codigo: string; credito: string; precio_reemplazo: string; diferencia: string };
+  adicional?: Cambio['reemplazo'];
+  comprobante?: {
+    codigo: string;
+    credito: string;
+    precio_reemplazo: string;
+    diferencia: string;
+    nota_venta_numero?: number;
+  };
   pago?: {
     id: number;
     proveedor: string;
@@ -69,6 +80,28 @@ export class CambiosPage {
   protected readonly elegido = signal<Cambio | null>(null);
   protected readonly opciones = signal<Opcion[]>([]);
   protected readonly opcion = signal(0);
+  protected readonly adicional = signal(0);
+  protected readonly reemplazos = computed(() =>
+    this.opciones().filter((o) => o.disponible >= (this.elegido()?.cantidad ?? 1)),
+  );
+  protected readonly adicionales = computed(() => {
+    const c = this.elegido();
+    const seleccion = this.reemplazos().find((o) => o.id === this.opcion());
+    if (
+      !c ||
+      !seleccion ||
+      Math.round(Number(seleccion.precio) * 100) * c.cantidad >= Math.round(Number(c.credito) * 100)
+    )
+      return [];
+    return this.opciones().filter((o) => o.id !== seleccion.id || o.disponible > c.cantidad);
+  });
+  protected readonly cotizacionEditada = computed(() => {
+    const c = this.elegido();
+    return (
+      this.opcion() !== 0 &&
+      (this.opcion() !== c?.reemplazo_id || this.adicional() !== (c?.adicional_id ?? 0))
+    );
+  });
   protected readonly error = signal('');
   protected readonly aviso = signal('');
   protected readonly ocupado = signal(false);
@@ -90,7 +123,7 @@ export class CambiosPage {
   constructor() {
     this.cargar();
   }
-  protected monto(v: string | number | null): string {
+  protected monto(v: string | number | null | undefined): string {
     return 'Bs ' + Number(v || 0).toFixed(2);
   }
   protected texto(e: Event): string {
@@ -195,6 +228,8 @@ export class CambiosPage {
     this.enfocar();
     this.opciones.set([]);
     this.opcion.set(0);
+    this.adicional.set(0);
+    this.opcion.set(0);
     this.condicion.set('');
     this.noVendibles.set(0);
     this.recepcion.set(false);
@@ -220,25 +255,43 @@ export class CambiosPage {
   protected cargarOpciones(): void {
     const c = this.elegido();
     if (!c) return;
-    this.http.get<Opcion[]>(this.base + '/' + c.id + '/opciones').subscribe({
-      next: (o) => {
-        if (this.elegido()?.id !== c.id) return;
-        this.opciones.set(o);
-        this.opcion.set(o[0]?.id || 0);
-        if (!o.length)
-          this.aviso.set('No hay reemplazos suficientes. Puedes continuar por devolución.');
-      },
-      error: (e: unknown) => this.error.set(mensajeApi(e)),
-    });
+    this.http
+      .get<Opcion[]>(this.base + '/' + c.id + '/opciones?incluir_adicionales=true')
+      .subscribe({
+        next: (o) => {
+          if (this.elegido()?.id !== c.id) return;
+          this.opciones.set(o);
+          const disponibles = this.reemplazos();
+          this.opcion.set(
+            disponibles.find((v) => v.id === c.reemplazo_id)?.id ?? disponibles[0]?.id ?? 0,
+          );
+          this.adicional.set(this.adicionales().find((v) => v.id === c.adicional_id)?.id ?? 0);
+          if (!disponibles.length)
+            this.aviso.set('No hay reemplazos suficientes. Puedes continuar por devolución.');
+        },
+        error: (e: unknown) => this.error.set(mensajeApi(e)),
+      });
+  }
+  protected seleccionarReemplazo(id: number): void {
+    this.opcion.set(id);
+    this.adicional.set(0);
   }
   protected cotizar(): void {
     const c = this.elegido();
     if (c && this.opcion())
-      this.ejecutar('/' + c.id + '/cotizar', { version: c.version, reemplazo_id: this.opcion() });
+      this.ejecutar('/' + c.id + '/cotizar', {
+        version: c.version,
+        reemplazo_id: this.opcion(),
+        adicional_id: this.adicional() || null,
+      });
   }
   protected aceptar(): void {
     const c = this.elegido();
-    if (c && window.confirm('¿Aceptas este reemplazo y la diferencia mostrada?'))
+    if (
+      c &&
+      !this.cotizacionEditada() &&
+      window.confirm('¿Aceptas las prendas y el importe mostrado?')
+    )
       this.ejecutar('/' + c.id + '/aceptar', { version: c.version, diferencia: c.diferencia });
   }
   protected accion(nombre: string): void {
@@ -248,6 +301,10 @@ export class CambiosPage {
   protected convertir(): void {
     if (window.confirm('¿Deseas continuar por devolución de la prenda original?'))
       this.accion('devolucion');
+  }
+  protected sinReemplazo(): void {
+    if (window.confirm('¿Confirmas que las prendas del cambio no se pueden entregar?'))
+      this.accion('sin-reemplazo');
   }
   protected pagar(medio: string): void {
     const c = this.elegido();

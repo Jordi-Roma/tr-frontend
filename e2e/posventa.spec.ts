@@ -21,7 +21,7 @@ test('política por empresa, inspección no vendible, aceptación y reintegro or
   const ha = await acceso(d.a.codigo), hc = await acceso(d.clienteA);
   await entrar(page, d.a.codigo); await page.goto('/politicas-posventa');
   await page.getByLabel('Habilitar devoluciones', { exact: true }).check();
-  await page.getByLabel('Plazo de devoluciones (días desde la compra)').fill('15');
+  await page.getByLabel('Plazo de devoluciones (días)').fill('15');
   await page.getByLabel('Condiciones de devoluciones', { exact: true }).fill('Con revisión del estado de las prendas.');
   await page.getByRole('button', { name: 'Guardar política', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Política guardada'); await axe(page);

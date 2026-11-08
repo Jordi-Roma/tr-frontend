@@ -48,7 +48,7 @@ export interface DevolucionDetalle {
 
 export interface Devolucion {
   aceptada_cliente_en?:string|null;
-  comprobante?:{codigo:string;monto:string;moneda:string}|null;
+  comprobante?:{codigo:string;monto:string;moneda:string;nota_venta_numero?:number}|null;
   id: number;
   codigo: string;
   venta_id: number;

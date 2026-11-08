@@ -109,7 +109,7 @@ if os.environ.get('STYLEAR_E2E_CAMBIOS') == '1':
     pv = helpers.consulta('SELECT v.*,p.categoria_id FROM producto_variante v JOIN producto p ON p.id=v.producto_id WHERE v.id=%s',(va,),True)
     pr = helpers.consulta("INSERT INTO producto(empresa_id,categoria_id,nombre) VALUES(%s,%s,'Prenda de reemplazo') RETURNING id",(a['id'],pv['categoria_id']),True)['id']
     vr = helpers.variantes.crear_variante(a['id'],pr,pv['talla_id'],pv['color_id'],'REEMPLAZO-E2E')
-    helpers.variantes.asignar_precio(vr,a['id'],Decimal('70'),date(2020,1,1),None)
+    helpers.variantes.asignar_precio(vr,a['id'],Decimal('30'),date(2020,1,1),None)
     helpers.consulta('INSERT INTO inventario_sucursal(empresa_id,sucursal_id,producto_variante_id,stock_disponible) VALUES(%s,%s,%s,5)',(a['id'],sa,vr))
     datos['reemplazoA'] = vr
 Path(__file__).with_name('.fixture.json').write_text(json.dumps(datos),encoding='utf-8')
