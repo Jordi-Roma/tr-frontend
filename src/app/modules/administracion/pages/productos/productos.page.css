@@ -573,3 +573,5 @@
     grid-template-columns: 1fr;
   }
 }
+
+.action-buttons{flex-wrap:wrap;justify-content:flex-end;gap:8px}.product-action{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 12px;border:1px solid #738460;border-radius:8px;color:#304226;background:#f6f8f3;text-decoration:none;font-weight:600;white-space:nowrap}.product-action:hover{background:#e8efdf}.product-action:focus-visible{outline:3px solid #354c22;outline-offset:2px}

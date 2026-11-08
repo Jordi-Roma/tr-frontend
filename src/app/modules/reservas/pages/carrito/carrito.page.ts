@@ -28,7 +28,10 @@ import {
   DeliveryCheckoutRequest,
   DeliveryCotizacionResponse,
 } from '../../../ventas_inventario/models/delivery.models';
-import { CheckoutQrResponse, OrdenPagoResponse } from '../../../ventas_inventario/models/pago.models';
+import {
+  CheckoutQrResponse,
+  OrdenPagoResponse,
+} from '../../../ventas_inventario/models/pago.models';
 import { DeliveryService } from '../../../ventas_inventario/services/delivery.service';
 import { PagoService } from '../../../ventas_inventario/services/pago.service';
 import { TiendaStateService } from '../../../../core/services/tienda-state.service';
@@ -42,18 +45,38 @@ import { TiendaStateService } from '../../../../core/services/tienda-state.servi
 export class CarritoPage implements OnInit, OnDestroy {
   protected readonly offline = inject(OfflineService);
   private readonly carritoService = inject(CarritoService);
-  private readonly perfil=inject(PerfilService);
-  protected readonly direcciones=signal<DireccionResponse[]>([]);
-  protected readonly direccionGuardada=signal<number|null>(null);
-  protected readonly cotizacionAceptada=signal(false);
-  private solicitudCotizacion=0;
-  private invalidarCotizacion():void {this.solicitudCotizacion++;this.cotizacionDelivery.set(null);this.cotizacionAceptada.set(false);this.cotizandoDelivery.set(false);if(this.deliveryLine){this.deliveryLine.remove();this.deliveryLine=undefined;}}
-  protected venceCotizacion():string {const fecha=this.cotizacionDelivery()?.vence_en;return fecha?new Date(fecha).toLocaleString('es-BO'):'';}
-  protected aceptarCotizacion(event:Event):void {this.cotizacionAceptada.set((event.target as HTMLInputElement).checked);}
-  protected elegirDireccion(event:Event):void {
-    const id=Number((event.target as HTMLSelectElement).value)||null;
-    this.direccionGuardada.set(id);this.invalidarCotizacion();
-    const d=this.direcciones().find(x=>x.id===id);if(d){this.direccionEntrega.set(d.direccion);this.referenciaEntrega.set(d.referencia||'');this.buscarDireccion();}
+  private readonly perfil = inject(PerfilService);
+  protected readonly direcciones = signal<DireccionResponse[]>([]);
+  protected readonly direccionGuardada = signal<number | null>(null);
+  protected readonly cotizacionAceptada = signal(false);
+  private solicitudCotizacion = 0;
+  private invalidarCotizacion(): void {
+    this.solicitudCotizacion++;
+    this.cotizacionDelivery.set(null);
+    this.cotizacionAceptada.set(false);
+    this.cotizandoDelivery.set(false);
+    if (this.deliveryLine) {
+      this.deliveryLine.remove();
+      this.deliveryLine = undefined;
+    }
+  }
+  protected venceCotizacion(): string {
+    const fecha = this.cotizacionDelivery()?.vence_en;
+    return fecha ? new Date(fecha).toLocaleString('es-BO') : '';
+  }
+  protected aceptarCotizacion(event: Event): void {
+    this.cotizacionAceptada.set((event.target as HTMLInputElement).checked);
+  }
+  protected elegirDireccion(event: Event): void {
+    const id = Number((event.target as HTMLSelectElement).value) || null;
+    this.direccionGuardada.set(id);
+    this.invalidarCotizacion();
+    const d = this.direcciones().find((x) => x.id === id);
+    if (d) {
+      this.direccionEntrega.set(d.direccion);
+      this.referenciaEntrega.set(d.referencia || '');
+      this.buscarDireccion();
+    }
   }
   private readonly catalogoService = inject(CatalogoPublicoService);
   private readonly reservasService = inject(ReservasService);
@@ -64,6 +87,13 @@ export class CarritoPage implements OnInit, OnDestroy {
 
   @ViewChild('deliveryMap')
   set deliveryMapRef(ref: ElementRef<HTMLDivElement> | undefined) {
+    if (!ref && this.deliveryMap) {
+      this.deliveryMap.remove();
+      this.deliveryMap = undefined;
+      this.deliveryMarker = undefined;
+      this.sucursalMarker = undefined;
+      this.deliveryLine = undefined;
+    }
     this.deliveryMapElement = ref?.nativeElement;
     if (this.deliveryMapElement && this.tipoEntrega() === 'DELIVERY') {
       this.programarMapa();
@@ -81,6 +111,14 @@ export class CarritoPage implements OnInit, OnDestroy {
   protected readonly sucursalId = signal<number | null>(null);
   protected readonly cargando = signal(false);
   protected readonly guardando = signal(false);
+  protected readonly mostrandoDelivery = signal(false);
+  protected abrirDelivery(): void {
+    this.mostrandoDelivery.set(true);
+  }
+  protected cerrarDelivery(): void {
+    this.mostrandoDelivery.set(false);
+  }
+
   protected readonly cotizandoDelivery = signal(false);
   protected readonly error = signal('');
   protected readonly mensaje = signal('');
@@ -99,7 +137,6 @@ export class CarritoPage implements OnInit, OnDestroy {
   protected readonly qrDataUrl = signal('');
   protected readonly copiadoQr = signal<string | null>(null);
   protected readonly errorQr = signal('');
-
 
   protected readonly items = computed(() => this.carrito()?.items ?? []);
   protected readonly subtotal = computed(() => this.toNumber(this.carrito()?.total));
@@ -120,10 +157,15 @@ export class CarritoPage implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
-    this.perfil.listarDirecciones().subscribe({next:d=>this.direcciones.set(d.direcciones),error:()=>this.direcciones.set([])});
+    this.perfil
+      .listarDirecciones()
+      .subscribe({
+        next: (d) => this.direcciones.set(d.direcciones),
+        error: () => this.direcciones.set([]),
+      });
     this.cargarCarrito();
     this.pagoService.obtenerPendiente().subscribe({
-      next: orden => this.intentoPendiente.set(orden),
+      next: (orden) => this.intentoPendiente.set(orden),
       error: (error: HttpErrorResponse) => this.error.set(this.obtenerMensajeError(error)),
     });
   }
@@ -184,9 +226,11 @@ export class CarritoPage implements OnInit, OnDestroy {
     this.tipoEntrega.set(tipo);
     this.error.set('');
     if (tipo === 'RECOJO_SUCURSAL') {
+      this.cerrarDelivery();
       this.invalidarCotizacion();
       return;
     }
+    this.abrirDelivery();
     this.programarMapa();
   }
 
@@ -196,7 +240,8 @@ export class CarritoPage implements OnInit, OnDestroy {
   }
 
   protected actualizarReferencia(event: Event): void {
-    this.referenciaEntrega.set((event.target as HTMLInputElement).value);this.invalidarCotizacion();
+    this.referenciaEntrega.set((event.target as HTMLInputElement).value);
+    this.invalidarCotizacion();
   }
 
   protected actualizarFechaCita(event: Event): void {
@@ -216,7 +261,7 @@ export class CarritoPage implements OnInit, OnDestroy {
       .pipe(finalize(() => this.cotizandoDelivery.set(false)))
       .subscribe({
         next: (resultado) => {
-          if(this.direccionEntrega().trim()!==direccion)return;
+          if (this.direccionEntrega().trim() !== direccion) return;
           this.direccionEntrega.set(resultado.direccion);
           this.actualizarUbicacion(
             this.toNumber(resultado.latitud),
@@ -262,22 +307,33 @@ export class CarritoPage implements OnInit, OnDestroy {
       return;
     }
     this.invalidarCotizacion();
-    const n=this.solicitudCotizacion;
+    const n = this.solicitudCotizacion;
     this.cotizandoDelivery.set(true);
     this.error.set('');
     this.deliveryService
       .cotizar(request)
-      .pipe(finalize(() => {if(n===this.solicitudCotizacion)this.cotizandoDelivery.set(false);}))
+      .pipe(
+        finalize(() => {
+          if (n === this.solicitudCotizacion) this.cotizandoDelivery.set(false);
+        }),
+      )
       .subscribe({
         next: (cotizacion) => {
-          if(n!==this.solicitudCotizacion)return;
+          if (n !== this.solicitudCotizacion) return;
           this.cotizacionDelivery.set(cotizacion);
-          if(this.deliveryMap&&cotizacion.ruta?.length){this.deliveryLine=L.polyline(cotizacion.ruta.map(p=>[p[1],p[0]] as L.LatLngTuple),{color:'#36552c',weight:4}).addTo(this.deliveryMap);}
+          if (this.deliveryMap && cotizacion.ruta?.length) {
+            this.deliveryLine = L.polyline(
+              cotizacion.ruta.map((p) => [p[1], p[0]] as L.LatLngTuple),
+              { color: '#36552c', weight: 4 },
+            ).addTo(this.deliveryMap);
+          }
           if (!cotizacion.disponible) {
             this.error.set(cotizacion.mensaje || 'La direccion esta fuera del rango de delivery.');
           }
         },
-        error: (error: HttpErrorResponse) => {if(n===this.solicitudCotizacion)this.error.set(this.obtenerMensajeError(error));},
+        error: (error: HttpErrorResponse) => {
+          if (n === this.solicitudCotizacion) this.error.set(this.obtenerMensajeError(error));
+        },
       });
   }
 
@@ -510,7 +566,7 @@ export class CarritoPage implements OnInit, OnDestroy {
       return null;
     }
     return {
-      direccion_id:this.direccionGuardada(),
+      direccion_id: this.direccionGuardada(),
       sucursal_id: sucursalId,
       direccion_entrega: direccion,
       referencia: this.referenciaEntrega().trim() || null,
@@ -525,12 +581,17 @@ export class CarritoPage implements OnInit, OnDestroy {
     }
     const base = this.deliveryRequest();
     const cotizacion = this.cotizacionDelivery();
-    if (!base || !cotizacion?.disponible || !cotizacion.cotizacion_id || !this.cotizacionAceptada()) {
+    if (
+      !base ||
+      !cotizacion?.disponible ||
+      !cotizacion.cotizacion_id ||
+      !this.cotizacionAceptada()
+    ) {
       return null;
     }
     return {
       ...base,
-      cotizacion_id:cotizacion.cotizacion_id,
+      cotizacion_id: cotizacion.cotizacion_id,
       distancia_km: cotizacion.distancia_km,
       tiempo_estimado_min: cotizacion.tiempo_estimado_min,
       costo_delivery: cotizacion.costo_delivery,
@@ -713,6 +774,13 @@ export class CarritoPage implements OnInit, OnDestroy {
 
     setTimeout(() => this.deliveryMap?.invalidateSize(), 150);
     this.dibujarRutaVisual();
+    const ruta = this.cotizacionDelivery()?.ruta;
+    if (ruta?.length) {
+      this.deliveryLine = L.polyline(
+        ruta.map((p) => [p[1], p[0]] as L.LatLngTuple),
+        { color: '#36552c', weight: 4 },
+      ).addTo(this.deliveryMap);
+    }
   }
 
   private actualizarUbicacion(latitud: number, longitud: number): void {
@@ -767,10 +835,9 @@ export class CarritoPage implements OnInit, OnDestroy {
       this.sucursalMarker.setLatLng(sucursalPoint);
     }
 
-    const etiqueta=document.createElement('span');
-    etiqueta.textContent=`Sale desde: ${sucursal.ciudad} - ${sucursal.nombre}`;
-    this.sucursalMarker.bindTooltip(etiqueta,{direction:'top'});
-
+    const etiqueta = document.createElement('span');
+    etiqueta.textContent = `Sale desde: ${sucursal.ciudad} - ${sucursal.nombre}`;
+    this.sucursalMarker.bindTooltip(etiqueta, { direction: 'top' });
   }
 
   private ajustarVistaRuta(clienteLat: number, clienteLng: number): void {

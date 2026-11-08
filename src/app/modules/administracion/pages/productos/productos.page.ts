@@ -1,4 +1,5 @@
 import { mensajeApi } from '../../../../core/services/error-api';
+import { AccesosModuloComponent } from '../../../../shared/components/accesos-modulo/accesos-modulo.component';
 import { EstadoPlanService } from '../../../../core/services/estado-plan.service';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -28,12 +29,22 @@ import { ProveedorResponse } from '../../models/proveedor.models';
 import { AppDrawerComponent } from '../../../../shared/components/app-drawer/app-drawer.component';
 
 @Component({
-  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppDrawerComponent, RouterLink],
+  imports: [OperacionNuevaDirective, ReactiveFormsModule, AppDrawerComponent, RouterLink, AccesosModuloComponent],
   selector: 'app-productos-page',
   styleUrl: './productos.page.css',
   templateUrl: './productos.page.html',
 })
 export class ProductosPage implements OnInit {
+  protected readonly accesosCatalogo = [
+    {nombre:'Categorías',ruta:'/categorias',icono:'pi pi-tags'},
+    {nombre:'Tallas',ruta:'/tallas',icono:'pi pi-sliders-h'},
+    {nombre:'Colores',ruta:'/colores',icono:'pi pi-palette'},
+    {nombre:'Marcas',ruta:'/marcas',icono:'pi pi-bookmark'},
+    {nombre:'Temporadas',ruta:'/temporadas',icono:'pi pi-calendar'},
+    {nombre:'Colecciones',ruta:'/colecciones',icono:'pi pi-th-large'},
+    {nombre:'Variantes y precios',ruta:'/variantes',icono:'pi pi-sitemap'},
+    {nombre:'Promociones',ruta:'/promociones',icono:'pi pi-percentage'},
+  ];
   protected readonly planEstado = inject(EstadoPlanService);
   private readonly productoService = inject(ProductoService);
   private readonly catalogoService = inject(CatalogoService);

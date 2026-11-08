@@ -1,3 +1,4 @@
+import { AuthService } from '../../../autenticacion/services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -13,6 +14,7 @@ import { PagoService } from '../../services/pago.service';
   templateUrl: './historial-pagos.page.html',
 })
 export class HistorialPagosPage implements OnInit {
+  protected readonly puedeConfigurar=inject(AuthService).tieneRol('ADMINISTRADOR');
   private readonly pagoService = inject(PagoService);
   private readonly router = inject(Router);
 

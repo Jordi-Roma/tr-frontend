@@ -1,3 +1,4 @@
+import { SelectorVarianteComponent } from './selector-variante.component';
 import { ActivatedRoute } from '@angular/router';
 import {
   afterNextRender,
@@ -19,6 +20,7 @@ import { Devolucion, VentaDevolucionElegible } from '../../models/devolucion.mod
 
 interface Opcion {
   id: number;
+  producto_id?: number;
   producto: string;
   talla: string;
   color: string;
@@ -57,7 +59,7 @@ interface Cambio {
 }
 @Component({
   selector: 'app-cambios',
-  imports: [RouterLink],
+  imports: [RouterLink, SelectorVarianteComponent],
   templateUrl: './cambios.page.html',
   styleUrl: '../historial-pagos/devoluciones.page.css',
 })
@@ -113,6 +115,15 @@ export class CambiosPage {
   protected readonly solicitud = signal<{ venta: number; linea: number; max: number } | null>(null);
   protected readonly cantidad = signal(1);
   protected readonly motivo = signal('');
+  protected readonly opcionesSolicitud = signal<Opcion[]>([]);
+  protected readonly opcionInicial = signal(0);
+  protected readonly creditoInicial = signal<string | null>(null);
+  protected readonly cargandoOpciones = signal(false);
+  private consultaOpciones = 0;
+  protected readonly diferenciaInicial = computed(() => {
+    const v=this.opcionesSolicitud().find(o=>o.id===this.opcionInicial());
+    return v && this.creditoInicial()!==null ? (Math.round(Number(v.precio)*100)*this.cantidad()-Math.round(Number(this.creditoInicial())*100))/100 : null;
+  });
   protected readonly condicion = signal('');
   protected readonly noVendibles = signal(0);
   protected readonly recepcion = signal(false);
@@ -181,6 +192,18 @@ export class CambiosPage {
     this.solicitud.set({ venta, linea, max });
     this.cantidad.set(1);
     this.motivo.set('');
+    this.consultarOpcionesIniciales();
+  }
+  protected cambiarCantidadSolicitud(event:Event):void {this.cantidad.set(Number(this.texto(event)));this.consultarOpcionesIniciales();}
+  protected consultarOpcionesIniciales():void {
+    const s=this.solicitud(),consulta=++this.consultaOpciones;
+    this.opcionesSolicitud.set([]);this.opcionInicial.set(0);this.creditoInicial.set(null);
+    if(!s||!Number.isInteger(this.cantidad())||this.cantidad()<1||this.cantidad()>s.max)return;
+    this.cargandoOpciones.set(true);this.error.set('');
+    this.http.get<{credito_estimado:string;opciones:Opcion[]}>(this.base+'/opciones-solicitud',{params:{venta_id:s.venta,venta_detalle_id:s.linea,cantidad:this.cantidad()}}).subscribe({
+      next:r=>{if(consulta!==this.consultaOpciones)return;this.opcionesSolicitud.set(r.opciones);this.creditoInicial.set(r.credito_estimado);this.cargandoOpciones.set(false);},
+      error:(e:unknown)=>{if(consulta!==this.consultaOpciones)return;this.cargandoOpciones.set(false);this.error.set(mensajeApi(e));}
+    });
   }
   protected solicitar(): void {
     const s = this.solicitud();
@@ -194,7 +217,9 @@ export class CambiosPage {
       this.error.set('Indica motivo y cantidades elegibles.');
       return;
     }
+    if(!this.opcionesSolicitud().some(o=>o.id===this.opcionInicial())){this.error.set('Selecciona producto, talla y color del reemplazo.');return;}
     const body = {
+      reemplazo_id:this.opcionInicial(),
       venta_id: s.venta,
       venta_detalle_id: s.linea,
       cantidad: this.cantidad(),
@@ -263,7 +288,7 @@ export class CambiosPage {
           this.opciones.set(o);
           const disponibles = this.reemplazos();
           this.opcion.set(
-            disponibles.find((v) => v.id === c.reemplazo_id)?.id ?? disponibles[0]?.id ?? 0,
+            disponibles.find((v) => v.id === c.reemplazo_id)?.id ?? 0,
           );
           this.adicional.set(this.adicionales().find((v) => v.id === c.adicional_id)?.id ?? 0);
           if (!disponibles.length)
@@ -275,6 +300,16 @@ export class CambiosPage {
   protected seleccionarReemplazo(id: number): void {
     this.opcion.set(id);
     this.adicional.set(0);
+  }
+  protected validarSolicitado(): void {
+    const c = this.elegido();
+    if (c?.reemplazo_id) {
+      this.opcion.set(0);
+      this.adicional.set(0);
+      this.ejecutar('/' + c.id + '/cotizar', {
+        version: c.version, reemplazo_id: c.reemplazo_id, adicional_id: c.adicional_id,
+      });
+    }
   }
   protected cotizar(): void {
     const c = this.elegido();

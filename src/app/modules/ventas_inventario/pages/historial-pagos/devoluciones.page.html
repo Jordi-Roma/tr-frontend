@@ -1,3 +1,4 @@
+<a [routerLink]="esCliente() ? '/mis-devoluciones' : '/devoluciones'">Volver a devoluciones y cambios</a>
 @if(politica();as p){<section class="panel"><h2>Política de devoluciones</h2><p>{{ p.devoluciones_habilitadas ? 'Plazo: '+p.plazo_devoluciones+' días desde la compra en tienda o la entrega a domicilio.' : 'La empresa todavía no habilitó devoluciones voluntarias.' }}</p><p>{{ p.condiciones_devoluciones }}</p></section>}
 <div class="returns-page">
   <header class="page-heading">

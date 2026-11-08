@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -15,9 +16,9 @@ export interface PoliticaPosventa {
 }
 @Component({
   selector: 'app-politica-posventa',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   styleUrl: '../../../reservas/pages/mayorista/mayorista.css',
-  template: ` <h1>Políticas de cambios y devoluciones</h1>
+  template: ` <a routerLink="/devoluciones">Volver a devoluciones y cambios</a><h1>Políticas de cambios y devoluciones</h1>
     <p>Los plazos cuentan desde la compra en tienda o la entrega a domicilio.</p>
     @if (error()) {
       <p role="alert">{{ error() }}</p>

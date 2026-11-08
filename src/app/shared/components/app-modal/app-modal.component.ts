@@ -1,5 +1,14 @@
 import { DOCUMENT } from '@angular/common';
-import { afterRenderEffect, Component, ElementRef, inject, input, OnDestroy, output, viewChild } from '@angular/core';
+import {
+  afterRenderEffect,
+  Component,
+  ElementRef,
+  inject,
+  input,
+  OnDestroy,
+  output,
+  viewChild,
+} from '@angular/core';
 
 @Component({
   selector: 'app-modal',
@@ -9,16 +18,22 @@ import { afterRenderEffect, Component, ElementRef, inject, input, OnDestroy, out
 export class AppModalComponent implements OnDestroy {
   readonly open = input(false);
   readonly title = input('');
+  readonly width = input('560px');
   readonly eyebrow = input('');
   readonly close = output<void>();
   private readonly document = inject(DOCUMENT);
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
+  private previousOverflow: string | null = null;
   private returnFocus: HTMLElement | null = null;
 
   constructor() {
     afterRenderEffect(() => {
       const panel = this.panel()?.nativeElement;
       if (this.open() && panel) {
+        if (this.previousOverflow === null) {
+          this.previousOverflow = this.document.body.style.overflow;
+          this.document.body.style.overflow = 'hidden';
+        }
         if (!this.returnFocus) {
           this.returnFocus = this.document.activeElement as HTMLElement | null;
           (panel.querySelector<HTMLElement>('input, select, textarea, button') ?? panel).focus();
@@ -35,9 +50,11 @@ export class AppModalComponent implements OnDestroy {
       event.stopPropagation();
       this.cerrar();
     } else if (event.key === 'Tab') {
-      const elements = Array.from(this.panel()?.nativeElement.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]',
-      ) ?? []).filter((element) => element.getClientRects().length > 0);
+      const elements = Array.from(
+        this.panel()?.nativeElement.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]',
+        ) ?? [],
+      ).filter((element) => element.getClientRects().length > 0);
       const first = elements[0];
       const last = elements[elements.length - 1];
       if (event.shiftKey && this.document.activeElement === first) {
@@ -55,6 +72,10 @@ export class AppModalComponent implements OnDestroy {
   }
 
   private restoreFocus(): void {
+    if (this.previousOverflow !== null) {
+      this.document.body.style.overflow = this.previousOverflow;
+      this.previousOverflow = null;
+    }
     this.returnFocus?.focus();
     this.returnFocus = null;
   }

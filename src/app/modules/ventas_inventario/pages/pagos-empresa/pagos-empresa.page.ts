@@ -8,9 +8,10 @@ import { ConfiguracionPagosEmpresa, ReembolsoPago, NotificacionPropia } from '..
 
 @Component({
   selector: 'app-pagos-empresa',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   styleUrl: './pagos-empresa.page.css',
   template: `
+    <a routerLink="/pagos">Volver a pagos</a>
     <h1>Pagos de prueba por empresa</h1>
     <p>Configura los medios de tu comercio. Este bloque no habilita cobros reales ni transferencias bancarias.</p>
     @if (error()) { <p role="alert">{{ error() }}</p> }

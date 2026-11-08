@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, finalize } from 'rxjs';
 import { AuthService } from '../../../autenticacion/services/auth.service';
 import { CrearDevolucionRequest, Devolucion, VentaDevolucionElegible } from '../../models/devolucion.models';
@@ -8,6 +8,7 @@ import { DevolucionService } from '../../services/devolucion.service';
 
 @Component({
   selector: 'app-devoluciones-page',
+  imports:[RouterLink],
   templateUrl: './devoluciones.page.html',
   styleUrl: './devoluciones.page.css',
 })

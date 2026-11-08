@@ -1,5 +1,10 @@
 @if (intentoPendiente(); as intento) {
-  <p role="status">Tienes un intento de pago pendiente. <a [routerLink]="['/pago/resultado']" [queryParams]="{orden_id: intento.orden_id}">Consultar o cancelar intento #{{ intento.orden_id }}</a></p>
+  <p role="status">
+    Tienes un intento de pago pendiente.
+    <a [routerLink]="['/pago/resultado']" [queryParams]="{ orden_id: intento.orden_id }"
+      >Consultar o cancelar intento #{{ intento.orden_id }}</a
+    >
+  </p>
 }
 <section class="cart-header" aria-labelledby="cart-title">
   <p class="eyebrow">Carrito</p>
@@ -15,7 +20,7 @@
     <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
     <h2>Cargando carrito...</h2>
   </section>
-} @else if (error()) {
+} @else if (error() && !carrito()) {
   <section class="empty-card error-card">
     <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
     <h2>No se pudo procesar</h2>
@@ -47,7 +52,18 @@
 
           <div class="item-info">
             <h2>{{ item.producto }}</h2>
-            <p>{{ item.paquete_id ? item.tipo_compra + ' · paquete #' + item.paquete_id + ' · ' + item.descuento_mayorista + '% de descuento' : 'Compra por unidad' }}</p>
+            <p>
+              {{
+                item.paquete_id
+                  ? item.tipo_compra +
+                    ' · paquete #' +
+                    item.paquete_id +
+                    ' · ' +
+                    item.descuento_mayorista +
+                    '% de descuento'
+                  : 'Compra por unidad'
+              }}
+            </p>
             <p>{{ item.categoria }} · {{ item.talla }} / {{ item.color }}</p>
             <p>
               {{ item.sucursal ? item.ciudad + ' - ' + item.sucursal : 'Sucursal por confirmar' }}
@@ -78,7 +94,10 @@
 
           @if (item.disponible_para_compra === false) {
             <p class="stock-warning" role="status">
-              {{ item.motivo_no_disponible || 'Esta prenda ya no está disponible. Retírala para continuar.' }}
+              {{
+                item.motivo_no_disponible ||
+                  'Esta prenda ya no está disponible. Retírala para continuar.'
+              }}
             </p>
           }
           <strong class="line-total">{{ formatPrecio(item.subtotal) }}</strong>
@@ -88,7 +107,9 @@
             class="remove-button"
             [disabled]="guardando()"
             (click)="quitar(item)"
-            [attr.aria-label]="item.paquete_id ? 'Quitar paquete completo #' + item.paquete_id : 'Quitar producto'"
+            [attr.aria-label]="
+              item.paquete_id ? 'Quitar paquete completo #' + item.paquete_id : 'Quitar producto'
+            "
           >
             <i class="pi pi-trash" aria-hidden="true"></i>
           </button>
@@ -98,6 +119,9 @@
 
     <aside class="summary-card" aria-label="Resumen de carrito">
       <h2>Resumen</h2>
+      @if (error() && !mostrandoDelivery()) {
+        <p role="alert" class="stock-warning">{{ error() }}</p>
+      }
 
       @if (mensaje()) {
         <p class="success-message">{{ mensaje() }}</p>
@@ -160,89 +184,18 @@
       </fieldset>
 
       @if (tipoEntrega() === 'DELIVERY') {
-        <section class="delivery-card" aria-label="Datos de delivery">
-          <label>Dirección guardada (opcional)
-            <select [value]="direccionGuardada() ?? ''" (change)="elegirDireccion($event)">
-              <option value="">Escribir otra dirección</option>
-              @for(d of direcciones();track d.id){<option [value]="d.id">{{ d.direccion }}</option>}
-            </select>
-          </label>
-          <p>El envío se paga con Stripe o QR junto con la compra. No se cobra efectivo al entregar.</p>
-          <label>
-            Dirección de entrega
-            <input
-              type="text"
-              [value]="direccionEntrega()"
-              (input)="actualizarDireccion($event)"
-              placeholder="Ej. Av. Banzer 4to anillo, Santa Cruz"
-            />
-          </label>
-
-          <label>
-            Referencia
-            <input
-              type="text"
-              [value]="referenciaEntrega()"
-              (input)="actualizarReferencia($event)"
-              placeholder="Ej. Casa roja frente a farmacia"
-            />
-          </label>
-
-          <div class="delivery-map-shell">
-            <div
-              #deliveryMap
-              class="delivery-map"
-              aria-label="Mapa para seleccionar la ubicación de entrega"
-            ></div>
-            <div class="delivery-map-legend" aria-hidden="true">
-              <span><i class="legend-dot branch"></i>Sucursal</span>
-              <span><i class="legend-dot client"></i>Tu ubicación</span>
-            </div>
-          </div>
-          <small
-            >Busca tu dirección o mueve el marcador en el mapa para ajustar la ubicación de
-            entrega.</small
-          >
-
-          <button
-            type="button"
-            class="secondary-button"
-            [disabled]="cotizandoDelivery()"
-            (click)="buscarDireccion()"
-          >
-            Buscar ubicación
-          </button>
-          <button
-            type="button"
-            class="secondary-button"
-            [disabled]="cotizandoDelivery()"
-            (click)="usarUbicacionActual()"
-          >
-            Usar mi ubicación actual
-          </button>
-          <button
-            type="button"
-            class="secondary-button"
-            [disabled]="cotizandoDelivery()"
-            (click)="cotizarDelivery()"
-          >
-            Cotizar delivery
-          </button>
-
-          @if (cotizacionDelivery(); as cotizacion) {
-            <div class="delivery-quote" [class.invalid]="!cotizacion.disponible">
-              <span>Distancia: {{ cotizacion.distancia_km }} km</span>
-              <span>Tiempo aprox.: {{ cotizacion.tiempo_estimado_min }} min</span>
-              <strong>{{
-                cotizacion.disponible ? formatPrecio(cotizacion.costo_delivery) : cotizacion.mensaje
-              }}</strong>
-            </div>
-          }
-        </section>
-      }
-      @if(tipoEntrega()==='DELIVERY' && cotizacionDelivery()?.cotizacion_id){
-        <label><input type="checkbox" [checked]="cotizacionAceptada()" (change)="aceptarCotizacion($event)" /> Acepto la cotización del envío mostrada</label>
-        <p>Válida hasta {{ venceCotizacion() }}. Si modificas el destino, debes cotizar otra vez.</p>
+        <button type="button" class="secondary-button" (click)="abrirDelivery()">
+          Configurar y cotizar delivery
+        </button>
+        @if (cotizacionDelivery()?.disponible) {
+          <p class="delivery-summary">
+            {{ direccionEntrega() }} · {{ formatPrecio(costoDelivery()) }}<br />{{
+              cotizacionAceptada()
+                ? 'Cotización aceptada'
+                : 'Abre delivery para aceptar la cotización'
+            }}
+          </p>
+        }
       }
       @if (tipoEntrega() === 'RECOJO_SUCURSAL') {
         <label class="branch-control">
@@ -267,7 +220,8 @@
 
         @if (excedeMaximoReserva()) {
           <p class="stock-warning">
-            Los paquetes son para compra directa; las reservas admiten sólo unidades y hasta 2 por variante.
+            Los paquetes son para compra directa; las reservas admiten sólo unidades y hasta 2 por
+            variante.
           </p>
         }
       }
@@ -320,7 +274,9 @@
           <button
             type="button"
             class="secondary-button"
-            [appOperacionNueva]="guardando() || !entregaLista() || excedeMaximoReserva() || !fechaCita()"
+            [appOperacionNueva]="
+              guardando() || !entregaLista() || excedeMaximoReserva() || !fechaCita()
+            "
             (click)="confirmarReserva()"
           >
             <i class="pi pi-calendar-check" aria-hidden="true"></i>
@@ -356,6 +312,126 @@
     </aside>
   </section>
 
+  <app-modal
+    [open]="mostrandoDelivery()"
+    title="Configurar delivery"
+    width="1080px"
+    (close)="cerrarDelivery()"
+  >
+    @if (mostrandoDelivery()) {
+      @if (error()) {
+        <p role="alert" class="stock-warning">{{ error() }}</p>
+      }
+      <section class="delivery-card" aria-label="Datos de delivery">
+        <div class="delivery-fields">
+          <h3>1. Dirección de entrega</h3>
+          <label
+            >Dirección guardada (opcional)
+            <select [value]="direccionGuardada() ?? ''" (change)="elegirDireccion($event)">
+              <option value="">Escribir otra dirección</option>
+              @for (d of direcciones(); track d.id) {
+                <option [value]="d.id">{{ d.direccion }}</option>
+              }
+            </select>
+          </label>
+          <p>
+            El envío se paga con Stripe o QR junto con la compra. No se cobra efectivo al entregar.
+          </p>
+          <label>
+            Dirección de entrega
+            <input
+              type="text"
+              [value]="direccionEntrega()"
+              (input)="actualizarDireccion($event)"
+              placeholder="Ej. Av. Banzer 4to anillo, Santa Cruz"
+            />
+          </label>
+
+          <label>
+            Referencia
+            <input
+              type="text"
+              [value]="referenciaEntrega()"
+              (input)="actualizarReferencia($event)"
+              placeholder="Ej. Casa roja frente a farmacia"
+            />
+          </label>
+        </div>
+        <div class="delivery-location">
+          <h3>2. Ubicación</h3>
+          <div class="delivery-map-shell">
+            <div
+              #deliveryMap
+              class="delivery-map"
+              aria-label="Mapa para seleccionar la ubicación de entrega"
+            ></div>
+            <div class="delivery-map-legend" aria-hidden="true">
+              <span><i class="legend-dot branch"></i>Sucursal</span>
+              <span><i class="legend-dot client"></i>Tu ubicación</span>
+            </div>
+          </div>
+          <small
+            >Busca tu dirección o mueve el marcador en el mapa para ajustar la ubicación de
+            entrega.</small
+          >
+        </div>
+        <div class="delivery-options">
+          <h3>3. Cotización del envío</h3>
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="cotizandoDelivery()"
+            (click)="buscarDireccion()"
+          >
+            Buscar ubicación
+          </button>
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="cotizandoDelivery()"
+            (click)="usarUbicacionActual()"
+          >
+            Usar mi ubicación actual
+          </button>
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="cotizandoDelivery()"
+            (click)="cotizarDelivery()"
+          >
+            Cotizar delivery
+          </button>
+
+          @if (cotizacionDelivery(); as cotizacion) {
+            <div class="delivery-quote" [class.invalid]="!cotizacion.disponible">
+              <span>Distancia: {{ cotizacion.distancia_km }} km</span>
+              <span>Tiempo aprox.: {{ cotizacion.tiempo_estimado_min }} min</span>
+              <strong>{{
+                cotizacion.disponible ? formatPrecio(cotizacion.costo_delivery) : cotizacion.mensaje
+              }}</strong>
+            </div>
+          }
+          @if (cotizacionDelivery()?.disponible && cotizacionDelivery()?.cotizacion_id) {
+            <label
+              ><input
+                type="checkbox"
+                [checked]="cotizacionAceptada()"
+                (change)="aceptarCotizacion($event)"
+              />
+              Acepto la cotización del envío mostrada</label
+            >
+            <p>
+              Válida hasta {{ venceCotizacion() }}. Si modificas el destino, debes cotizar otra vez.
+            </p>
+          }
+          <button type="button" class="primary-button" (click)="cerrarDelivery()">
+            Volver al resumen de compra
+          </button>
+        </div>
+      </section>
+    }
+  </app-modal>
+
   @if (mostrandoModalQr() && checkoutQr()) {
     <app-modal [open]="true" title="Pagar con QR de prueba" (close)="cerrarModalQr()">
       <div class="qr-modal-content">
@@ -369,9 +445,7 @@
               formatPrecio(checkoutQr()!.monto_total)
             }}</strong>
           </p>
-          <div class="qr-timer-pill">
-            Simulación sin validez bancaria
-          </div>
+          <div class="qr-timer-pill">Simulación sin validez bancaria</div>
         </div>
 
         <div class="qr-code-wrapper">
@@ -428,8 +502,12 @@
           </div>
         }
 
-        <p role="status">QR DE PRUEBA. No es un QR bancario: no transfieras dinero. La conexión BCP está pendiente.</p>
-        <a [routerLink]="['/pago/resultado']" [queryParams]="{orden_id: checkoutQr()!.orden_id}">Consultar estado o cancelar intento</a>
+        <p role="status">
+          QR DE PRUEBA. No es un QR bancario: no transfieras dinero. La conexión BCP está pendiente.
+        </p>
+        <a [routerLink]="['/pago/resultado']" [queryParams]="{ orden_id: checkoutQr()!.orden_id }"
+          >Consultar estado o cancelar intento</a
+        >
         <div class="qr-modal-actions">
           <button
             type="button"
