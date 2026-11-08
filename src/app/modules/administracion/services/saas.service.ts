@@ -27,8 +27,9 @@ export class SaasService {
   estadoSuscripcionStripe() {
     return this.http.get<SuscripcionStripe>(`${this.base}/mi-empresa/suscripcion/stripe`);
   }
-  abrirSuscripcionStripe(accion: 'checkout' | 'portal') {
-    return this.http.post<{ url: string }>(`${this.base}/mi-empresa/suscripcion/stripe/${accion}`, {});
+  abrirSuscripcionStripe(accion: 'checkout' | 'portal', planId?: number) {
+    const datos = planId === undefined ? {} : { plan_id: planId };
+    return this.http.post<{ url: string }>(`${this.base}/mi-empresa/suscripcion/stripe/${accion}`, datos);
   }
   empresas() {
     return this.http.get<Empresa[]>(`${this.base}/saas/empresas`);

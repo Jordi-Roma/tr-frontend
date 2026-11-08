@@ -224,6 +224,11 @@ test('sesión de empresa abierta actualiza capacidades tras cambio de plan SaaS'
   await login(empresa, false);
   try {
     await empresa.goto('/mi-plan');
+    for (const nombre of ['Básico', 'Intermedio', 'Premium']) {
+      await expect(empresa.getByRole('article', { name: nombre, exact: true })).toBeVisible();
+    }
+    const planActual = empresa.getByRole('article').filter({ hasText: 'Plan actual' });
+    await expect(planActual.getByRole('heading', { name: 'Prueba', exact: true })).toBeVisible();
     await expect(empresa.locator('app-capacidades-plan')).toContainText('Exportar PDF: Habilitada');
     const cambios = { funciones: { reportes_pdf: false, reportes_excel: true } };
     const prev = await (

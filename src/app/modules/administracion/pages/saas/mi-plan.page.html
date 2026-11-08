@@ -1,0 +1,133 @@
+<header class="encabezado planes-hero">
+  <div>
+    <p class="ceja">Mi empresa</p>
+    <h1>Mi plan</h1>
+    <p class="hero-texto">Compara los planes de StyleAR y elige el que necesita tu empresa.</p>
+  </div>
+  <button type="button" class="secundario" (click)="cargar()" [disabled]="cargando()">
+    Actualizar
+  </button>
+</header>
+
+@if (error()) {
+  <p role="alert" class="error">{{ error() }}</p>
+}
+@if (cargando() && !stripe()) {
+  <p role="status">Consultando planes…</p>
+}
+
+@if (stripe(); as s) {
+  @if (s.estado === 'PENDIENTE') {
+    <p role="status" class="aviso-pago">
+      @if (regresoDeStripe) {
+        Stripe está confirmando tu pago. Puedes usar «Actualizar» para consultar el estado.
+      } @else {
+        Tienes un pago pendiente en Stripe.
+      }
+      Tu plan actual seguirá vigente hasta que se confirme el pago.
+    </p>
+  }
+  @if (s.estado === 'ACTIVA' || s.comprobante_url) {
+    <section class="panel" aria-labelledby="suscripcion-stripe">
+      <h2 id="suscripcion-stripe">Facturación</h2>
+      @if (s.estado === 'ACTIVA') {
+        <p>Tu suscripción mensual está activa en Stripe de prueba.</p>
+      }
+      <div class="acciones facturacion-acciones">
+        @if (s.comprobante_url) {
+          <a [href]="s.comprobante_url" target="_blank" rel="noopener noreferrer">
+            Ver último comprobante de Stripe
+          </a>
+        }
+        @if (s.puede_gestionar) {
+          <button type="button" class="secundario" (click)="abrirStripe('portal')" [disabled]="abriendoStripe()">
+            Gestionar suscripción en Stripe
+          </button>
+        }
+      </div>
+    </section>
+  }
+  @if (s.planes?.length) {
+    <section class="planes-lista" aria-labelledby="planes-disponibles">
+      <div class="planes-lista-titulo">
+        <h2 id="planes-disponibles">Planes para tu empresa</h2>
+        <span>Pagos en Stripe de prueba</span>
+      </div>
+      <div class="tarjetas-planes">
+        @for (p of s.planes; track p.id) {
+          @let pendiente = s.plan_pendiente_id === p.id;
+          <article
+            class="plan-card"
+            [class.plan-basico]="p.codigo === 'BASICO'"
+            [class.plan-intermedio]="p.codigo === 'INTERMEDIO'"
+            [class.plan-premium]="p.codigo === 'PREMIUM'"
+            [attr.aria-labelledby]="'plan-empresa-' + p.id"
+          >
+            <div class="tarjeta-cabecera">
+              <div class="tarjeta-meta">
+                <span class="plan-icono" aria-hidden="true">
+                  <i [class]="p.codigo === 'PREMIUM' ? 'pi pi-star' : p.codigo === 'INTERMEDIO' ? 'pi pi-sparkles' : 'pi pi-box'"></i>
+                </span>
+                @if (p.es_actual || pendiente) {
+                  <span class="plan-estado" [class.plan-inactivo]="!p.es_actual">
+                    {{ p.es_actual ? 'Plan actual' : 'Pago pendiente' }}
+                  </span>
+                }
+              </div>
+              <h3 [id]="'plan-empresa-' + p.id">{{ p.nombre }}</h3>
+              @if (p.descripcion) {
+                <p class="plan-descripcion">{{ p.descripcion }}</p>
+              }
+            </div>
+            <div class="tarjeta-cuerpo">
+              <div class="plan-precio">
+                @if (+p.precio === 0) {
+                  <strong>Gratis</strong>
+                } @else {
+                  <span class="precio-moneda">{{ p.moneda === 'USD' ? 'US$' : p.moneda === 'BOB' ? 'Bs' : p.moneda }}</span>
+                  <strong>{{ p.precio | number: '1.2-2' }}</strong>
+                  <span class="precio-periodo">/ mes</span>
+                }
+              </div>
+              <dl class="plan-cupos">
+                @for (cupo of cupos; track cupo.clave) {
+                  <div>
+                    <dt>{{ cupo.nombre }}</dt>
+                    <dd>{{ p.limites[cupo.clave] ?? 'Sin límite' }}</dd>
+                  </div>
+                }
+              </dl>
+              <ul class="plan-funciones">
+                @for (funcion of funciones; track funcion.clave) {
+                  @if (p.funciones[funcion.clave]) {
+                    <li><i class="pi pi-check" aria-hidden="true"></i> {{ funcion.nombre }}</li>
+                  }
+                }
+              </ul>
+              <div class="plan-contratar">
+                @if (p.puede_elegir && !(pendiente && regresoDeStripe)) {
+                  <button type="button" (click)="abrirStripe('checkout', p.id)" [disabled]="abriendoStripe() || cargando()">
+                    {{ pendiente ? 'Continuar pago' : p.es_actual ? 'Suscribirme a ' + p.nombre : 'Elegir ' + p.nombre }}
+                  </button>
+                } @else if (pendiente) {
+                  <span>En confirmación</span>
+                } @else if (p.es_actual) {
+                  <span>Tu empresa usa este plan</span>
+                } @else if (+p.precio > 0) {
+                  <span>{{ s.estado === 'ACTIVA' ? 'Gestiona tu suscripción actual' : 'Contratación no disponible' }}</span>
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
+}
+
+@if (plan(); as p) {
+  <section class="panel">
+    <h2>Capacidades de mi empresa</h2>
+    <app-capacidades-plan [datos]="p" />
+  </section>
+}

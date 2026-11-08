@@ -1,0 +1,50 @@
+.planes-lista {
+  margin-block: 1.5rem;
+}
+
+.tarjeta-meta {
+  margin-bottom: 0.8rem;
+}
+
+.plan-precio {
+  margin-bottom: 1rem;
+}
+
+.plan-funciones {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  color: #3e4739;
+  font-size: 0.88rem;
+  list-style: none;
+}
+
+.plan-funciones i {
+  color: var(--plan-acento);
+}
+
+.plan-contratar {
+  margin-top: auto;
+  padding-top: 0.7rem;
+  border-top: 1px solid #e5e8e0;
+  color: #485245;
+  font-size: 0.88rem;
+}
+
+.plan-contratar button {
+  width: 100%;
+  background: var(--plan-acento);
+}
+
+.aviso-pago {
+  padding: 0.8rem 1rem;
+  border-radius: 0.75rem;
+  background: #faf0da;
+  color: #6b4a20;
+}
+
+.facturacion-acciones {
+  align-items: center;
+  flex-wrap: wrap;
+}
