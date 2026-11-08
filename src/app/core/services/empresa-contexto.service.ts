@@ -2,6 +2,7 @@ import { HttpBackend, HttpClient } from '@angular/common/http';
 import { inject, Service, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
+import { ACCESO_OFFLINE } from '../offline/offline.model';
 import { CambioContextoService } from './cambio-contexto.service';
 
 export interface EmpresaPublica {
@@ -37,6 +38,10 @@ export class EmpresaContextoService {
 
   seleccionar(empresa: EmpresaPublica): void {
     if (empresa.estado === 'CANCELADA') throw new Error('Empresa no disponible.');
+    const accesoOffline = localStorage.getItem(ACCESO_OFFLINE);
+    if (accesoOffline && !accesoOffline.startsWith(`${empresa.id}:`)) {
+      localStorage.removeItem(ACCESO_OFFLINE);
+    }
     this.cambios.invalidar();
     this.seleccion.set(empresa);
     localStorage.setItem(CODIGO_KEY, empresa.codigo);

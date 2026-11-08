@@ -9,6 +9,7 @@ import { AuthService } from '../../modules/autenticacion/services/auth.service';
 import { AsistenteChatComponent } from '../../modules/inteligencia/components/asistente-chat/asistente-chat.component';
 import { RecomendacionesService } from '../../modules/inteligencia/services/recomendaciones.service';
 import { CarritoService } from '../../modules/reservas/services/carrito.service';
+import { OfflineService } from '../../core/offline/offline.service';
 
 interface MenuItem {
   label: string;
@@ -41,6 +42,7 @@ const PROVEEDOR = ['PROVEEDOR'];
   templateUrl: './main-layout.html',
 })
 export class MainLayout {
+  protected readonly offline = inject(OfflineService);
   protected readonly empresa = inject(EmpresaContextoService).empresa;
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);

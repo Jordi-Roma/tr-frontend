@@ -6,6 +6,13 @@ import { NotFoundPage } from './shared/pages/not-found/not-found.page';
 
 export const routes: Routes = [
   {
+    path: 'operaciones-offline',
+    loadComponent: () =>
+      import('./modules/ventas_inventario/pages/operaciones-offline/operaciones-offline.page').then(
+        (m) => m.OperacionesOfflinePage,
+      ),
+  },
+  {
     path: 'crear-empresa',
     loadComponent: () =>
       import('./modules/autenticacion/pages/crear-empresa/crear-empresa.page').then(

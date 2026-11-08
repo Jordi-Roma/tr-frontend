@@ -1,4 +1,5 @@
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
+import { OfflineService } from '../../../../core/offline/offline.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -26,6 +27,7 @@ type OrdenCatalogo = 'relevancia' | 'nombre' | 'precio-asc' | 'precio-desc';
   templateUrl: './catalogo.page.html',
 })
 export class CatalogoPage implements OnInit {
+  protected readonly offline = inject(OfflineService);
   private readonly catalogoService = inject(CatalogoPublicoService);
   private readonly tiendaState = inject(TiendaStateService);
   private readonly route = inject(ActivatedRoute);

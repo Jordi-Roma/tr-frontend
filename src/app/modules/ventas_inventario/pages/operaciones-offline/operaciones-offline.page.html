@@ -1,0 +1,258 @@
+<main class="offline-page">
+  <header>
+    <a routerLink="/empresa">Directorio de empresas</a>
+    <h1>Operaciones offline</h1>
+    <p role="status">{{ offline.conectado() ? 'Con conexión' : 'Sin conexión' }}</p>
+  </header>
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  @if (aviso()) {
+    <p role="status">{{ aviso() }}</p>
+  }
+  @if (!offline.identidad()) {
+    <section aria-labelledby="acceso-titulo">
+      <h2 id="acceso-titulo">
+        {{ offline.usuario() ? 'Preparar esta computadora' : 'Desbloquear acceso local' }}
+      </h2>
+      @if (!offline.soportado) {
+        <p>El almacenamiento offline requiere un navegador compatible y una conexión segura.</p>
+      } @else if (offline.puedeActivar() || (!offline.usuario() && offline.accesoGuardado())) {
+        <p>
+          Usa la frase offline de tu propia cuenta. El acceso se bloquea tras cinco minutos de
+          inactividad.
+        </p>
+        <form (submit)="$event.preventDefault(); abrir()">
+          <label for="frase">Frase de acceso offline</label>
+          <input
+            id="frase"
+            [type]="verFrase() ? 'text' : 'password'"
+            [formControl]="frase"
+            autocomplete="off"
+          />
+          <div class="acciones">
+            <button type="submit" [disabled]="guardando() || !frase.value.trim()">
+              {{ offline.usuario() ? 'Preparar y descargar' : 'Desbloquear' }}
+            </button>
+            @if (offline.puedeActivar()) {
+              <button type="button" [disabled]="guardando()" (click)="generar()">
+                Generar frase nueva
+              </button>
+            }
+            @if (!offline.usuario()) {
+              <button type="button" [disabled]="guardando()" (click)="salir()">
+                Cerrar acceso local
+              </button>
+            }
+          </div>
+        </form>
+      } @else {
+        <p>
+          Conéctate e inicia sesión en una empresa para habilitar el acceso offline de tu cuenta.
+        </p>
+      }
+      @if (!offline.usuario()) {
+        <a routerLink="/login" [queryParams]="{ returnUrl: '/operaciones-offline' }"
+          >Iniciar sesión con internet</a
+        >
+      }
+    </section>
+  } @else {
+    <div class="acciones">
+      <button type="button" [disabled]="offline.ocupada()" (click)="offline.sincronizar(true)">
+        Sincronizar
+      </button>
+      <button type="button" (click)="offline.bloquear()">Bloquear</button>
+      <button type="button" [disabled]="guardando()" (click)="salir()">Cerrar sesión</button>
+      @if (!offline.usuario() && offline.conectado()) {
+        <a routerLink="/login" [queryParams]="{ returnUrl: '/operaciones-offline' }"
+          >Iniciar sesión para sincronizar</a
+        >
+      }
+    </div>
+    @if (offline.actualizacion()) {
+      <p role="status">
+        Hay una versión nueva de StyleAR.
+        <button
+          type="button"
+          [disabled]="seleccion().length > 0 || guardando() || offline.ocupada()"
+          (click)="actualizar()"
+        >
+          Actualizar la aplicación
+        </button>
+      </p>
+    }
+    @if (offline.mensaje()) {
+      <p role="status">{{ offline.mensaje() }}</p>
+    }
+    @if (offline.ocupada()) {
+      <p role="status">Sincronizando con StyleAR…</p>
+    }
+    @if (offline.listaOffline()) {
+      <p class="listo" role="status">Listo para trabajar sin conexión.</p>
+    }
+    @if (offline.copia(); as copia) {
+      <p>
+        Última descarga {{ copia.fecha | date: 'dd/MM/yyyy HH:mm' }}. Los precios y existencias
+        pueden haber cambiado.
+      </p>
+    }
+    <nav class="acciones" aria-label="Vistas de operaciones offline">
+      <button
+        type="button"
+        [attr.aria-pressed]="!historialVisible()"
+        (click)="historialVisible.set(false)"
+      >
+        Catálogo y registro
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="historialVisible()"
+        (click)="historialVisible.set(true)"
+      >
+        Historial y pendientes
+      </button>
+    </nav>
+    @if (historialVisible()) {
+      <section aria-labelledby="historial-titulo">
+        <h2 id="historial-titulo">Historial y pendientes</h2>
+        @for (op of colaVisible(); track op.uuid) {
+          <article>
+            <h3>{{ op.tipo === 'VENTA' ? 'Venta de contado' : 'Reserva' }} · {{ op.estado }}</h3>
+            <p>{{ op.fecha | date: 'dd/MM/yyyy HH:mm' }} · Referencia {{ op.uuid }}</p>
+            @if (op.resultado; as resultado) {
+              <p>{{ resultado.codigo }} · {{ resultado.total | currency: 'BOB' : 'Bs ' }}</p>
+            }
+            @if (op.motivo) {
+              <p>{{ op.motivo }}</p>
+            }
+            @if (op.efectivo !== undefined) {
+              <p>Efectivo recibido {{ op.efectivo / 100 | currency: 'BOB' : 'Bs ' }}</p>
+              @if (op.efectivoDevuelto) {
+                <p>Efectivo devuelto {{ op.efectivoDevuelto | date: 'dd/MM/yyyy HH:mm' }}</p>
+              } @else if (op.estado === 'En conflicto' || op.estado === 'Rechazada') {
+                @if (devolucion() === op.uuid) {
+                  <p>Confirma después de devolver el efectivo al cliente.</p>
+                  <button type="button" [disabled]="guardando()" (click)="devolver()">
+                    Confirmar efectivo devuelto
+                  </button>
+                  <button type="button" (click)="devolucion.set(null)">Cancelar</button>
+                } @else {
+                  <button type="button" (click)="devolucion.set(op.uuid)">
+                    Registrar devolución de efectivo
+                  </button>
+                }
+              }
+            }
+          </article>
+        }
+        @for (fila of historial(); track fila.tipo + ':' + fila.id) {
+          <article>
+            <h3>{{ fila.tipo }} {{ fila.codigo }}</h3>
+            <p>Sincronizada · {{ fila.estado }} · {{ fila.total | currency: 'BOB' : 'Bs ' }}</p>
+            @if (fila.detalles?.length) {
+              <details>
+                <summary>Ver prendas</summary>
+                <ul>
+                  @for (linea of fila.detalles; track $index) {
+                    <li>
+                      {{ linea.producto ?? linea.producto_variante_id }} × {{ linea.cantidad }}
+                    </li>
+                  }
+                </ul>
+              </details>
+            }
+          </article>
+        }
+        @if (!colaVisible().length && !historial().length) {
+          <p>Aún no hay operaciones guardadas.</p>
+        }
+      </section>
+    } @else {
+      <section aria-labelledby="catalogo-titulo">
+        <h2 id="catalogo-titulo">Catálogo descargado</h2>
+        @if (offline.copia()?.sucursales?.length) {
+          <label for="sucursal">Sucursal</label>
+          <select
+            id="sucursal"
+            #selector
+            [value]="sucursal()"
+            [disabled]="guardando()"
+            (change)="cambiarSucursal(selector.value)"
+          >
+            @for (s of offline.copia()?.sucursales; track s.id) {
+              <option [value]="s.id">{{ s.nombre }}</option>
+            }
+          </select>
+          <label for="buscar">Buscar en el catálogo</label>
+          <input id="buscar" #buscar type="search" (input)="filtrar(buscar.value)" />
+          <ul class="variantes" tabindex="0" aria-label="Variantes del catálogo descargado">
+            @for (v of variantes().slice(0, limite()); track v.variante_id) {
+              <li>
+                <div>
+                  <strong>{{ v.nombre }}</strong>
+                  <p>
+                    {{ v.talla }} {{ v.color }} · Stock conocido {{ v.stock }}
+                    @if (v.precio_centavos !== null) {
+                      · {{ v.precio_centavos / 100 | currency: 'BOB' : 'Bs ' }}
+                    }
+                  </p>
+                </div>
+                <div class="acciones">
+                  <button
+                    type="button"
+                    [attr.aria-label]="'Quitar una unidad de ' + v.nombre"
+                    [disabled]="guardando() || !cantidades().get(v.variante_id)"
+                    (click)="cambiarCantidad(v, -1)"
+                  >
+                    −
+                  </button>
+                  <span>{{ cantidades().get(v.variante_id) ?? 0 }}</span>
+                  <button
+                    type="button"
+                    [attr.aria-label]="'Agregar una unidad de ' + v.nombre"
+                    [disabled]="
+                      guardando() ||
+                      v.precio_centavos === null ||
+                      (cantidades().get(v.variante_id) ?? 0) >= maximo(v)
+                    "
+                    (click)="cambiarCantidad(v, 1)"
+                  >
+                    +
+                  </button>
+                </div>
+              </li>
+            } @empty {
+              <li>No hay prendas para esta búsqueda.</li>
+            }
+          </ul>
+          @if (variantes().length > limite()) {
+            <button type="button" (click)="verMas()">Ver más prendas</button>
+          }
+        } @else {
+          <p>Sin catálogo guardado. Sincroniza con internet para comenzar.</p>
+        }
+      </section>
+      @if (seleccion().length) {
+        <form class="resumen" (submit)="$event.preventDefault(); guardar()">
+          <strong>Total estimado {{ total() / 100 | currency: 'BOB' : 'Bs ' }}</strong>
+          @if (offline.puedeVender()) {
+            <label class="confirmacion"
+              ><input type="checkbox" [formControl]="efectivo" /> Recibí este importe en
+              efectivo</label
+            >
+          } @else {
+            <label for="fecha-cita">Fecha de cita</label>
+            <input id="fecha-cita" type="date" [formControl]="fechaCita" />
+          }
+          <button
+            type="submit"
+            [disabled]="guardando() || (offline.puedeVender() ? !efectivo.value : !fechaCita.value)"
+          >
+            {{ offline.puedeVender() ? 'Guardar venta de contado' : 'Guardar reserva' }}
+          </button>
+        </form>
+      }
+    }
+  }
+</main>

@@ -10,6 +10,7 @@ import {
 import { mensajeApi } from '../../../../core/services/error-api';
 import { FocoService } from '../../../../core/services/foco.service';
 import { AuthService } from '../../services/auth.service';
+import { OfflineService } from '../../../../core/offline/offline.service';
 
 function normalizar(texto: string): string {
   return texto
@@ -26,6 +27,7 @@ function normalizar(texto: string): string {
   styleUrl: './empresa.page.css',
 })
 export class EmpresaPage {
+  protected readonly offline = inject(OfflineService);
   private readonly contexto = inject(EmpresaContextoService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);

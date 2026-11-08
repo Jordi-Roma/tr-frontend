@@ -46,6 +46,11 @@
       <p class="eyebrow">Un lugar, muchas tiendas</p>
       <h1 id="empresa-title">Elige una empresa.<br /><em>Encuentra tu estilo.</em></h1>
       <p class="introduccion">Descubre las tiendas de StyleAR y entra a explorar su catálogo.</p>
+      @if (offline.accesoGuardado() || offline.puedeActivar()) {
+        <p><a routerLink="/operaciones-offline">Abrir operaciones offline</a></p>
+      } @else if (!offline.conectado()) {
+        <p role="status">Conéctate para elegir una empresa y preparar el acceso sin internet.</p>
+      }
       <div class="buscador">
         <label for="buscar-empresa">Buscar empresa por nombre</label>
         <div class="campo-busqueda">
@@ -83,8 +88,8 @@
         <p class="eyebrow">Cambiar de tienda</p>
         <h2 id="cambio-title" tabindex="-1">Entrar a {{ empresa.nombre }}</h2>
         <p>
-          Hay una sesión abierta. Para entrar a esta empresa se cerrará esa sesión y se limpiarán
-          sus datos de este dispositivo.
+          Hay una sesión abierta. Para entrar a esta empresa se cerrará esa sesión. Las operaciones
+          pendientes quedarán guardadas para su titular.
         </p>
         <div class="acciones">
           <button

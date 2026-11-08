@@ -1,6 +1,8 @@
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
+import { OfflineService } from '../../../../core/offline/offline.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 import { AuthService } from '../../../autenticacion/services/auth.service';
 import { VentaPresencialResponse } from '../../models/inventario.models';
@@ -9,12 +11,13 @@ import { ClienteVenta, VarianteVenta, VentasService } from '../../services/venta
 type Linea = { variante: VarianteVenta; cantidad: number; descuento: number };
 
 @Component({
-  imports: [OperacionNuevaDirective],
+  imports: [OperacionNuevaDirective, RouterLink],
   selector: 'app-venta-presencial-page',
   styleUrls: ['../../../administracion/pages/admin-crud.shared.css', './venta-presencial.page.css'],
   templateUrl: './venta-presencial.page.html',
 })
 export class VentaPresencialPage implements OnInit {
+  protected readonly offline = inject(OfflineService);
   private readonly servicio = inject(VentasService);
   protected readonly esAdmin = inject(AuthService).tieneRol('ADMINISTRADOR');
   protected readonly ventas = signal<VentaPresencialResponse[]>([]);

@@ -3,6 +3,9 @@
   <div class="heading-row">
     <div>
       <h1 id="catalog-title">Prendas listas para combinar</h1>
+      @if (offline.puedeActivar()) {
+        <a routerLink="/operaciones-offline">Abrir catálogo offline</a>
+      }
       <p>Explora poleras, oversize y camisas con precio vigente y disponibilidad por sucursal.</p>
     </div>
   </div>

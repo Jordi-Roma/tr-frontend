@@ -112,6 +112,9 @@
       </header>
 
       <main class="main-content">
+        @if (offline.puedeActivar()) {
+          <a routerLink="/operaciones-offline">Operaciones offline</a>
+        }
         <app-estado-empresa />
         <router-outlet />
       </main>
@@ -154,6 +157,11 @@
           />
         </form>
 
+        @if (offline.puedeActivar()) {
+          <a class="icon-link" routerLink="/operaciones-offline" aria-label="Operaciones offline">
+            <i class="pi pi-cloud" aria-hidden="true"></i>
+          </a>
+        }
         <a class="icon-link" routerLink="/favoritos" aria-label="Favoritos">
           <i class="pi pi-heart" aria-hidden="true"></i>
         </a>

@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "stylear",
+      "installMode": "prefetch",
+      "resources": {
+        "files": ["/index.html", "/favicon.ico", "/manifest.webmanifest", "/icons/*.png", "/*.css", "/*.js", "/media/*"]
+      }
+    }
+  ],
+  "navigationUrls": ["/**", "!/**/*.*", "!/**/*__*", "!/**/*__*/**", "!/api/**"]
+}

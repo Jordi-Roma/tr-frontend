@@ -1,11 +1,12 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpBackend, HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, Observable, of, tap, throwError } from 'rxjs';
+import { catchError, defer, Observable, of, tap, throwError, timeout } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import { PerfilResponse } from '../models/perfil.models';
 import { EmpresaContextoService } from '../../../core/services/empresa-contexto.service';
 import { CambioContextoService } from '../../../core/services/cambio-contexto.service';
+import { ACCESO_OFFLINE, CIERRE_COMPARTIDO, EQUIPO_COMPARTIDO } from '../../../core/offline/offline.model';
 import {
   LoginRequest,
   LoginResponse,
@@ -63,6 +64,7 @@ export function sesionLocalValida(token: string, usuario: unknown): usuario is U
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly httpDirecto = new HttpClient(inject(HttpBackend));
   private readonly contexto = inject(EmpresaContextoService);
   private readonly cambios = inject(CambioContextoService);
   private readonly router = inject(Router);
@@ -87,8 +89,14 @@ export class AuthService {
 
   constructor() {
     globalThis.addEventListener?.('storage', (event: StorageEvent) => {
+      if (event.key === CIERRE_COMPARTIDO || event.key === EQUIPO_COMPARTIDO) {
+        this.limpiarMemoria();
+        if (!this.router.url.startsWith('/operaciones-offline')) void this.router.navigateByUrl('/empresa');
+        return;
+      }
       if (
         (event.key === TOKEN_STORAGE_KEY || event.key === USER_STORAGE_KEY || event.key === null) &&
+        (event.key === null || localStorage.getItem(EQUIPO_COMPARTIDO) !== '1') &&
         this.tokenSignal() &&
         localStorage.getItem(TOKEN_STORAGE_KEY) !== this.tokenSignal()
       ) {
@@ -144,6 +152,19 @@ export class AuthService {
     );
   }
   logout(): Observable<unknown> {
+    if (localStorage.getItem(EQUIPO_COMPARTIDO) === '1') {
+      return defer(() => {
+        const token = this.tokenSignal();
+        const empresa = this.contexto.empresa()?.codigo;
+        this.limpiarSesion();
+        if (!token) return of(null);
+        const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+        if (empresa) headers['X-Empresa-Codigo'] = empresa;
+        return this.httpDirecto.post<unknown>(
+          `${API_BASE_URL}/api/v1/autenticacion/logout`, {}, { headers },
+        ).pipe(timeout(4000), catchError(() => of(null)));
+      });
+    }
     const operacion = this.tokenSignal()
       ? this.http
           .post<unknown>(`${API_BASE_URL}/api/v1/autenticacion/logout`, {})
@@ -175,8 +196,10 @@ export class AuthService {
     }
     this.tokenSignal.set(response.access_token);
     this.usuarioSignal.set(usuario);
-    localStorage.setItem(TOKEN_STORAGE_KEY, response.access_token);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuario));
+    if (localStorage.getItem(EQUIPO_COMPARTIDO) !== '1') {
+      localStorage.setItem(TOKEN_STORAGE_KEY, response.access_token);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuario));
+    }
   }
   actualizarPerfilLocal(perfil: PerfilResponse): void {
     const actual = this.usuarioSignal();
@@ -190,14 +213,35 @@ export class AuthService {
       roles: perfil.roles,
     };
     this.usuarioSignal.set(usuario);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuario));
+    if (localStorage.getItem(EQUIPO_COMPARTIDO) !== '1') {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuario));
+    }
   }
   limpiarSesion(): void {
+    localStorage.removeItem(ACCESO_OFFLINE);
+    if (localStorage.getItem(EQUIPO_COMPARTIDO) === '1') {
+      localStorage.setItem(CIERRE_COMPARTIDO, crypto.randomUUID());
+    }
+    this.limpiarMemoria();
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
+  }
+
+  activarEquipoCompartido(): void {
+    localStorage.setItem(EQUIPO_COMPARTIDO, '1');
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
+  }
+
+  pausarSesionCompartida(): void {
+    this.limpiarMemoria();
+    localStorage.setItem(CIERRE_COMPARTIDO, crypto.randomUUID());
+  }
+
+  private limpiarMemoria(): void {
     this.permisos.set(null);
     this.tokenSignal.set(null);
     this.usuarioSignal.set(null);
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    localStorage.removeItem(USER_STORAGE_KEY);
     this.cambios.invalidar();
   }
   estaAutenticado(): boolean {
@@ -211,6 +255,11 @@ export class AuthService {
   }
 
   private leerSesion(): { token: string; usuario: UsuarioAutenticado } | null {
+    if (localStorage.getItem(EQUIPO_COMPARTIDO) === '1') {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
+      return null;
+    }
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     try {
       const usuario: unknown = JSON.parse(localStorage.getItem(USER_STORAGE_KEY) ?? 'null');

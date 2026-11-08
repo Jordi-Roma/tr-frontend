@@ -4,6 +4,9 @@
       <p class="admin-eyebrow">Ventas e inventario</p>
       <h1 id="venta-title">Venta presencial</h1>
       <p>Registra la compra y entrega una nota de venta de tu empresa.</p>
+      @if (offline.puedeActivar()) {
+        <a routerLink="/operaciones-offline">Registrar una venta en efectivo offline</a>
+      }
     </div>
   </div>
   @if (mensaje()) {

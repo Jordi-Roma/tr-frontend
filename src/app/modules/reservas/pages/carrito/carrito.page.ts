@@ -2,6 +2,7 @@ import { PerfilService } from '../../../autenticacion/services/perfil.service';
 import { DireccionResponse } from '../../../autenticacion/models/perfil.models';
 import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
 import { OperacionNuevaDirective } from '../../../../core/directives/operacion-nueva.directive';
+import { OfflineService } from '../../../../core/offline/offline.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
@@ -39,6 +40,7 @@ import { TiendaStateService } from '../../../../core/services/tienda-state.servi
   templateUrl: './carrito.page.html',
 })
 export class CarritoPage implements OnInit, OnDestroy {
+  protected readonly offline = inject(OfflineService);
   private readonly carritoService = inject(CarritoService);
   private readonly perfil=inject(PerfilService);
   protected readonly direcciones=signal<DireccionResponse[]>([]);

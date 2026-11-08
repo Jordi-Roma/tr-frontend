@@ -4,6 +4,9 @@
 <section class="cart-header" aria-labelledby="cart-title">
   <p class="eyebrow">Carrito</p>
   <h1 id="cart-title">Tu carrito de compras</h1>
+  @if (offline.puedeActivar()) {
+    <a routerLink="/operaciones-offline">Registrar una reserva offline</a>
+  }
   <p>Revisa tus prendas antes de confirmar la reserva o pagar una compra digital.</p>
 </section>
 
