@@ -131,7 +131,7 @@ export class PlanesPage {
         Validators.pattern(/^\d+(\.\d{1,2})?$/),
       ],
     }),
-    moneda: new FormControl('BOB', {
+    moneda: new FormControl('USD', {
       nonNullable: true,
       validators: [Validators.required, Validators.pattern(/^[A-Z]{3}$/)],
     }),
@@ -232,7 +232,7 @@ export class PlanesPage {
       codigo: '',
       nombre: '',
       precio: 0,
-      moneda: 'BOB',
+      moneda: 'USD',
       activo: true,
       publico: false,
     });

@@ -2,7 +2,9 @@
   <div>
     <p class="ceja">Administración SaaS</p>
     <h1 id="planes-title">Planes</h1>
-    <p class="hero-texto">Gestiona precios de referencia, cupos y funciones de cada plan de StyleAR.</p>
+    <p class="hero-texto">
+      Gestiona precios de referencia, cupos y funciones de cada plan de StyleAR.
+    </p>
   </div>
   <div class="acciones hero-acciones">
     <button
@@ -78,7 +80,19 @@
 
         <div class="tarjeta-cuerpo">
           <div class="plan-precio">
-            <span class="precio-moneda">{{ p.moneda === 'BOB' ? 'Bs' : p.moneda }}</span>
+            <span class="precio-moneda">
+              @switch (p.moneda) {
+                @case ('USD') {
+                  US$
+                }
+                @case ('BOB') {
+                  Bs
+                }
+                @default {
+                  {{ p.moneda }}
+                }
+              }
+            </span>
             <strong>{{ p.precio | number: '1.2-2' }}</strong>
             <span class="precio-periodo">/ mes</span>
           </div>
