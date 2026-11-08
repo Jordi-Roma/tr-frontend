@@ -1,15 +1,27 @@
-<header class="encabezado">
+<header class="encabezado planes-hero">
   <div>
-    <p class="ceja">Plataforma</p>
-    <h1>Planes</h1>
-    <p>
-      Configura condiciones, cupos y funciones. El precio de referencia no genera cobros
-      automáticos.
-    </p>
+    <p class="ceja">Administración SaaS</p>
+    <h1 id="planes-title">Planes</h1>
+    <p class="hero-texto">Gestiona precios de referencia, cupos y funciones de cada plan de StyleAR.</p>
   </div>
-  <button class="secundario" (click)="cargar()" [disabled]="ocupado() || cargando()">
-    Actualizar
-  </button>
+  <div class="acciones hero-acciones">
+    <button
+      type="button"
+      class="secundario"
+      (click)="cargar()"
+      [disabled]="ocupado() || cargando()"
+    >
+      <i class="pi pi-refresh" aria-hidden="true"></i> Actualizar
+    </button>
+    <button
+      type="button"
+      id="crear-plan"
+      (click)="nuevo()"
+      [disabled]="!catalogo() || ocupado() || cargando()"
+    >
+      <i class="pi pi-plus" aria-hidden="true"></i> Nuevo plan
+    </button>
+  </div>
 </header>
 @if (error()) {
   <p role="alert" class="error">{{ error() }}</p>
@@ -20,40 +32,102 @@
 @if (cargando()) {
   <p role="status">Cargando planes…</p>
 }
-<section class="panel tabla">
-  <table>
-    <caption>
-      Planes de la plataforma
-    </caption>
-    <thead>
-      <tr>
-        <th scope="col">Plan</th>
-        <th scope="col">Estado</th>
-        <th scope="col">Precio de referencia</th>
-        <th scope="col">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (p of planes(); track p.id) {
-        <tr>
-          <th scope="row">
-            {{ p.nombre }}<small>{{ p.codigo }}</small>
-          </th>
-          <td>
-            {{ p.activo ? 'Activo' : 'Inactivo'
-            }}<small>{{ p.publico ? 'Público' : 'Oculto en registro' }}</small>
-          </td>
-          <td>{{ p.precio }} {{ p.moneda }}</td>
-          <td>
+<section class="planes-lista" aria-labelledby="planes-disponibles">
+  <div class="planes-lista-titulo">
+    <h2 id="planes-disponibles">Planes de la plataforma</h2>
+    <span>{{ planes().length }} {{ planes().length === 1 ? 'plan' : 'planes' }}</span>
+  </div>
+  <div class="tarjetas-planes">
+    @for (p of tarjetas(); track p.id) {
+      @let resumenPlan = conteos().get(p.id);
+      <article
+        class="plan-card"
+        [class.plan-basico]="p.codigo === 'BASICO' || p.codigo === 'BASIC'"
+        [class.plan-intermedio]="p.codigo === 'INTERMEDIO' || p.codigo === 'INTERMEDIATE'"
+        [class.plan-premium]="p.codigo === 'PREMIUM'"
+        [attr.aria-labelledby]="'nombre-plan-' + p.id"
+      >
+        <div class="tarjeta-cabecera">
+          <div class="tarjeta-meta">
+            <span class="plan-icono" aria-hidden="true">
+              @switch (p.codigo) {
+                @case ('PREMIUM') {
+                  <i class="pi pi-star"></i>
+                }
+                @case ('INTERMEDIO') {
+                  <i class="pi pi-sparkles"></i>
+                }
+                @case ('INTERMEDIATE') {
+                  <i class="pi pi-sparkles"></i>
+                }
+                @default {
+                  <i class="pi pi-box"></i>
+                }
+              }
+            </span>
+            <span class="plan-estado" [class.plan-inactivo]="!p.activo">
+              {{ p.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <p class="plan-codigo">{{ p.codigo }}</p>
+          <h3 [id]="'nombre-plan-' + p.id">{{ p.nombre }}</h3>
+          @if (p.descripcion) {
+            <p class="plan-descripcion">{{ p.descripcion }}</p>
+          }
+        </div>
+
+        <div class="tarjeta-cuerpo">
+          <div class="plan-precio">
+            <span class="precio-moneda">{{ p.moneda === 'BOB' ? 'Bs' : p.moneda }}</span>
+            <strong>{{ p.precio | number: '1.2-2' }}</strong>
+            <span class="precio-periodo">/ mes</span>
+          </div>
+          <p class="plan-visibilidad">
+            <i [class]="p.publico ? 'pi pi-eye' : 'pi pi-eye-slash'" aria-hidden="true"></i>
+            {{ p.publico ? 'Visible en el registro' : 'Oculto en el registro' }}
+          </p>
+
+          <dl class="plan-cupos">
+            @for (cupo of cuposPrincipales; track cupo.clave) {
+              <div>
+                <dt>{{ cupo.nombre }}</dt>
+                <dd>{{ p.limites[cupo.clave] ?? 'Sin límite' }}</dd>
+              </div>
+            }
+          </dl>
+
+          <div class="plan-empresas">
+            <div>
+              <span
+                ><strong>{{ resumenPlan?.empresas ?? 0 }}</strong>
+                {{ (resumenPlan?.empresas ?? 0) === 1 ? 'empresa' : 'empresas' }}</span
+              >
+              <small
+                >{{ resumenPlan?.vigentes ?? 0 }} vigentes · {{ resumenPlan?.no_vigentes ?? 0 }} no
+                vigentes</small
+              >
+            </div>
+            <a
+              routerLink="/saas/empresas"
+              [queryParams]="{ plan_id: p.id }"
+              [attr.aria-label]="'Ver empresas de ' + p.nombre"
+            >
+              Ver empresas <i class="pi pi-arrow-right" aria-hidden="true"></i>
+            </a>
+          </div>
+
+          <div class="plan-acciones">
             <button
-              class="secundario"
+              type="button"
+              [id]="'editar-plan-' + p.id"
               (click)="editar(p)"
               [disabled]="ocupado() || cargando()"
               [attr.aria-label]="'Editar plan ' + p.nombre"
             >
-              Editar
+              <i class="pi pi-pencil" aria-hidden="true"></i> Editar plan
             </button>
             <button
+              type="button"
               class="secundario"
               (click)="verHistorial(p)"
               [disabled]="ocupado() || cargando()"
@@ -61,49 +135,20 @@
             >
               Historial
             </button>
-          </td>
-        </tr>
-      } @empty {
-        <tr>
-          <td colspan="4">No hay planes disponibles.</td>
-        </tr>
+          </div>
+        </div>
+      </article>
+    } @empty {
+      @if (!cargando() && !error()) {
+        <p class="panel">No hay planes disponibles.</p>
       }
-    </tbody>
-  </table>
+    }
+  </div>
 </section>
+
 @if (catalogo(); as c) {
-  <section class="panel">
-    <h2>Empresas por plan</h2>
-    <div class="tabla" tabindex="0" role="region" aria-label="Conteos de empresas por plan">
-      <table>
-        <caption>
-          Cada empresa se cuenta una vez según su última suscripción
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Plan</th>
-            <th scope="col">Empresas</th>
-            <th scope="col">Vigentes</th>
-            <th scope="col">No vigentes</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (r of resumen(); track r.id) {
-            <tr>
-              <th scope="row">
-                <a routerLink="/saas/empresas" [queryParams]="{ plan_id: r.id }">{{ r.nombre }}</a>
-              </th>
-              <td>{{ r.empresas }}</td>
-              <td>{{ r.vigentes }}</td>
-              <td>{{ r.no_vigentes }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
-  <section class="panel">
-    <h2>Comparar planes</h2>
+  <details class="panel comparacion-planes">
+    <summary>Comparar planes</summary>
     <div class="tabla" tabindex="0" role="region" aria-label="Comparación de planes">
       <table>
         <caption>
@@ -137,164 +182,7 @@
         </tbody>
       </table>
     </div>
-  </section>
-  <section class="panel" aria-labelledby="plan-title">
-    <h2 id="plan-title">{{ editando() ? 'Editar plan' : 'Crear plan' }}</h2>
-    <form [formGroup]="form" (ngSubmit)="guardar()">
-      <fieldset [disabled]="ocupado() || previa() !== null">
-        <legend>Datos del plan</legend>
-        <div class="grid">
-          <label for="plan-codigo"
-            >Código<input
-              id="plan-codigo"
-              formControlName="codigo"
-              required
-              maxlength="50"
-              [readOnly]="editando()?.codigo === 'STYLEAR_LEGADO'"
-          /></label>
-          <label for="plan-nombre"
-            >Nombre<input id="plan-nombre" formControlName="nombre" required maxlength="120"
-          /></label>
-          <label for="plan-precio"
-            >Precio de referencia<input
-              id="plan-precio"
-              formControlName="precio"
-              type="number"
-              min="0"
-              max="9999999999.99"
-              step="0.01"
-              required
-          /></label>
-          <label for="plan-moneda"
-            >Moneda<input
-              id="plan-moneda"
-              formControlName="moneda"
-              minlength="3"
-              maxlength="3"
-              required
-          /></label>
-          <label for="plan-descripcion"
-            >Descripción<textarea
-              id="plan-descripcion"
-              formControlName="descripcion"
-              maxlength="4000"
-            ></textarea>
-          </label>
-          <div>
-            <label for="plan-stripe-price"
-              >ID del precio mensual en Stripe<input
-                id="plan-stripe-price"
-                formControlName="stripe_price_id"
-                maxlength="255"
-                placeholder="price_…"
-                aria-describedby="plan-stripe-ayuda"
-              />
-            </label>
-            <small id="plan-stripe-ayuda">Opcional. El precio de prueba debe coincidir con el importe y la moneda del plan.</small>
-          </div>
-          <label for="plan-condiciones"
-            >Condiciones<textarea
-              id="plan-condiciones"
-              formControlName="condiciones"
-              maxlength="10000"
-            ></textarea>
-          </label>
-          @if (editando()) {
-            <label class="check"
-              ><input type="checkbox" formControlName="activo" />Plan activo</label
-            >
-          }
-          <label class="check"
-            ><input type="checkbox" formControlName="publico" />Disponible en el registro
-            público</label
-          >
-        </div>
-        <fieldset formGroupName="limites">
-          <legend>Cupos y políticas</legend>
-          <p>
-            Un empleado con cuenta consume también un usuario. Cero impide nuevas altas cuando está
-            permitido. En edición, dejar vacío conserva un límite ausente; no elimina un límite
-            existente.
-          </p>
-          <div class="grid">
-            @for (l of c.limites; track l.clave) {
-              <label [for]="'cupo-' + l.clave"
-                >{{ l.nombre }} ({{ l.unidad }})<input
-                  [id]="'cupo-' + l.clave"
-                  type="number"
-                  [min]="l.minimo"
-                  step="1"
-                  [formControlName]="l.clave"
-              /></label>
-            }
-          </div>
-        </fieldset>
-        <fieldset formGroupName="funciones">
-          <legend>Funciones editables</legend>
-          <p>
-            Las funciones esenciales se conservan. La voz requiere interpretación; la programación
-            necesita PDF o Excel y cupo disponible.
-          </p>
-          @for (f of c.funciones; track f.clave) {
-            <label class="check"
-              ><input type="checkbox" [formControlName]="f.clave" />{{ f.nombre }}</label
-            >
-            <p>{{ f.descripcion }}</p>
-          }
-        </fieldset>
-        <button [disabled]="form.invalid || ocupado() || cargando()">
-          {{ editando() ? 'Revisar impacto' : 'Crear plan' }}
-        </button>
-      </fieldset>
-      <button
-        type="button"
-        class="secundario"
-        (click)="nuevo()"
-        [disabled]="ocupado() || cargando()"
-      >
-        {{ editando() ? 'Cancelar edición' : 'Limpiar formulario' }}
-      </button>
-    </form>
-  </section>
-}
-@if (previa(); as p) {
-  <section class="panel" aria-labelledby="impacto-plan">
-    <h2 id="impacto-plan" tabindex="-1">Revisar impacto antes de guardar</h2>
-    <p>{{ p.impacto.total_empresas }} empresas afectadas por {{ p.propuesta.nombre }}.</p>
-    @for (e of p.impacto.empresas; track e.id) {
-      <article>
-        <h3>{{ e.nombre }}</h3>
-        @if (e.operaciones_bloqueadas_por_desactivar_plan) {
-          <p class="aviso">
-            Desactivar este plan bloqueará las operaciones nuevas de esta empresa.
-          </p>
-        }
-        @for (x of e.excesos | keyvalue; track x.key) {
-          <p>
-            {{ x.key }}: uso {{ x.value.uso }}, nuevo límite {{ x.value.limite }}. No se eliminan
-            registros.
-          </p>
-        }
-        <p>Reportes que se pausarán: {{ e.reportes_a_pausar.length }}.</p>
-        @if (e.restablecer_horario_respaldo) {
-          <p>El horario del respaldo volverá a 02:00, America/La_Paz.</p>
-        }
-      </article>
-    }
-    <p>Mejorar un plan no reactiva automáticamente programaciones pausadas.</p>
-    <div class="acciones">
-      <button type="button" (click)="confirmar()" [disabled]="ocupado() || cargando()">
-        Confirmar cambios del plan</button
-      ><button
-        type="button"
-        class="secundario"
-        (click)="volver()"
-        [disabled]="ocupado() || cargando()"
-      >
-        Volver a editar
-      </button>
-    </div>
-  </section>
+  </details>
 }
 @if (historial(); as entradas) {
   <section class="panel">
@@ -332,3 +220,234 @@
     }
   </section>
 }
+
+<dialog
+  #editor
+  class="plan-editor"
+  aria-labelledby="plan-title"
+  (cancel)="$event.preventDefault(); cerrarEditor()"
+>
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="editor-layout">
+    <header class="editor-header">
+      <div>
+        <p class="ceja">{{ editando()?.codigo ?? 'Administración SaaS' }}</p>
+        <h2 id="plan-title">{{ editando() ? 'Editar ' + editando()?.nombre : 'Crear plan' }}</h2>
+      </div>
+      <button
+        type="button"
+        class="secundario cerrar-editor"
+        aria-label="Cerrar"
+        (click)="cerrarEditor()"
+        [disabled]="ocupado()"
+      >
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div class="editor-cuerpo" [attr.aria-busy]="ocupado()">
+      @if (previa(); as p) {
+        <section aria-labelledby="impacto-plan" class="editor-impacto">
+          <h3 id="impacto-plan" tabindex="-1">Revisar impacto antes de guardar</h3>
+          <p>{{ p.impacto.total_empresas }} empresas afectadas por {{ p.propuesta.nombre }}.</p>
+          @for (e of p.impacto.empresas; track e.id) {
+            <article class="impacto-empresa">
+              <h4>{{ e.nombre }}</h4>
+              @if (e.operaciones_bloqueadas_por_desactivar_plan) {
+                <p class="aviso">
+                  Desactivar este plan bloqueará las operaciones nuevas de esta empresa.
+                </p>
+              }
+              @for (x of e.excesos | keyvalue; track x.key) {
+                <p>
+                  {{ x.key }}: uso {{ x.value.uso }}, nuevo límite {{ x.value.limite }}. Los
+                  registros se conservan.
+                </p>
+              }
+              <p>Reportes que se pausarán: {{ e.reportes_a_pausar.length }}.</p>
+              @if (e.restablecer_horario_respaldo) {
+                <p>El horario del respaldo volverá a 02:00, America/La_Paz.</p>
+              }
+            </article>
+          }
+          <p>Las programaciones pausadas se reactivan manualmente.</p>
+        </section>
+      } @else if (catalogo()) {
+        <fieldset class="editor-campos" [disabled]="ocupado()">
+          <legend class="editor-leyenda">Configuración del plan</legend>
+          <fieldset class="editor-seccion">
+            <legend>Datos y visibilidad</legend>
+            <div class="grid">
+              <label for="plan-codigo"
+                >Código<input
+                  id="plan-codigo"
+                  formControlName="codigo"
+                  required
+                  maxlength="50"
+                  [readOnly]="editando()?.codigo === 'STYLEAR_LEGADO'"
+              /></label>
+              <label for="plan-nombre"
+                >Nombre<input id="plan-nombre" formControlName="nombre" required maxlength="120"
+              /></label>
+              <label for="plan-descripcion"
+                >Descripción<textarea
+                  id="plan-descripcion"
+                  formControlName="descripcion"
+                  maxlength="4000"
+                ></textarea>
+              </label>
+              <label for="plan-condiciones"
+                >Condiciones<textarea
+                  id="plan-condiciones"
+                  formControlName="condiciones"
+                  maxlength="10000"
+                ></textarea>
+              </label>
+            </div>
+            <div class="estado-editor">
+              @if (editando()) {
+                <label class="check"
+                  ><input type="checkbox" formControlName="activo" />Plan activo</label
+                >
+              }
+              <label class="check"
+                ><input type="checkbox" formControlName="publico" />Disponible en el registro
+                público</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset class="editor-seccion">
+            <legend>Precio</legend>
+            <div class="grid precio-editor">
+              <label for="plan-precio"
+                >Precio de referencia<input
+                  id="plan-precio"
+                  formControlName="precio"
+                  type="number"
+                  min="0"
+                  max="9999999999.99"
+                  step="0.01"
+                  required
+              /></label>
+              <label for="plan-moneda"
+                >Moneda<input
+                  id="plan-moneda"
+                  formControlName="moneda"
+                  minlength="3"
+                  maxlength="3"
+                  required
+              /></label>
+              <div class="stripe-editor">
+                <label for="plan-stripe-price"
+                  >ID del precio mensual en Stripe<input
+                    id="plan-stripe-price"
+                    formControlName="stripe_price_id"
+                    maxlength="255"
+                    placeholder="price_…"
+                    aria-describedby="plan-stripe-ayuda"
+                /></label>
+                <small id="plan-stripe-ayuda"
+                  >Opcional. El precio de prueba debe coincidir con el importe y la moneda del
+                  plan.</small
+                >
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="editor-seccion" formGroupName="limites">
+            <legend>Límites</legend>
+            <p class="ayuda-editor">
+              Un empleado con cuenta también usa un cupo de usuario. Conserva un valor para los
+              límites ya definidos.
+            </p>
+            <div class="grid">
+              @for (l of limitesGenerales(); track l.clave) {
+                <label [for]="'cupo-' + l.clave"
+                  >{{ l.nombre }} ({{ l.unidad }})<input
+                    [id]="'cupo-' + l.clave"
+                    type="number"
+                    [min]="l.minimo"
+                    step="1"
+                    [formControlName]="l.clave"
+                /></label>
+              }
+            </div>
+          </fieldset>
+
+          <fieldset class="editor-seccion" formGroupName="funciones">
+            <legend>Funciones</legend>
+            <p class="ayuda-editor">
+              La voz requiere interpretación. La programación necesita PDF o Excel y un cupo
+              disponible.
+            </p>
+            <div class="funciones-editor">
+              @for (f of funcionesGenerales(); track f.clave) {
+                <div class="funcion-editor">
+                  <label class="check"
+                    ><input
+                      type="checkbox"
+                      [formControlName]="f.clave"
+                      [attr.aria-describedby]="'funcion-' + f.clave"
+                    />{{ f.nombre }}</label
+                  >
+                  <small [id]="'funcion-' + f.clave">{{ f.descripcion }}</small>
+                </div>
+              }
+            </div>
+          </fieldset>
+
+          <fieldset class="editor-seccion">
+            <legend>Respaldos</legend>
+            <div class="grid" formGroupName="limites">
+              @for (l of limitesRespaldo(); track l.clave) {
+                <label [for]="'cupo-' + l.clave"
+                  >{{ l.nombre }} ({{ l.unidad }})<input
+                    [id]="'cupo-' + l.clave"
+                    type="number"
+                    [min]="l.minimo"
+                    step="1"
+                    [formControlName]="l.clave"
+                /></label>
+              }
+            </div>
+            <div class="funciones-editor respaldos-editor" formGroupName="funciones">
+              @for (f of funcionesRespaldo(); track f.clave) {
+                <div class="funcion-editor">
+                  <label class="check"
+                    ><input
+                      type="checkbox"
+                      [formControlName]="f.clave"
+                      [attr.aria-describedby]="'funcion-' + f.clave"
+                    />{{ f.nombre }}</label
+                  >
+                  <small [id]="'funcion-' + f.clave">{{ f.descripcion }}</small>
+                </div>
+              }
+            </div>
+          </fieldset>
+        </fieldset>
+      }
+    </div>
+
+    @if (errorEditor()) {
+      <p role="alert" class="error editor-error">{{ errorEditor() }}</p>
+    }
+    <footer class="editor-acciones">
+      <button type="button" class="secundario" (click)="cerrarEditor()" [disabled]="ocupado()">
+        Cancelar
+      </button>
+      @if (previa()) {
+        <button type="button" class="secundario" (click)="volver()" [disabled]="ocupado()">
+          Volver a editar
+        </button>
+        <button type="button" (click)="confirmar()" [disabled]="ocupado()">
+          Guardar cambios del plan
+        </button>
+      } @else {
+        <button type="submit" [disabled]="form.invalid || ocupado() || cargando()">
+          {{ editando() ? 'Revisar impacto' : 'Crear plan' }}
+        </button>
+      }
+    </footer>
+  </form>
+</dialog>

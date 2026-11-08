@@ -86,14 +86,14 @@ test('AS publica un plan para el registro sin publicar el plan de transición', 
   await plataforma(page);
   await page.goto('/saas/planes');
   await page
-    .getByRole('row')
+    .getByRole('article', { name: 'Prueba', exact: true })
     .filter({ hasText: plan.codigo })
     .getByRole('button', { name: 'Editar plan Prueba', exact: true })
     .click();
   await page.getByLabel('Disponible en el registro público', { exact: true }).check();
   await axe(page);
   await page.getByRole('button', { name: 'Revisar impacto', exact: true }).click();
-  await page.getByRole('button', { name: 'Confirmar cambios del plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Guardar cambios del plan', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Plan guardado.' })).toBeVisible();
   const planes = await request.get(API + '/empresas/registro/planes');
   expect(((await planes.json()) as { id: number }[]).some((p) => p.id === d.plan)).toBeTruthy();

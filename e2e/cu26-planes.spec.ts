@@ -49,6 +49,7 @@ test.beforeEach(async ({ page }) => {
 
 test('plan: creación, impacto, conflicto, conservación de claves e historial', async ({ page }) => {
   await page.goto('/saas/planes');
+  await page.getByRole('button', { name: 'Nuevo plan', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Crear plan', exact: true })).toBeVisible();
   const codigo = 'UI_' + Date.now(),
     nombre = 'Plan UI ' + codigo;
@@ -77,7 +78,18 @@ test('plan: creación, impacto, conflicto, conservación de claves e historial',
     ).ok(),
   ).toBeTruthy();
   await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
-  await page.getByRole('button', { name: 'Editar plan ' + nombre, exact: true }).click();
+  const tarjeta = page.getByRole('article', { name: nombre, exact: true });
+  await expect(tarjeta.getByRole('link', { name: 'Ver empresas de ' + nombre })).toHaveAttribute(
+    'href', '/saas/empresas?plan_id=' + id,
+  );
+  const editar = tarjeta.getByRole('button', { name: 'Editar plan ' + nombre, exact: true });
+  await editar.click();
+  const editor = page.getByRole('dialog', { name: 'Editar ' + nombre });
+  await expect(editor).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(editor).toBeHidden();
+  await expect(editar).toBeFocused();
+  await editar.click();
   await page.getByLabel('Descripción', { exact: true }).fill('Edición confirmada');
   await page.getByRole('button', { name: 'Revisar impacto', exact: true }).click();
   await expect(
@@ -97,19 +109,19 @@ test('plan: creación, impacto, conflicto, conservación de claves e historial',
       })
     ).ok(),
   ).toBeTruthy();
-  await page.getByRole('button', { name: 'Confirmar cambios del plan' }).click();
+  await page.getByRole('button', { name: 'Guardar cambios del plan' }).click();
   await expect(
     page.getByRole('alert').filter({ hasText: 'Vuelve a revisar el impacto' }),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Confirmar cambios del plan' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Guardar cambios del plan' })).toHaveCount(0);
   await expect(page.getByLabel('Descripción', { exact: true })).toHaveValue('Edición confirmada');
   await page.getByRole('button', { name: 'Revisar impacto', exact: true }).click();
   await page.getByRole('button', { name: 'Volver a editar' }).click();
   await page.getByLabel('Precio de referencia', { exact: true }).fill('30');
   await page.getByLabel('ID del precio mensual en Stripe', { exact: true }).fill('price_E2E30');
-  await expect(page.getByRole('button', { name: 'Confirmar cambios del plan' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Guardar cambios del plan' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Revisar impacto', exact: true }).click();
-  await page.getByRole('button', { name: 'Confirmar cambios del plan' }).click();
+  await page.getByRole('button', { name: 'Guardar cambios del plan' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Plan guardado' })).toBeVisible();
   planes = await (await page.request.get(API + '/saas/planes', { headers: h })).json();
   const guardado = planes.find((p: { id: number }) => p.id === id);
@@ -122,6 +134,12 @@ test('plan: creación, impacto, conflicto, conservación de claves e historial',
   await expect(page.getByRole('heading', { name: 'Historial de ' + nombre })).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
   await accesible(page);
+  await editar.click();
+  await expect(editor).toBeVisible();
+  await expect(editor.getByRole('button', { name: 'Cancelar', exact: true })).toBeInViewport();
+  await accesible(page);
+  await editor.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await expect(editar).toBeFocused();
 });
 
 test('empresas: filtro por plan, paginación, política, historial y renovación', async ({

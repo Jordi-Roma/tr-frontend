@@ -1,5 +1,13 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { DatePipe, KeyValuePipe } from '@angular/common';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { DatePipe, DecimalPipe, KeyValuePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormControl,
@@ -24,19 +32,59 @@ import {
 } from '../../models/saas.models';
 import { SaasService } from '../../services/saas.service';
 
+const LIMITES_RESPALDO = new Set([
+  'respaldos_manuales_semana',
+  'retencion_respaldos_dias',
+  'frecuencia_respaldo_dias',
+]);
+const FUNCIONES_RESPALDO = new Set([
+  'respaldos_manuales',
+  'respaldos_automaticos',
+  'horario_respaldo_configurable',
+]);
+const ORDEN_PLANES: Record<string, number> = {
+  BASICO: 0,
+  BASIC: 0,
+  INTERMEDIO: 1,
+  INTERMEDIATE: 1,
+  PREMIUM: 2,
+};
+
 @Component({
   selector: 'app-saas-planes',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe, KeyValuePipe],
-  styleUrl: './saas.css',
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, DecimalPipe, KeyValuePipe],
+  styleUrls: ['./saas.css', './planes.page.css'],
   templateUrl: './planes.page.html',
 })
 export class PlanesPage {
   private readonly api = inject(SaasService);
   private readonly foco = inject(FocoService);
   private readonly destroy = inject(DestroyRef);
+  private readonly editor = viewChild<ElementRef<HTMLDialogElement>>('editor');
   protected readonly catalogo = signal<CatalogoPlan | null>(null);
   protected readonly planes = signal<Plan[]>([]);
+  protected readonly tarjetas = computed(() =>
+    [...this.planes()].sort((a, b) => (ORDEN_PLANES[a.codigo] ?? 3) - (ORDEN_PLANES[b.codigo] ?? 3)),
+  );
   protected readonly resumen = signal<ResumenPlan[]>([]);
+  protected readonly conteos = computed(() => new Map(this.resumen().map((r) => [r.id, r])));
+  protected readonly cuposPrincipales = [
+    { clave: 'usuarios', nombre: 'Usuarios' },
+    { clave: 'empleados', nombre: 'Empleados' },
+    { clave: 'sucursales', nombre: 'Sucursales' },
+  ];
+  protected readonly limitesGenerales = computed(() =>
+    (this.catalogo()?.limites ?? []).filter((l) => !LIMITES_RESPALDO.has(l.clave)),
+  );
+  protected readonly limitesRespaldo = computed(() =>
+    (this.catalogo()?.limites ?? []).filter((l) => LIMITES_RESPALDO.has(l.clave)),
+  );
+  protected readonly funcionesGenerales = computed(() =>
+    (this.catalogo()?.funciones ?? []).filter((f) => !FUNCIONES_RESPALDO.has(f.clave)),
+  );
+  protected readonly funcionesRespaldo = computed(() =>
+    (this.catalogo()?.funciones ?? []).filter((f) => FUNCIONES_RESPALDO.has(f.clave)),
+  );
   protected readonly comparacion = signal<Plan[]>([]);
   protected readonly historial = signal<HistorialPlan[] | null>(null);
   protected readonly nombreHistorial = signal('');
@@ -45,8 +93,10 @@ export class PlanesPage {
   protected readonly cargando = signal(false);
   protected readonly ocupado = signal(false);
   protected readonly error = signal('');
+  protected readonly errorEditor = signal('');
   protected readonly mensaje = signal('');
   private cambiosConfirmados: PlanCambio | null = null;
+  private focoTrasGuardar: string | null = null;
   protected readonly limites = new FormRecord<FormControl<number | null>>({});
   protected readonly funciones = new FormRecord<FormControl<boolean>>({});
   protected readonly form = new FormGroup({
@@ -100,6 +150,7 @@ export class PlanesPage {
         this.resumen.set([]);
         this.historial.set(null);
         this.catalogo.set(null);
+        this.editor()?.nativeElement.close();
         this.editando.set(null);
         this.invalidarPrevia();
         this.form.reset();
@@ -118,7 +169,12 @@ export class PlanesPage {
     })
       .pipe(
         takeUntilDestroyed(this.destroy),
-        finalize(() => this.cargando.set(false)),
+        finalize(() => {
+          this.cargando.set(false);
+          if (this.focoTrasGuardar && !this.destroy.destroyed)
+            this.foco.llevar(this.focoTrasGuardar);
+          this.focoTrasGuardar = null;
+        }),
       )
       .subscribe({
         next: (r) => {
@@ -142,7 +198,6 @@ export class PlanesPage {
               );
             for (const f of r.catalogo.funciones)
               this.funciones.addControl(f.clave, new FormControl(false, { nonNullable: true }));
-            this.nuevo(false);
           }
         },
         error: (e) => this.error.set(mensajeApi(e)),
@@ -150,6 +205,7 @@ export class PlanesPage {
   }
   protected editar(p: Plan): void {
     this.editando.set(p);
+    this.errorEditor.set('');
     this.invalidarPrevia();
     this.form.reset({
       codigo: p.codigo,
@@ -166,10 +222,11 @@ export class PlanesPage {
       this.limites.controls[l.clave].setValue(p.limites[l.clave] ?? null);
     for (const f of this.catalogo()?.funciones ?? [])
       this.funciones.controls[f.clave].setValue(p.funciones[f.clave] ?? true);
-    this.foco.llevar('plan-codigo');
+    this.abrirEditor();
   }
-  protected nuevo(enfocar = true): void {
+  protected nuevo(): void {
     this.editando.set(null);
+    this.errorEditor.set('');
     this.invalidarPrevia();
     this.form.reset({
       codigo: '',
@@ -190,13 +247,25 @@ export class PlanesPage {
           } as Record<string, number>
         )[l.clave] ?? null,
       );
-    if (enfocar) this.foco.llevar('plan-codigo');
+    this.abrirEditor();
+  }
+  private abrirEditor(): void {
+    this.editor()?.nativeElement.showModal();
+    this.foco.llevar('plan-codigo');
+  }
+  protected cerrarEditor(): void {
+    if (this.ocupado()) return;
+    this.editor()?.nativeElement.close();
+    this.invalidarPrevia();
+    this.editando.set(null);
+    this.errorEditor.set('');
   }
   private invalidarPrevia(): void {
     this.previa.set(null);
     this.cambiosConfirmados = null;
   }
   protected volver(): void {
+    this.errorEditor.set('');
     this.invalidarPrevia();
     this.foco.llevar('plan-codigo');
   }
@@ -221,7 +290,7 @@ export class PlanesPage {
   private validar(): boolean {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.error.set('Revisa el código, nombre, precio y los límites indicados.');
+      this.errorEditor.set('Revisa el código, nombre, precio y los límites indicados.');
       return false;
     }
     const f = this.funciones.getRawValue(),
@@ -232,7 +301,7 @@ export class PlanesPage {
         (c.dependencias.some((k) => !f[k]) ||
           (c.requiere_alguna.length > 0 && !c.requiere_alguna.some((k) => f[k])))
       ) {
-        this.error.set('Revisa las dependencias de ' + c.nombre + '.');
+        this.errorEditor.set('Revisa las dependencias de ' + c.nombre + '.');
         return false;
       }
     }
@@ -240,14 +309,14 @@ export class PlanesPage {
       (f['reportes_programacion'] && l['reportes_programados'] === 0) ||
       (f['respaldos_manuales'] && (l['respaldos_manuales_semana'] ?? 0) < 1)
     ) {
-      this.error.set('La función habilitada necesita un cupo mayor que cero.');
+      this.errorEditor.set('La función habilitada necesita un cupo mayor que cero.');
       return false;
     }
     if (
       this.editando() &&
       Object.entries(this.editando()!.limites).some(([k]) => k in l && l[k] === null)
     ) {
-      this.error.set(
+      this.errorEditor.set(
         'Un límite existente no puede eliminarse dejando el campo vacío. Conserva un número válido.',
       );
       return false;
@@ -281,7 +350,7 @@ export class PlanesPage {
   }
   protected guardar(): void {
     if (this.ocupado() || this.cargando() || !this.catalogo() || !this.validar()) return;
-    this.error.set('');
+    this.errorEditor.set('');
     this.mensaje.set('');
     this.ocupado.set(true);
     const completos = this.datos(),
@@ -300,7 +369,7 @@ export class PlanesPage {
             this.previa.set(p);
             this.foco.llevar('impacto-plan');
           },
-          error: (e) => this.error.set(mensajeApi(e)),
+          error: (e) => this.errorEditor.set(mensajeApi(e)),
         });
     } else {
       const { activo: _, ...alta } = completos;
@@ -310,7 +379,10 @@ export class PlanesPage {
           takeUntilDestroyed(this.destroy),
           finalize(() => this.ocupado.set(false)),
         )
-        .subscribe({ next: () => this.guardado(), error: (e) => this.error.set(mensajeApi(e)) });
+        .subscribe({
+          next: () => this.guardado(),
+          error: (e) => this.errorEditor.set(mensajeApi(e)),
+        });
     }
   }
   protected confirmar(): void {
@@ -319,7 +391,7 @@ export class PlanesPage {
       datos = this.cambiosConfirmados;
     if (id === undefined || !p || !datos || this.ocupado()) return;
     this.ocupado.set(true);
-    this.error.set('');
+    this.errorEditor.set('');
     this.api
       .editarPlan(id, { ...datos, token_previsualizacion: p.token_previsualizacion })
       .pipe(
@@ -330,16 +402,17 @@ export class PlanesPage {
         next: () => this.guardado(),
         error: (e) => {
           this.invalidarPrevia();
-          this.error.set(mensajeApi(e) + ' Vuelve a revisar el impacto antes de confirmar.');
+          this.errorEditor.set(mensajeApi(e) + ' Vuelve a revisar el impacto antes de confirmar.');
           this.foco.llevar('plan-codigo');
         },
       });
   }
   private guardado(): void {
-    this.nuevo();
-    this.mensaje.set('Plan guardado. Las programaciones pausadas no se reactivan automáticamente.');
-    // Finalize mantiene ocupado hasta terminar la notificación de éxito.
+    const plan = this.editando();
+    this.focoTrasGuardar = plan ? 'editar-plan-' + plan.id : 'crear-plan';
+    this.mensaje.set('Plan guardado.');
     this.ocupado.set(false);
+    this.cerrarEditor();
     this.cargar();
   }
   protected verHistorial(p: Plan): void {

@@ -1,0 +1,419 @@
+.planes-hero {
+  align-items: center;
+  padding: clamp(20px, 4vw, 38px);
+  border: 1px solid #dce1d4;
+  border-radius: 22px;
+  background: linear-gradient(115deg, #fff 15%, #eef2e7 100%);
+}
+
+.planes-hero h1 {
+  font: 700 clamp(2rem, 4vw, 3.05rem)/1.08 var(--font-display);
+}
+
+.hero-texto {
+  color: #485245;
+  margin: 0;
+}
+
+.hero-acciones {
+  flex-shrink: 0;
+}
+
+.planes-lista {
+  margin-bottom: 24px;
+}
+
+.planes-lista-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.planes-lista-titulo h2 {
+  margin: 0;
+}
+
+.planes-lista-titulo span {
+  color: #4d5748;
+  font-size: 0.875rem;
+}
+
+.tarjetas-planes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 18px;
+}
+
+.plan-card {
+  --plan-acento: #455a40;
+  --plan-tono: #edf2e9;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid #dce1d4;
+  border-top: 4px solid var(--plan-acento);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(29 40 25 / 7%);
+  overflow-wrap: anywhere;
+}
+
+.plan-basico {
+  --plan-acento: #405a3e;
+  --plan-tono: #e9f2e7;
+}
+
+.plan-intermedio {
+  --plan-acento: #3c516f;
+  --plan-tono: #eaf0f9;
+}
+
+.plan-premium {
+  --plan-acento: #6b4a20;
+  --plan-tono: #faf0da;
+}
+
+.tarjeta-cabecera {
+  padding: 20px 20px 17px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(145deg, var(--plan-tono) 0%, #fff 100%);
+}
+
+.tarjeta-meta,
+.plan-empresas {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan-icono {
+  display: grid;
+  place-items: center;
+  width: 45px;
+  height: 45px;
+  border-radius: 13px;
+  background: var(--plan-acento);
+  color: #fff;
+}
+
+.plan-estado {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e6efe3;
+  color: #28513b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.plan-inactivo {
+  background: #eee9e3;
+  color: #594e42;
+}
+
+.plan-codigo {
+  margin: 14px 0 4px;
+  color: var(--plan-acento);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.tarjeta-cabecera h3 {
+  margin: 0;
+  font: 700 clamp(1.55rem, 2.4vw, 1.95rem)/1.16 var(--font-display);
+}
+
+.plan-descripcion {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: #4d5748;
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+}
+
+.tarjeta-cuerpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0 20px 20px;
+}
+
+.plan-precio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-precio strong {
+  font-size: clamp(1.55rem, 2.45vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.precio-moneda {
+  font-weight: 700;
+  color: var(--plan-acento);
+}
+
+.precio-periodo,
+.plan-visibilidad {
+  color: #4d5748;
+  font-size: 0.82rem;
+}
+
+.plan-visibilidad {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 7px 0 16px;
+}
+
+.plan-cupos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 11px;
+  border-radius: 12px;
+  background: #f4f6f1;
+}
+
+.plan-cupos dt {
+  color: #485245;
+  font-size: 0.73rem;
+}
+
+.plan-cupos dd {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.plan-empresas {
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding: 12px 0 14px;
+  border-top: 1px solid #e5e8e0;
+  font-size: 0.88rem;
+}
+
+.plan-empresas small {
+  display: block;
+  margin-top: 3px;
+}
+
+.plan-empresas a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  color: var(--plan-acento);
+  font-weight: 700;
+}
+
+.plan-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plan-acciones button:first-child {
+  flex: 1;
+  border-color: var(--plan-acento);
+  background: var(--plan-acento);
+}
+
+.planes-hero button,
+.plan-acciones button,
+.editor-acciones button {
+  border-radius: 9px;
+}
+
+.comparacion-planes summary {
+  padding: 0;
+}
+
+.comparacion-planes .tabla {
+  margin-top: 16px;
+}
+
+.plan-editor {
+  width: min(880px, calc(100% - 24px));
+  max-width: none;
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 1px solid #dce1d4;
+  border-radius: 20px;
+  background: #fff;
+  color: #20231c;
+  box-shadow: 0 24px 80px rgb(25 33 23 / 28%);
+  overflow: hidden;
+}
+
+.plan-editor::backdrop {
+  background: rgb(21 28 20 / 56%);
+  backdrop-filter: blur(3px);
+}
+
+.editor-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: min(860px, calc(100dvh - 26px));
+}
+
+.editor-header,
+.editor-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px clamp(14px, 4vw, 26px);
+}
+
+.editor-header {
+  justify-content: space-between;
+  border-bottom: 1px solid #dce1d4;
+  background: #f4f6ef;
+}
+
+.editor-header .ceja,
+.editor-header h2 {
+  margin: 0;
+}
+
+.editor-header h2 {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  font: 700 clamp(1.25rem, 3vw, 1.7rem)/1.16 var(--font-display);
+}
+
+.cerrar-editor {
+  flex: 0 0 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.editor-cuerpo {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 16px clamp(14px, 4vw, 26px);
+}
+
+.editor-acciones {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  border-top: 1px solid #dce1d4;
+  background: #fff;
+}
+
+.editor-error {
+  margin: 0 clamp(14px, 4vw, 26px) 8px;
+}
+
+.editor-campos {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.editor-leyenda {
+  position: absolute;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.editor-seccion {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.editor-seccion .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+.stripe-editor {
+  grid-column: 1 / -1;
+}
+
+.stripe-editor small,
+.funcion-editor small {
+  display: block;
+  margin-top: 4px;
+}
+
+.ayuda-editor {
+  margin: 0 0 12px;
+  color: #4d5748;
+  font-size: 0.86rem;
+}
+
+.estado-editor,
+.funciones-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+}
+
+.estado-editor,
+.respaldos-editor {
+  margin-top: 12px;
+}
+
+.funcion-editor {
+  padding: 8px 12px;
+  border: 1px solid #dce1d4;
+  border-radius: 8px;
+}
+
+.editor-seccion input[type='checkbox'] {
+  flex: 0 0 18px;
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  accent-color: #405a3e;
+}
+
+.editor-seccion label.check {
+  min-height: 28px;
+}
+
+.impacto-empresa {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #dce1d4;
+  border-radius: 8px;
+}
+
+.impacto-empresa h4 {
+  margin: 0;
+}
+
+@media (max-width: 650px) {
+  .planes-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .editor-seccion .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -249,6 +249,7 @@ test('AS tiene pantallas accesibles y crea/edita planes sin entrar al negocio', 
   await expect(page.getByRole('heading', { name: 'Planes', exact: true })).toBeVisible();
   await accesible(page);
   const codigo = 'E2E_' + Date.now();
+  await page.getByRole('button', { name: 'Nuevo plan', exact: true }).click();
   await page.getByLabel(/^Código/).fill(codigo);
   await page.getByLabel('Nombre', { exact: true }).fill('Plan navegador');
   await page.getByLabel(/Usuarios activos, incluidos clientes y personal/).fill('5');
@@ -256,7 +257,7 @@ test('AS tiene pantallas accesibles y crea/edita planes sin entrar al negocio', 
   await expect(page.getByRole('status').filter({ hasText: 'Plan guardado.' })).toBeVisible();
   await expect(page.getByText(codigo, { exact: true })).toBeVisible();
   await page
-    .getByRole('row')
+    .getByRole('article', { name: 'Plan navegador', exact: true })
     .filter({ hasText: codigo })
     .getByRole('button', { name: /Editar plan/ })
     .click();
@@ -265,11 +266,11 @@ test('AS tiene pantallas accesibles y crea/edita planes sin entrar al negocio', 
   const guardado = page.waitForResponse(
     (r) => r.url().includes('/saas/planes/') && r.request().method() === 'PUT',
   );
-  await page.getByRole('button', { name: 'Confirmar cambios del plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Guardar cambios del plan', exact: true }).click();
   expect((await guardado).ok()).toBeTruthy();
   await expect(
     page
-      .getByRole('row')
+      .getByRole('article', { name: 'Plan navegador editado', exact: true })
       .filter({ hasText: codigo })
       .getByRole('button', { name: 'Editar plan Plan navegador editado', exact: true }),
   ).toBeVisible();
