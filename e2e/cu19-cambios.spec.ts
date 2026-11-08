@@ -58,7 +58,19 @@ test('CU19 aplica el saldo a otra prenda y completa el cambio con comprobante', 
   const ha = await acceso(d.a.codigo),
     h = await acceso(d.clienteA);
   await entrar(page, d.a.codigo);
-  await page.goto('/politicas-posventa');
+  await page.goto('/productos');
+  const catalogo=page.getByRole('navigation',{name:'Administración de productos'});
+  await expect(catalogo.getByRole('link')).toHaveCount(8);
+  await expect(page.locator('.product-action').first()).toBeVisible();
+  await page.setViewportSize({width:390,height:844});
+  await axe(page);
+  await page.screenshot({path:'../tr-backend/.private/productos_tarjetas.png',fullPage:true});
+  await page.goto('/pagos');
+  await expect(page.getByRole('link',{name:'Configurar pagos de prueba'})).toBeVisible();
+  await page.goto('/devoluciones');
+  await expect(page.getByRole('navigation',{name:'Opciones de posventa'}).getByRole('link')).toHaveCount(3);
+  await axe(page);
+  await page.getByRole('link',{name:'Políticas posventa',exact:true}).click();
   await expect(
     page.getByRole('button', { name: 'Actualizar política', exact: true }),
   ).toBeEnabled();
@@ -118,9 +130,21 @@ test('CU19 aplica el saldo a otra prenda y completa el cambio con comprobante', 
     (await request.post(api + '/pagos/qr/confirmar/' + o.orden_id, { headers: h })).ok(),
   ).toBeTruthy();
   await cambiar(page, d.clienteA);
-  await page.goto('/cambios');
+  await page.goto('/mis-devoluciones');
+  await expect(page.getByRole('navigation',{name:'Opciones de posventa'}).getByRole('link')).toHaveCount(2);
+  await page.getByRole('link',{name:'Cambios',exact:true}).click();
   await page.getByRole('button', { name: 'Solicitar cambio', exact: true }).first().click();
   await page.getByLabel('Motivo del cambio', { exact: true }).fill('La costura necesita revisión');
+  const linea=(await (await request.get(api+'/posventa/cambios/elegibles',{headers:h})).json())[0].detalles[0];
+  const inicial=await (await request.get(api+`/posventa/cambios/opciones-solicitud?venta_id=${o.venta_id}&venta_detalle_id=${linea.venta_detalle_id}&cantidad=1`,{headers:h})).json();
+  const reemplazo=inicial.opciones.find((v:{id:number})=>v.id===d.reemplazoA);
+  const selector=page.getByRole('group',{name:'Prenda de reemplazo',exact:true});
+  await selector.getByRole('combobox',{name:'Producto',exact:true}).selectOption(String(reemplazo.producto_id));
+  await selector.getByRole('combobox',{name:'Talla',exact:true}).selectOption(reemplazo.talla);
+  await selector.getByRole('combobox',{name:'Color',exact:true}).selectOption(reemplazo.color);
+  await expect(page.getByRole('status')).toContainText('Reintegro estimado a tu favor: Bs 20.00');
+  await axe(page);
+  await page.screenshot({path:'../tr-backend/.private/cambio_talla_color.png',fullPage:true});
   await page.getByRole('button', { name: 'Enviar solicitud de cambio', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('SOLICITADO');
   await axe(page);
@@ -135,26 +159,26 @@ test('CU19 aplica el saldo a otra prenda y completa el cambio con comprobante', 
   await page.getByLabel('Unidades no vendibles', { exact: true }).fill('1');
   await page.getByLabel('Confirmo la recepción física y la inspección').check();
   await page.getByRole('button', { name: 'Aceptar cambio inspeccionado', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('APROBADO');
+  await expect(page.getByRole('status')).toContainText('COTIZADO');
   await axe(page);
   await cambiar(page, d.clienteA);
   await page.goto('/cambios');
   await page.getByRole('button', { name: 'Ver cambio ' + cid, exact: true }).click();
-  await page.getByRole('button', { name: 'Consultar reemplazos disponibles', exact: true }).click();
-  await page
-    .getByRole('combobox', { name: 'Prenda de reemplazo', exact: true })
-    .selectOption(String(d.reemplazoA));
+  await expect(page.getByRole('button', { name: 'Confirmar reintegro a mi favor', exact: true })).toBeEnabled();
+  await expect(page.getByRole('group', { name: 'Prenda de reemplazo', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Modificar reemplazo o agregar otra prenda (opcional)', exact: true }).click();
+  await page.getByRole('group',{name:'Prenda de reemplazo',exact:true}).getByRole('combobox',{name:'Producto',exact:true}).selectOption(String(reemplazo.producto_id));
   await page.getByRole('button', { name: 'Cotizar reemplazo', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('COTIZADO');
   const detalle = page.getByRole('region', { name: 'Detalle del cambio' });
   await expect(detalle).toContainText('Bs -20.00');
   await page.getByLabel('Usar el saldo en una prenda adicional').selectOption(String(d.varianteA));
-  await expect(page.getByRole('button', { name: 'Aceptar reemplazo y diferencia', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Confirmar reintegro a mi favor', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Cotizar reemplazo', exact: true }).click();
   await expect(detalle).toContainText('Prenda adicional: Prenda Empresa A');
   await expect(detalle).toContainText('Bs 30.00');
   await axe(page);
-  await page.getByRole('button', { name: 'Aceptar reemplazo y diferencia', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar diferencia y continuar al pago', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('ESPERA_PAGO');
   await page.getByRole('button', { name: 'Pagar diferencia con QR', exact: true }).click();
   await expect(

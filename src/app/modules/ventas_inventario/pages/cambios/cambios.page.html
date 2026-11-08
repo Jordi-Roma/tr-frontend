@@ -1,4 +1,5 @@
 <div class="returns-page">
+  <a [routerLink]="personal ? '/devoluciones' : '/mis-devoluciones'">Volver a devoluciones y cambios</a>
   <header class="page-heading">
     <div>
       <h1>{{ gestion() ? 'Gestión de cambios' : 'Mis cambios de prendas' }}</h1>
@@ -69,16 +70,23 @@
               min="1"
               [max]="s.max"
               [value]="cantidad()"
-              (input)="cantidad.set(+texto($event))" /></label
+              (change)="cambiarCantidadSolicitud($event)" /></label
           ><label class="field"
             >Motivo del cambio<input
               maxlength="500"
               [value]="motivo()"
               (input)="motivo.set(texto($event))" /></label
-          ><button
+          >
+          @if(cargandoOpciones()){<p role="status">Consultando tallas, colores y precios…</p>}
+          <app-selector-variante [opciones]="opcionesSolicitud()" [(seleccion)]="opcionInicial" />
+          <button type="button" class="button secondary" (click)="consultarOpcionesIniciales()" [disabled]="cargandoOpciones()">Actualizar disponibilidad</button>
+          @if(diferenciaInicial();as diferencia){<p role="status">{{diferencia>0?'Pago estimado de diferencia: ':'Reintegro estimado a tu favor: '}}{{monto(diferencia>0?diferencia:-diferencia)}}</p>}
+          @if(diferenciaInicial()===0){<p role="status">Sin diferencia estimada de precio.</p>}
+          <p>La tienda inspeccionará la prenda. Precio y existencias se validarán nuevamente antes de aceptar y liquidar el cambio; esta solicitud no reserva stock ni inicia un pago.</p>
+          <button
             class="button primary"
             type="button"
-            [disabled]="ocupado()"
+            [disabled]="ocupado() || cargandoOpciones() || !opcionInicial()"
             (click)="solicitar()"
           >
             Enviar solicitud de cambio
@@ -159,28 +167,23 @@
         </button>
       }
       @if (!gestion() && (c.estado === 'APROBADO' || c.estado === 'COTIZADO')) {
+        @if (c.reemplazo && c.estado === 'APROBADO') {
+          <p>Validaremos el precio y las existencias del reemplazo solicitado antes de confirmar la diferencia.</p>
+          <button type="button" class="button primary" [disabled]="ocupado()" (click)="validarSolicitado()">Continuar con el reemplazo solicitado</button>
+        }
+        @if (c.reemplazo && c.estado === 'COTIZADO') {
+          <button type="button" class="button secondary" [disabled]="ocupado()" (click)="validarSolicitado()">Actualizar precio y disponibilidad</button>
+        }
         <button
           class="button secondary"
           type="button"
           [disabled]="ocupado()"
           (click)="cargarOpciones()"
         >
-          Consultar reemplazos disponibles
+          {{ c.reemplazo ? 'Modificar reemplazo o agregar otra prenda (opcional)' : 'Elegir reemplazo disponible' }}
         </button>
         @if (reemplazos().length) {
-          <label class="field"
-            >Prenda de reemplazo<select
-              [value]="opcion()"
-              (change)="seleccionarReemplazo(+texto($event))"
-            >
-              @for (o of reemplazos(); track o.id) {
-                <option [value]="o.id">
-                  {{ o.producto }} · {{ o.talla }} / {{ o.color }} · {{ monto(o.precio) }} por
-                  prenda
-                </option>
-              }
-            </select></label
-          >
+          <app-selector-variante [opciones]="reemplazos()" [seleccion]="opcion()" (seleccionChange)="seleccionarReemplazo($event)" />
           @if (adicionales().length) {
             <label class="field">
               Usar el saldo en una prenda adicional
@@ -204,7 +207,7 @@
       }
       @if (c.reemplazo) {
         <p>
-          Reemplazo: {{ c.reemplazo.producto }} · {{ c.reemplazo.talla }} /
+          {{c.estado === 'SOLICITADO' || c.estado === 'APROBADO' ? 'Reemplazo solicitado (estimación):' : 'Reemplazo:'}} {{ c.reemplazo.producto }} · {{ c.reemplazo.talla }} /
           {{ c.reemplazo.color }} · {{ monto(c.precio_reemplazo) }} por prenda
         </p>
         @if (c.adicional; as adicionalCotizada) {
@@ -214,7 +217,7 @@
           </p>
         }
         <p>
-          Diferencia (positivo: pagar; negativo: reintegro):
+          {{ c.estado === 'SOLICITADO' || c.estado === 'APROBADO' ? 'Diferencia estimada' : 'Diferencia' }} (positivo: pagar; negativo: reintegro):
           <strong>{{ monto(c.diferencia) }}</strong>
         </p>
       }
@@ -225,7 +228,7 @@
           [disabled]="ocupado() || cotizacionEditada()"
           (click)="aceptar()"
         >
-          Aceptar reemplazo y diferencia
+          {{ +(c.diferencia || 0) > 0 ? 'Confirmar diferencia y continuar al pago' : +(c.diferencia || 0) < 0 ? 'Confirmar reintegro a mi favor' : 'Confirmar cambio sin diferencia' }}
         </button>
       }
       @if (!gestion() && c.estado === 'ESPERA_PAGO') {
@@ -257,6 +260,9 @@
             <a [href]="p.checkout_url">Abrir pago de diferencia</a>
           }
         }
+      }
+      @if (!gestion() && c.estado === 'ESPERA_REINTEGRO') {
+        <p role="status">Tienes un reintegro a favor de {{ monto(-(+(c.diferencia || 0))) }}. La tienda debe procesarlo por el medio original y confirmar la devolución del dinero.</p>
       }
       @if (gestion() && c.estado === 'ESPERA_REINTEGRO') {
         <p>Reintegro pendiente del excedente por el medio de pago original.</p>

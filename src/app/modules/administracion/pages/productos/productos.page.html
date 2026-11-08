@@ -13,6 +13,7 @@
       </div>
     </div>
   </header>
+  <app-accesos-modulo [accesos]="accesosCatalogo" etiqueta="Administración de productos" />
 
   @if (!formularioAbierto() && error()) {
     <p class="error-message" role="alert">{{ error() }}</p>
@@ -123,9 +124,9 @@
                     </td>
                     <td class="text-right" (click)="$event.stopPropagation()">
                       <div class="action-buttons">
-                        <a routerLink="/precios-mayoristas" [queryParams]="{producto_id: producto.id, nombre: producto.nombre}">Descuentos mayoristas</a>
-                        <a routerLink="/variantes" [queryParams]="{producto_id: producto.id}">Variantes y precios</a>
-                        <a routerLink="/promociones" [queryParams]="{producto_id: producto.id}">Promociones</a>
+                        <a class="product-action" routerLink="/precios-mayoristas" [queryParams]="{producto_id: producto.id, nombre: producto.nombre}">Descuentos mayoristas</a>
+                        <a class="product-action" routerLink="/variantes" [queryParams]="{producto_id: producto.id}">Variantes y precios</a>
+                        <a class="product-action" routerLink="/promociones" [queryParams]="{producto_id: producto.id}">Promociones</a>
                         <button [appOperacionNueva]="false"
                           class="btn-icon-only"
                           title="Editar"

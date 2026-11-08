@@ -78,6 +78,9 @@ export function esOperacionNueva(metodo: string, ruta: string): boolean {
       '/api/v1/reportes/generar',
       '/api/v1/reportes/exportar/pdf',
       '/api/v1/reportes/exportar/excel',
+      '/api/v1/reportes/analitica/interpretar',
+      '/api/v1/reportes/analitica/exportar/pdf',
+      '/api/v1/reportes/analitica/exportar/excel',
     ].includes(ruta)
   )
     return false;

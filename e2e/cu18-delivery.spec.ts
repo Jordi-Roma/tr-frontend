@@ -25,7 +25,7 @@ test('CU18 cotiza dirección, acepta envío, paga y confirma entrega con inciden
  await page.getByLabel('Dirección guardada (opcional)').selectOption({label:'Avenida prueba 123'});
  await expect(page.getByText('Acepto la cotización del envío mostrada')).toBeVisible();
  const pagar=page.getByRole('button',{name:'Pagar delivery con QR de prueba',exact:true});await expect(pagar).toBeDisabled();await axe(page);
- await page.getByLabel('Acepto la cotización del envío mostrada').check();await expect(pagar).toBeEnabled();await pagar.click();
+ await page.getByLabel('Acepto la cotización del envío mostrada').check();await page.getByRole('button',{name:'Volver al resumen de compra'}).click();await expect(pagar).toBeEnabled();await pagar.click();
  expect(await (await request.get(api+'/delivery/mis-deliveries',{headers:h})).json()).toEqual(existentes);
  await page.getByRole('link',{name:'Consultar estado o cancelar intento'}).click();await page.getByRole('button',{name:'Simular pago aprobado',exact:true}).click();
  await expect(page.locator('.status-pill')).toHaveText('Aprobado');

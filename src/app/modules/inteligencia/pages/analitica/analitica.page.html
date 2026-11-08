@@ -1,0 +1,345 @@
+<header>
+  <p class="eyebrow">Reportes · Machine learning</p>
+  <h1>Analítica inteligente</h1>
+  <p>Predicción de ventas y patrones de compra, con origen y alcance identificados.</p>
+</header>
+<app-solicitud-analitica
+  [origen]="origen()"
+  [bloqueado]="bloqueado()"
+  (aplicar)="aplicarSolicitud($event)"
+/>
+<form [formGroup]="form" (ngSubmit)="consultar()" class="panel filtros">
+  <label
+    >Origen de datos<select formControlName="origen">
+      <option value="OFICIAL">Historial oficial</option>
+      <option value="DEMOSTRACION">Demostración con datos sintéticos</option>
+    </select></label
+  >
+  <label
+    >Análisis<select formControlName="vista">
+      <option value="predicciones">Predicción de ventas</option>
+      @if (estado()?.segmentacion_permitida) {
+        <option value="segmentos">Segmentación de clientes</option>
+      }
+    </select></label
+  >
+  @if (vista() === 'predicciones') {
+    <label
+      >Sucursal<select formControlName="sucursal">
+        <option [ngValue]="0">Todas las autorizadas</option>
+        @for (s of fuente()?.sucursales; track s.id) {
+          <option [ngValue]="s.id">{{ s.nombre }}</option>
+        }
+      </select></label
+    >
+    <label
+      >Producto<select formControlName="producto">
+        <option value="">Todos los productos</option>
+        @for (p of productos(); track p) {
+          <option [value]="p">{{ p }}</option>
+        }
+      </select></label
+    >
+    <label>Corte desde<input type="date" formControlName="desde" /></label
+    ><label>Corte hasta<input type="date" formControlName="hasta" /></label>
+  } @else {
+    <label
+      >Grupo<select formControlName="grupo">
+        <option [ngValue]="0">Todos los grupos</option>
+        @for (p of segmentacion()?.perfiles; track p.grupo) {
+          <option [ngValue]="p.grupo">{{ p.nombre }}</option>
+        }
+      </select></label
+    >
+  }
+  <button class="button primary" [disabled]="cargando() || bloqueado() || !estado()" type="submit">
+    Aplicar filtros
+  </button>
+</form>
+@if (fuente(); as f) {
+  <section
+    class="origen"
+    [class.demo]="origen() === 'DEMOSTRACION'"
+    aria-label="Origen y disponibilidad"
+  >
+    <h2>
+      {{ origen() === 'DEMOSTRACION' ? 'Demostración con datos sintéticos' : 'Historial oficial' }}
+    </h2>
+    <p>
+      <strong>{{ etiquetaEstado(f.estado) }}</strong
+      >. {{ f.advertencia }}
+    </p>
+    @if (origen() === 'DEMOSTRACION') {
+      <p>
+        Las sucursales están asociadas a una simulación; estos registros no son ventas oficiales.
+      </p>
+    }
+    @if (f.evaluado_en) {
+      <p>
+        Auditoría: {{ f.evaluado_en }} · {{ f.fuente_datos }}. Es una instantánea; no una consulta
+        en vivo a Railway.
+      </p>
+    }
+    @if (f.estado === 'HISTORIAL_INSUFICIENTE') {
+      <p>
+        No hay modelos oficiales validados con este historial. Puedes consultar por separado la
+        demostración académica.
+      </p>
+    }
+    @if (f.resumen_historial; as resumen) {
+      @if (resumen['ventas_completadas'] !== undefined) {
+        <p>
+          Ventas completadas auditadas: {{ resumen['ventas_completadas'] }} · Clientes compradores:
+          {{ resumen['clientes_compradores'] }}.
+        </p>
+      }
+    }
+  </section>
+}
+@if (cargando()) {
+  <p role="status">Cargando analítica…</p>
+}
+@if (error()) {
+  <div role="alert" class="error">
+    <p>{{ error() }}</p>
+    @if (!bloqueado()) {
+      <button
+        class="button secondary"
+        type="button"
+        (click)="estado() ? consultar() : cargarEstado()"
+      >
+        Reintentar
+      </button>
+    }
+  </div>
+}
+@if (resultado()) {
+  <section class="panel" aria-label="Exportar reporte de analítica">
+    <h2>Descargar reporte</h2>
+    <p>
+      Incluye todo el filtro aplicado, no solo esta página, e identifica el origen. Máximo 5000
+      filas.
+    </p>
+    <button
+      class="button primary"
+      type="button"
+      [disabled]="exportando() || cargando()"
+      (click)="exportar('pdf')"
+    >
+      Descargar PDF
+    </button>
+    <button
+      class="button secondary"
+      type="button"
+      [disabled]="exportando() || cargando()"
+      (click)="exportar('excel')"
+    >
+      Descargar Excel
+    </button>
+    @if (exportando()) {
+      <p role="status">Preparando reporte…</p>
+    }
+    @if (aviso()) {
+      <p role="status">{{ aviso() }}</p>
+    }
+  </section>
+}
+@if (prediccion(); as r) {
+  @if (r.metricas; as m) {
+    <section class="panel">
+      <h2>Evaluación histórica de predicciones</h2>
+      <p>{{ r.advertencia }}</p>
+      <p>Comparación sobre semanas de prueba. No es un pronóstico oficial vigente.</p>
+      <dl class="metricas">
+        <div>
+          <dt>Error absoluto medio (MAE)</dt>
+          <dd>{{ m.mae | number: '1.0-3' }} unidades</dd>
+        </div>
+        <div>
+          <dt>RMSE</dt>
+          <dd>{{ m.rmse | number: '1.0-3' }} unidades</dd>
+        </div>
+        <div>
+          <dt>MAE de semana anterior</dt>
+          <dd>{{ m.mae_referencia | number: '1.0-3' }} unidades</dd>
+        </div>
+        <div>
+          <dt>Muestras evaluadas</dt>
+          <dd>{{ m.muestras }}</dd>
+        </div>
+      </dl>
+      <p>
+        Errores por producto, sucursal y semana. Métricas y gráfico corresponden a todo el filtro
+        aplicado, no solo a esta página.
+      </p>
+      <details>
+        <summary>Ver información del modelo</summary>
+        <p>Modelo entrenado: {{ r.entrenado_en }} · Dataset: {{ r.dataset_id }}.</p>
+      </details>
+      <h3>Ventas reales frente a predichas</h3>
+      <app-serie-analitica [datos]="r.serie" />
+    </section>
+  }
+  @if (r.sin_datos) {
+    <p role="status">No hay resultados de predicción para el origen y los filtros aplicados.</p>
+  }
+  @if (r.filas.length) {
+    <section class="panel">
+      <details>
+        <summary>Ver detalle de la evaluación</summary>
+        <div class="tabla" tabindex="0" role="region" aria-label="Detalle de predicciones">
+          <table>
+            <caption>
+              Semanas y productos del filtro aplicado
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Corte / objetivo hasta</th>
+                <th scope="col">Sucursal</th>
+                <th scope="col">Producto</th>
+                <th scope="col">Reales</th>
+                <th scope="col">Predichas</th>
+                <th scope="col">Referencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of r.filas; track $index) {
+                <tr>
+                  <th scope="row">{{ f.fecha_corte }} / {{ f.objetivo_hasta }}</th>
+                  <td>{{ f.sucursal }}</td>
+                  <td>{{ f.producto_id }}</td>
+                  <td>{{ f.unidades_reales | number: '1.0-2' }}</td>
+                  <td>{{ f.unidades_predichas | number: '1.0-2' }}</td>
+                  <td>{{ f.referencia_semana_anterior | number: '1.0-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+  }
+}
+@if (segmentacion(); as r) {
+  @if (r.metricas; as m) {
+    <section class="panel">
+      <h2>Grupos de clientes</h2>
+      <p>{{ r.advertencia }}</p>
+      <p>
+        Corte: {{ r.fecha_corte }} · Ventana: {{ r.ventana_dias }} días · Sin compras en la ventana:
+        {{ r.clientes_sin_compras_ventana }}.
+      </p>
+      <dl class="metricas">
+        <div>
+          <dt>Clientes analizados</dt>
+          <dd>{{ m.clientes_analizados }}</dd>
+        </div>
+        <div>
+          <dt>Grupos encontrados</dt>
+          <dd>{{ m.grupos }}</dd>
+        </div>
+        <div>
+          <dt>Separación interna (silhouette)</dt>
+          <dd>{{ m.silhouette | number: '1.0-3' }}</dd>
+        </div>
+        <div>
+          <dt>Estabilidad entre semillas (ARI)</dt>
+          <dd>{{ m.ari_medio | number: '1.0-3' }}</dd>
+        </div>
+      </dl>
+      <p>
+        Evaluación interna de la misma instantánea. No mide exactitud comercial ni estabilidad
+        futura.
+      </p>
+      @for (p of r.perfiles; track p.grupo) {
+        <article class="grupo">
+          <h3>{{ p.nombre }}</h3>
+          <p class="grupo-total">
+            <strong>{{ p.clientes }} clientes</strong> ·
+            {{ p.proporcion * 100 | number: '1.0-1' }} % del total
+          </p>
+          <div
+            class="barra"
+            role="img"
+            [attr.aria-label]="p.nombre + ': ' + p.clientes + ' clientes'"
+          >
+            <span [style.width.%]="p.proporcion * 100"></span>
+          </div>
+          <dl class="perfil-resumen">
+            <div>
+              <dt>Última compra hace</dt>
+              <dd>{{ p.recencia_media_dias | number: '1.0-1' }} días</dd>
+            </div>
+            <div>
+              <dt>Compras por cliente</dt>
+              <dd>{{ p.frecuencia_media_compras | number: '1.0-1' }}</dd>
+            </div>
+            <div>
+              <dt>Gasto por cliente</dt>
+              <dd>Bs {{ p.gasto_medio_centavos / 100 | number: '1.2-2' }}</dd>
+            </div>
+          </dl>
+        </article>
+      }
+    </section>
+  }
+  @if (r.sin_datos) {
+    <p role="status">No hay clientes para el origen y grupo seleccionados.</p>
+  }
+  @if (r.filas.length) {
+    <section class="panel">
+      <details>
+        <summary>Ver clientes del conjunto consultado</summary>
+        <div class="tabla" tabindex="0" role="region" aria-label="Asignaciones de clientes">
+          <table>
+            <caption>
+              Detalle RFM paginado; gasto expresado en bolivianos
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Cliente</th>
+                <th scope="col">Grupo</th>
+                <th scope="col">Recencia (días)</th>
+                <th scope="col">Compras</th>
+                <th scope="col">Gasto Bs</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of r.filas; track f.cliente_id) {
+                <tr>
+                  <th scope="row">{{ f.cliente_id }}</th>
+                  <td>{{ f.grupo }}</td>
+                  <td>{{ f.recencia_dias }}</td>
+                  <td>{{ f.frecuencia_compras }}</td>
+                  <td>{{ f.gasto_centavos / 100 | number: '1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+  }
+}
+@if (resultado(); as r) {
+  @if (r.total_filas) {
+    <nav class="paginacion" aria-label="Páginas de analítica">
+      <button
+        class="button secondary"
+        type="button"
+        [disabled]="cargando() || r.pagina <= 1"
+        (click)="pagina(-1)"
+      >
+        Anterior</button
+      ><span>Página {{ r.pagina }} · {{ r.total_filas }} registros</span
+      ><button
+        class="button secondary"
+        type="button"
+        [disabled]="cargando() || r.pagina * r.tamano >= r.total_filas"
+        (click)="pagina(1)"
+      >
+        Siguiente
+      </button>
+    </nav>
+  }
+}

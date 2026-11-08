@@ -7,6 +7,12 @@ import { ReportesPage } from './pages/reportes/reportes.page';
 
 export const INTELIGENCIA_ROUTES: Routes = [
   {
+    path: 'analitica',
+    loadComponent: () => import('./pages/analitica/analitica.page').then(m => m.AnaliticaPage),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMINISTRADOR', 'ENCARGADO_SUCURSAL'] },
+  },
+  {
     path: 'dashboard',
     component: AdminDashboardPage,
     canActivate: [roleGuard],

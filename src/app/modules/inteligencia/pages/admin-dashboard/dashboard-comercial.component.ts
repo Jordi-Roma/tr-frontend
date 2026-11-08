@@ -1,3 +1,4 @@
+import { BarrasDashboardComponent } from './barras-dashboard.component';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -10,40 +11,103 @@ import { CambioContextoService } from '../../../../core/services/cambio-contexto
 import { mensajeApi } from '../../../../core/services/error-api';
 @Component({
   selector: 'app-dashboard-comercial',
-  imports: [ReactiveFormsModule, KeyValuePipe],
+  imports: [ReactiveFormsModule, KeyValuePipe, BarrasDashboardComponent],
   styleUrl: '../../../administracion/pages/saas/saas.css',
+  styles: `
+    .graficos-principales {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .filtros-dashboard {
+      margin: 1.5rem 0;
+    }
+    .filtros-dashboard summary {
+      cursor: pointer;
+      padding: 1rem;
+      background: #edf1e8;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .filtros-dashboard form {
+      padding: 1rem 0;
+    }
+    @media (max-width: 760px) {
+      .graficos-principales {
+        grid-template-columns: 1fr;
+      }
+    }
+  `,
   template: ` <section class="panel">
     <h2>Dashboard comercial</h2>
-    <form [formGroup]="form" (ngSubmit)="cargar()">
-      <div class="grid">
-        <label for="dash-desde"
-          >Desde<input id="dash-desde" type="date" formControlName="fecha_desde" required /></label
-        ><label for="dash-hasta"
-          >Hasta<input id="dash-hasta" type="date" formControlName="fecha_hasta" required
-        /></label>
-        <label for="dash-sucursal"
-          >Sucursal<select id="dash-sucursal" formControlName="sucursal_id">
-            @if (!encargado) {
-              <option [ngValue]="null">Todas</option>
-            }
-            @for (s of catalogo()?.sucursales ?? []; track s.id) {
-              <option [ngValue]="s.id">{{ s.nombre }}</option>
-            }
-          </select></label
-        >
-        <label for="dash-canal"
-          >Canal de venta<select id="dash-canal" formControlName="tipo_venta">
-            <option [ngValue]="null">Todos</option>
-            <option value="PRESENCIAL">Presencial</option>
-            <option value="DIGITAL">Digital</option>
-          </select></label
-        >
-        <label class="check"
-          ><input type="checkbox" formControlName="comparar" />Comparar con período anterior</label
-        >
+    @if (resultado(); as r) {
+      <p>Período: {{ r.filtros.fecha_desde }} al {{ r.filtros.fecha_hasta }}</p>
+      <div class="graficos-principales">
+        <app-barras-dashboard
+          titulo="Ventas completadas por fecha"
+          unidad="Cantidad de ventas"
+          [datos]="ventasPorFecha(r)"
+        />
+        <app-barras-dashboard
+          titulo="Importe vendido por fecha"
+          unidad="Bolivianos (BOB)"
+          [datos]="importesPorFecha(r)"
+        />
+        <app-barras-dashboard
+          titulo="Canales de venta"
+          unidad="Cantidad de ventas completadas"
+          [datos]="[
+            { etiqueta: 'Presencial', valor: r.datos.ventas_presenciales },
+            { etiqueta: 'Digital', valor: r.datos.ventas_digitales },
+          ]"
+        />
+        <app-barras-dashboard
+          formato="ranking"
+          titulo="Productos más vendidos"
+          unidad="Unidades vendidas"
+          [datos]="productosVendidos(r)"
+        />
       </div>
-      <button [disabled]="cargando() || !catalogo()">Actualizar dashboard</button>
-    </form>
+    }
+    <details class="filtros-dashboard">
+      <summary>Ajustar período y filtros del dashboard</summary>
+      <form [formGroup]="form" (ngSubmit)="cargar()">
+        <div class="grid">
+          <label for="dash-desde"
+            >Desde<input
+              id="dash-desde"
+              type="date"
+              formControlName="fecha_desde"
+              required /></label
+          ><label for="dash-hasta"
+            >Hasta<input id="dash-hasta" type="date" formControlName="fecha_hasta" required
+          /></label>
+          <label for="dash-sucursal"
+            >Sucursal<select id="dash-sucursal" formControlName="sucursal_id">
+              @if (!encargado) {
+                <option [ngValue]="null">Todas</option>
+              }
+              @for (s of catalogo()?.sucursales ?? []; track s.id) {
+                <option [ngValue]="s.id">{{ s.nombre }}</option>
+              }
+            </select></label
+          >
+          <label for="dash-canal"
+            >Canal de venta<select id="dash-canal" formControlName="tipo_venta">
+              <option [ngValue]="null">Todos</option>
+              <option value="PRESENCIAL">Presencial</option>
+              <option value="DIGITAL">Digital</option>
+            </select></label
+          >
+          <label class="check"
+            ><input type="checkbox" formControlName="comparar" />Comparar con período
+            anterior</label
+          >
+        </div>
+        <button [disabled]="cargando() || !catalogo()">Actualizar dashboard</button>
+      </form>
+    </details>
     @if (error()) {
       <p class="error" role="alert">{{ error() }}</p>
     }
@@ -257,6 +321,15 @@ export class DashboardComercialComponent {
           if (revision === this.revision) this.error.set(mensajeApi(e));
         },
       });
+  }
+  protected ventasPorFecha(r: DashboardResultado) {
+    return r.datos.serie_ventas.map((v) => ({ etiqueta: v.fecha, valor: v.ventas }));
+  }
+  protected importesPorFecha(r: DashboardResultado) {
+    return r.datos.serie_ventas.map((v) => ({ etiqueta: v.fecha, valor: Number(v.importe) }));
+  }
+  protected productosVendidos(r: DashboardResultado) {
+    return r.datos.productos_mas_vendidos.map((p) => ({ etiqueta: p.nombre, valor: p.unidades }));
   }
   protected etiqueta(k: string): string {
     return k.replaceAll('_', ' ');

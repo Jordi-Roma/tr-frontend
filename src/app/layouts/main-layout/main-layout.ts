@@ -74,10 +74,9 @@ export class MainLayout {
     { label: 'Para ti', path: '/para-ti', icon: 'pi pi-sparkles' },
     { label: 'Reservas', path: '/reservas', icon: 'pi pi-calendar-check' },
     { label: 'Notificaciones', path: '/notificaciones', icon: 'pi pi-bell', roles: ['CLIENTE'] },
-    { label: 'Mis cambios', path: '/cambios', icon: 'pi pi-sync', roles: ['CLIENTE'] },
     { label: 'Mis pagos', path: '/mis-pagos', icon: 'pi pi-credit-card', roles: ['CLIENTE'] },
     {
-      label: 'Mis devoluciones',
+      label: 'Mis devoluciones y cambios',
       path: '/mis-devoluciones',
       icon: 'pi pi-refresh',
       roles: ['CLIENTE'],
@@ -163,18 +162,10 @@ export class MainLayout {
       items: [
         { label: 'Respaldos de mi empresa', path: '/respaldos', icon: 'pi pi-database', roles: ADMIN },
         { label: 'Productos', path: '/productos', icon: 'pi pi-shopping-bag', roles: ADMIN },
-        { label: 'Categorias', path: '/categorias', icon: 'pi pi-tags', roles: ADMIN },
-        { label: 'Tallas', path: '/tallas', icon: 'pi pi-sliders-h', roles: ADMIN },
-        { label: 'Colores', path: '/colores', icon: 'pi pi-palette', roles: ADMIN },
-        { label: 'Marcas', path: '/marcas', icon: 'pi pi-bookmark', roles: ADMIN },
-        { label: 'Temporadas', path: '/temporadas', icon: 'pi pi-calendar', roles: ADMIN },
-        { label: 'Colecciones', path: '/colecciones', icon: 'pi pi-th-large', roles: ADMIN },
         { label: 'Proveedores', path: '/proveedores', icon: 'pi pi-truck', roles: ADMIN },
         { label: 'Ciudades', path: '/ciudades', icon: 'pi pi-map-marker', roles: ADMIN },
         { label: 'Sucursales', path: '/sucursales', icon: 'pi pi-building', roles: ADMIN },
         { label: 'Empleados', path: '/empleados', icon: 'pi pi-id-card', roles: ADMIN_O_ENCARGADO },
-        { label: 'Variantes', path: '/variantes', icon: 'pi pi-sitemap', roles: ADMIN },
-        { label: 'Promociones', path: '/promociones', icon: 'pi pi-percentage', roles: ADMIN },
         {
           label: 'Reservas',
           path: '/reservas-admin',
@@ -211,13 +202,10 @@ export class MainLayout {
           icon: 'pi pi-receipt',
           roles: ADMIN_ENCARGADO_CAJERO,
         },
-        { label: 'Cambios de prendas', path: '/cambios', icon: 'pi pi-sync', roles: ADMIN_ENCARGADO_CAJERO },
-        { label: 'Políticas de posventa', path: '/politicas-posventa', icon: 'pi pi-book', roles: ['ADMINISTRADOR'] },
-      { label: 'Pagos de prueba', path: '/pagos-empresa', icon: 'pi pi-cog', roles: ADMIN },
         { label: 'Notificaciones', path: '/notificaciones', icon: 'pi pi-bell' },
         { label: 'Pagos', path: '/pagos', icon: 'pi pi-credit-card', roles: ADMIN_O_ENCARGADO },
         {
-          label: 'Devoluciones',
+          label: 'Devoluciones y cambios',
           path: '/devoluciones',
           icon: 'pi pi-replay',
           roles: ADMIN_ENCARGADO_CAJERO,
@@ -233,7 +221,10 @@ export class MainLayout {
     {
       title: 'REPORTES',
       icon: 'pi pi-chart-bar',
-      items: [{ label: 'Reportes', path: '/reportes', icon: 'pi pi-file-chart', roles: ADMIN_O_ENCARGADO }],
+      items: [
+        { label: 'Reportes', path: '/reportes', icon: 'pi pi-file-chart', roles: ADMIN_O_ENCARGADO },
+        { label: 'Analítica inteligente', path: '/analitica', icon: 'pi pi-chart-line', roles: ADMIN_O_ENCARGADO },
+      ],
     },
   ];
 

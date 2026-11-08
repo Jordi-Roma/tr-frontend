@@ -1,0 +1,235 @@
+:host {
+  display: block;
+  color: #252e21;
+}
+header {
+  margin-bottom: 1.5rem;
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+}
+h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+.panel {
+  background: #fff;
+  border: 1px solid #b6bdad;
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin: 1rem 0;
+}
+.filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+input,
+select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.7rem;
+  border: 1px solid #78836c;
+  border-radius: 8px;
+  background: #fff;
+  color: #252e21;
+  font: inherit;
+}
+.origen {
+  border-left: 5px solid #344c2b;
+  background: #edf1e8;
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+}
+.demo {
+  background: #edf3f8;
+  border-color: #245a81;
+}
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.metricas div {
+  background: #f2f4ef;
+  padding: 1rem;
+  border-radius: 8px;
+}
+dt {
+  font-size: 0.9rem;
+}
+dd {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0;
+}
+.tabla {
+  overflow: auto;
+  max-width: 100%;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+caption {
+  text-align: left;
+  padding: 0.8rem 0;
+  color: #49513f;
+}
+th,
+td {
+  padding: 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid #b6bdad;
+  white-space: nowrap;
+}
+th {
+  color: #283124;
+}
+.grupo {
+  margin: 1.2rem 0;
+}
+.barra {
+  background: #e1e6da;
+  height: 20px;
+  border: 1px solid #758267;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.barra span {
+  display: block;
+  height: 100%;
+  background: #344c2b;
+}
+.paginacion {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 1.2rem 0;
+}
+.error {
+  color: #84251e;
+  background: #fff0ec;
+  padding: 1rem;
+  border-radius: 8px;
+}
+:focus-visible {
+  outline: 3px solid #245a81;
+  outline-offset: 3px;
+}
+p {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+button {
+  min-height: 44px;
+}
+
+.button {
+  padding: 0.7rem 1rem;
+  border: 1px solid #344c2b;
+  border-radius: 8px;
+  background: #fff;
+  color: #283b21;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.button.primary {
+  background: #344c2b;
+  color: #fff;
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.button.primary:hover:not(:disabled) {
+  background: #283b21;
+}
+
+.grupo {
+  padding: 1.25rem;
+  border: 1px solid #c9d1c1;
+  border-radius: 12px;
+  background: #fafbf8;
+}
+.grupo:nth-of-type(even) .barra span {
+  background: #245a81;
+}
+.grupo-total {
+  color: #344c2b;
+}
+.barra {
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+}
+.perfil-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+}
+.perfil-resumen dd {
+  font-size: 1.15rem;
+}
+.perfil-resumen dt {
+  color: #49513f;
+}
+summary {
+  cursor: pointer;
+  padding: 0.8rem;
+  font-weight: 600;
+  min-height: 44px;
+  box-sizing: border-box;
+  background: #f2f4ef;
+  border-radius: 8px;
+}
+h2,
+h3 {
+  line-height: 1.3;
+}
+.panel {
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.grupo {
+  background: linear-gradient(135deg, #fff, #edf4f8);
+  border-color: #cfdee6;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px #2449660c;
+}
+.barra {
+  height: 38px;
+  border-radius: 12px;
+  background: #e1eaf0;
+  box-shadow: inset 0 2px 5px #29445b15;
+}
+.barra span {
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 36px, #ffffff35 36px 38px),
+    linear-gradient(90deg, #2f6553, #7cb593);
+  box-shadow: inset 0 4px 0 #ffffff50;
+}
+.grupo:nth-of-type(even) .barra span {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 36px, #ffffff35 36px 38px),
+    linear-gradient(90deg, #285d86, #68a6c9);
+}
+.perfil-resumen > div {
+  background: #ffffffbb;
+  padding: 0.85rem;
+  border-radius: 12px;
+}
