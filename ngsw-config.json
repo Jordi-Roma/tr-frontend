@@ -8,6 +8,13 @@
       "resources": {
         "files": ["/index.html", "/favicon.ico", "/manifest.webmanifest", "/icons/*.png", "/*.css", "/*.js", "/media/*"]
       }
+    },
+    {
+      "name": "fin-precarga",
+      "installMode": "prefetch",
+      "resources": {
+        "files": ["/pwa-lista.txt"]
+      }
     }
   ],
   "navigationUrls": ["/**", "!/**/*.*", "!/**/*__*", "!/**/*__*/**", "!/api/**"]

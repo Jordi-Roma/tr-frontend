@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, effect, inject, Service, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
-import { firstValueFrom, timeout } from 'rxjs';
+import { filter, firstValueFrom, switchMap, take, timeout, timer } from 'rxjs';
 import { AuthService } from '../../modules/autenticacion/services/auth.service';
 import { PerfilResponse } from '../../modules/autenticacion/models/perfil.models';
 import { API_BASE_URL } from '../config/api.config';
@@ -87,8 +87,8 @@ export class OfflineService {
   readonly mensaje = signal('');
   readonly conectado = signal(navigator.onLine);
   readonly accesoGuardado = signal(!!localStorage.getItem(ACCESO_OFFLINE));
-  readonly controlada = signal(!!navigator.serviceWorker?.controller);
-  readonly listaOffline = computed(() => this.controlada() && this.copia() !== null);
+  private readonly interfazGuardada = signal(false);
+  readonly listaOffline = computed(() => this.interfazGuardada() && this.copia() !== null);
   readonly actualizacion = signal(false);
   readonly usuario = this.auth.usuarioActual;
   readonly puedeActivar = computed(
@@ -106,9 +106,19 @@ export class OfflineService {
     this.sw?.versionUpdates.subscribe((evento) => {
       if (evento.type === 'VERSION_READY') this.actualizacion.set(true);
     });
-    navigator.serviceWorker?.addEventListener('controllerchange', () =>
-      this.controlada.set(!!navigator.serviceWorker?.controller),
-    );
+    if (this.sw?.isEnabled && typeof caches !== 'undefined') {
+      // El Service Worker guarda este recurso después de precargar la interfaz.
+      timer(0, 1500)
+        .pipe(
+          filter(() => !!navigator.serviceWorker.controller),
+          switchMap(() =>
+            caches.match('/pwa-lista.txt', { ignoreVary: true }).catch(() => undefined),
+          ),
+          filter((respuesta) => respuesta?.ok === true),
+          take(1),
+        )
+        .subscribe(() => this.interfazGuardada.set(true));
+    }
     window.addEventListener('online', () => {
       this.conectado.set(true);
       if (this.abierta) void this.sincronizar();

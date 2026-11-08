@@ -90,6 +90,10 @@
     }
     @if (offline.listaOffline()) {
       <p class="listo" role="status">Listo para trabajar sin conexión.</p>
+    } @else if (offline.copia() && offline.conectado()) {
+      <p role="status">
+        Preparando la aplicación para usarla sin conexión. Mantén esta pantalla abierta.
+      </p>
     }
     @if (offline.copia(); as copia) {
       <p>
